@@ -7,15 +7,10 @@ Use standard cmake procedure
 
 ```bash
 get clone https://github.com/sr99622/libavio.git
-
 cd libavio
-
 mkdir build
-
 cd build
-
 cmake ..
-
 cmake --build . --config Release
 
 (Use administrator privilege)
