@@ -269,6 +269,15 @@ public:
     std::string mux_audio_q_name;
 
     std::vector<std::thread*> ops;
+    bool running = false;
+
+    void key_event(int keyCode)
+    {
+        SDL_Event event;
+        event.type = SDL_KEYDOWN;
+        event.key.keysym.sym = keyCode;
+        SDL_PushEvent(&event);
+    }
 
     void add_reader(Reader& reader_in)
     {
@@ -335,7 +344,8 @@ public:
 
     void run()
     {
-        av_log_set_level(AV_LOG_PANIC);        
+        av_log_set_level(AV_LOG_PANIC);
+        running = true;
 
         for (const std::string& name : pkt_q_names) {
             if (!name.empty()) {
@@ -446,6 +456,14 @@ public:
                     delete q->second;
                 }
             }
+
+            //if (reader)
+            //    delete reader;
+
+            //if (videoDecoder)
+            //    delete videoDecoder;
+
+            //delete display;
         }
 
         //std::exit(0);
@@ -455,7 +473,9 @@ public:
             delete ops[i];
         }
 
-        std::exit(0);
+        running = false;
+
+        //std::exit(0);
 
     }
 };
