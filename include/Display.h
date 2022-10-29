@@ -5,7 +5,6 @@
 #include <SDL.h>
 #include <chrono>
 #include <deque>
-#include "SDL_ttf.h"
 #include "Exception.h"
 #include "Queue.h"
 #include "Frame.h"
