@@ -62,6 +62,11 @@ else()
     endif()
 endif()
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+
 
 add_library(avio SHARED 
                         src/Reader.cpp
@@ -80,6 +85,7 @@ add_library(avio SHARED
 target_link_libraries(avio PRIVATE 
                 ${FFMPEG_LIBRARIES}
                 ${SDL2_LIBRARIES}
+                Qt5::Widgets
              )
 
 target_include_directories(avio PUBLIC

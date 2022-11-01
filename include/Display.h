@@ -15,10 +15,11 @@
 #include "Writer.h"
 #include "Encoder.h"
 #include "Event.h"
+#include <QLabel>
 
 #define SDL_EVENT_LOOP_WAIT 10
 
-using Callback = std::function<void(int)>;
+//using Callback = std::function<void(int)>;
 
 namespace avio
 {
@@ -61,6 +62,8 @@ public:
     void toggleRecord();
 
     Frame f;
+
+    QLabel* lblDisplay = nullptr;
 
     std::string audioDeviceStatus() const;
     const char* sdlAudioFormatName(SDL_AudioFormat format) const;

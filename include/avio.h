@@ -11,6 +11,11 @@
 namespace avio
 {
 
+const char * version()
+{
+    return "1.1.0";
+}
+
 static void show_pkt(AVPacket* pkt)
 {
     std::stringstream str;

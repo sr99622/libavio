@@ -1,5 +1,6 @@
 #include "Display.h"
 #include <filesystem>
+#include <QPixmap>
 
 namespace avio 
 {
@@ -75,10 +76,15 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
             ex.msg(str.str());
 
-            if (hwnd) 
+            if (hwnd) {
                 window = SDL_CreateWindowFrom(hwnd);
-            else 
+                SDL_SetWindowSize(window, 640, 480);
+            }
+            else {
                 window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, 0);
+            }
+
+
             if (!window) throw Exception(std::string("SDL_CreateWindow") + SDL_GetError());
 
             if (fullscreen) SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
@@ -123,20 +129,33 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
-    if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
-        ex.ck(SDL_UpdateYUVTexture(texture, NULL,
-            f.m_frame->data[0], f.m_frame->linesize[0],
-            f.m_frame->data[1], f.m_frame->linesize[1],
-            f.m_frame->data[2], f.m_frame->linesize[2]), 
-            SDL_GetError());
+    if (lblDisplay) {
+        std::cout << "what up dog" << std::endl;
+        int width = lblDisplay->width();
+        int height = lblDisplay->height();
+        std::cout << "width: " << width << " height: " << height << std::endl;
+        std::cout << "f w " << f.m_frame->width << std::endl;
+        const uint8_t * data = (const uint8_t*)f.m_frame->data;
+        QImage img((unsigned char*)f.m_frame->data, f.m_frame->width, f.m_frame->height, QImage::Format_RGB888);
+        QPixmap pix = QPixmap::fromImage(img);
+        lblDisplay->setPixmap(pix);
     }
     else {
-        ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
-    }
+        if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
+            ex.ck(SDL_UpdateYUVTexture(texture, NULL,
+                f.m_frame->data[0], f.m_frame->linesize[0],
+                f.m_frame->data[1], f.m_frame->linesize[1],
+                f.m_frame->data[2], f.m_frame->linesize[2]), 
+                SDL_GetError());
+        }
+        else {
+            ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
+        }
 
-    SDL_RenderClear(renderer);
-    ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
-    SDL_RenderPresent(renderer);
+        SDL_RenderClear(renderer);
+        ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
+        SDL_RenderPresent(renderer);
+    }
 }
 
 void Display::clearInputQueues()
