@@ -1,14 +1,9 @@
 #include "Display.h"
+#include "GLWidget.h"
 #include <filesystem>
 
 namespace avio 
 {
-
-void Display::setHWnd(long long arg)
-{
-    std::cout << arg << std::endl;
-    hwnd = reinterpret_cast<void*>(arg);
-}
 
 void Display::init()
 {
@@ -36,6 +31,10 @@ Display::~Display()
 int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 {
     int ret = 0;
+
+    if (use_callback)
+        return ret;
+
     try {
         Uint32 sdl_format = 0;
         int w = width;
@@ -75,10 +74,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
             ex.msg(str.str());
 
-            if (hwnd) 
-                window = SDL_CreateWindowFrom(hwnd);
-            else 
-                window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, 0);
+            window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, 0);
             if (!window) throw Exception(std::string("SDL_CreateWindow") + SDL_GetError());
 
             if (fullscreen) SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
@@ -123,20 +119,26 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
-    if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
-        ex.ck(SDL_UpdateYUVTexture(texture, NULL,
-            f.m_frame->data[0], f.m_frame->linesize[0],
-            f.m_frame->data[1], f.m_frame->linesize[1],
-            f.m_frame->data[2], f.m_frame->linesize[2]), 
-            SDL_GetError());
+    if (use_callback) {
+        //f_display(f);
+        emit thingy_bob(f.m_frame->data[0]);
     }
     else {
-        ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
-    }
+        if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
+            ex.ck(SDL_UpdateYUVTexture(texture, NULL,
+                f.m_frame->data[0], f.m_frame->linesize[0],
+                f.m_frame->data[1], f.m_frame->linesize[1],
+                f.m_frame->data[2], f.m_frame->linesize[2]), 
+                SDL_GetError());
+        }
+        else {
+            ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
+        }
 
-    SDL_RenderClear(renderer);
-    ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
-    SDL_RenderPresent(renderer);
+        SDL_RenderClear(renderer);
+        ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
+        SDL_RenderPresent(renderer);
+    }
 }
 
 void Display::clearInputQueues()

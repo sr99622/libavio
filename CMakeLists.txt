@@ -19,23 +19,6 @@ include(GNUInstallDirs)
 # set arch-specific include dir
 set(CMAKE_INSTALL_INCLUDEDIR "include/${CMAKE_LIBRARY_ARCHITECTURE}")
 
-
-if (FFMPEG_INCLUDE_DIRS AND FFMPEG_LIBRARIES)
-    message("-- FFmpeg is using include dirs ${FFMPEG_INCLUDE_DIRS} and libs ${FFMPEG_LIBRARIES}")
-else()
-    find_package(FFmpeg)
-    if (FFMPEG_INCLUDE_DIRS)
-        message("-- Found FFmpeg Include Directories ${FFMPEG_INCLUDE_DIRS}")
-    else()    
-        message("-- **WARNING** Unable to find FFmpeg Include Directories automatically.  Use -DFFMPEG_INCLUDE_DIRS location manually")
-    endif()
-    if (FFMPEG_LIBRARIES)
-        message("-- Found FFmpeg Libraries ${FFMPEG_LIBRARIES}")
-    else()    
-        message("-- **WARNING** Unable to find FFmpeg Libraries automatically.  Use -DFFMPEG_LIBRARIES to set location manually")
-    endif()
-endif()
-
 if (UNIX)
     message("finding alsa")
     set (ALSA_INCLUDE_DIR_CANDIDATE $ENV{CONDA_PREFIX}/include/alsa)
@@ -50,18 +33,15 @@ if (UNIX)
     endif()
 endif()
 
-if (SDL2_LIBRARIES AND SDL2_INCLUDE_DIRS)
-    message("-- SDL2 is using include dirs ${SDL2_INCLUDE_DIRS} and lib ${SDL2_LIBRARIES}")
-else()
-    find_package(SDL2)
-    if (SDL2_FOUND)
-        set(SDL2_LIBRARIES SDL2::SDL2)
-        message("-- Found SDL2: ${SDL2_INCLUDE_DIRS}")
-    else()
-        message("-- **WARNING** Unable to find SDL2 automatically.  Use -DSDL2_INCLUDE_DIRS and -DSDL2_LIBRARIES to set locations manually")
-    endif()
-endif()
+find_package(SDL2)
+find_package(FFmpeg)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
+set(CMAKE_AUTOMOC ON)
+set(MOC_INCLUDES
+    include/GLWidget.h
+    include/Display.h
+)
 
 add_library(avio SHARED 
                         src/Reader.cpp
@@ -75,17 +55,19 @@ add_library(avio SHARED
                         src/Encoder.cpp
                         src/Writer.cpp
                         src/Pipe.cpp
+                        src/GLWidget.cpp
+                        ${MOC_INCLUDES}
                     )
                 
 target_link_libraries(avio PRIVATE 
+                SDL2::SDL2
+                Qt5::Widgets
                 ${FFMPEG_LIBRARIES}
-                ${SDL2_LIBRARIES}
              )
 
 target_include_directories(avio PUBLIC
                     include
                     ${FFMPEG_INCLUDE_DIRS}
-                    ${SDL2_INCLUDE_DIRS}
                   )
 
 if (MSVC)
@@ -111,5 +93,6 @@ install(FILES
             include/Queue.h
             include/Reader.h
             include/Writer.h
+            include/GLWidget.h
             
             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <chrono>
 #include <deque>
+#include <functional>
 #include "Exception.h"
 #include "Queue.h"
 #include "Frame.h"
@@ -15,13 +16,14 @@
 #include "Writer.h"
 #include "Encoder.h"
 #include "Event.h"
+#include <QObject>
 
 #define SDL_EVENT_LOOP_WAIT 10
 
-using Callback = std::function<void(int)>;
-
 namespace avio
 {
+
+class GLWidget;
 
 enum class PlayState {
     PLAY,
@@ -29,10 +31,12 @@ enum class PlayState {
     QUIT
 };
 
-class Display
+class Display : public QObject
 {
+    Q_OBJECT
+
 public:
-    Display(Reader& reader) : reader(&reader) {  }
+    Display(Reader& reader) : reader(&reader) { }
     ~Display();
 
     void init();
@@ -126,10 +130,20 @@ public:
     Decoder* audioDecoder = nullptr;
     Filter* audioFilter = nullptr;
 
-    void setHWnd(long long arg);
-    void* hwnd = nullptr;
+    bool use_callback = false;
+    std::function<void(Frame&)> f_display;
+    void setCallback(const std::function<void(Frame&)>& callback) {
+        f_display = callback;
+        use_callback = true;
+    }
+
+    GLWidget* glWidget;
 
     ExceptionHandler ex;
+
+signals:
+    void thingy_bob(const uchar*);
+
 };
 
 }
