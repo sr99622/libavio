@@ -177,7 +177,7 @@ void GLWidget::setData(const uchar* data)
     if (fmt != QImage::Format_RGB888)
         img = img.convertToFormat(QImage::Format_RGB888);
     img = img.mirrored();
-    texture->setData(QOpenGLTexture::RGB, QOpenGLTexture::UInt8, img.bits());
+    texture->setData(QOpenGLTexture::RGB, QOpenGLTexture::UInt8, (const void*)img.bits());
     update();
 }
 
