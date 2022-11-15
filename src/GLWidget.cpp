@@ -2,7 +2,6 @@
 #include "GLWidget.h"
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
-#include <QTimer>
 #include <iostream>
 #include "avio.h"
 
@@ -15,13 +14,15 @@ namespace avio
 
 GLWidget::GLWidget(int width, int height) : width(width), height(height)
 {
-    QTimer *timer = new QTimer(this);
+    timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(poll()));
     timer->start(poll_interval);
 }
 
 GLWidget::~GLWidget()
 {
+    //timer->stop();
+    delete timer;
     makeCurrent();
     vbo.destroy();
     delete texture;

@@ -5,6 +5,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>
+#include <QTimer>
 #include <iostream>
 #include "Queue.h"
 #include "Frame.h"
@@ -67,6 +68,8 @@ private:
 
     int width = 0;
     int height = 0;
+
+    QTimer *timer;
 
     int count = 0;
 
