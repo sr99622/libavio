@@ -488,6 +488,9 @@ public:
             delete ops[i];
         }
 
+        //if (glWidget)
+        //    delete glWidget;
+
         running = false;
 
         //std::exit(0);
