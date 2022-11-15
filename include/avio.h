@@ -7,6 +7,7 @@
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
+#include "GLWidget.h"
 
 namespace avio
 {
@@ -252,6 +253,7 @@ public:
     Encoder*  videoEncoder = nullptr;
     Encoder*  audioEncoder = nullptr;
     Display*  display      = nullptr;
+    GLWidget* glWidget     = nullptr;
 
     PKT_Q_MAP pkt_queues;
     FRAME_Q_MAP frame_queues;
@@ -342,6 +344,13 @@ public:
             frame_q_names.push_back(display->afq_out_name);
     }
 
+    void add_widget(GLWidget* widget_in)
+    {
+        glWidget = widget_in;
+        if (!display->vfq_out_name.empty())
+            frame_q_names.push_back(display->vfq_out_name);
+    }
+
     void run()
     {
         av_log_set_level(AV_LOG_PANIC);
@@ -375,6 +384,11 @@ public:
         if (videoFilter) {
             ops.push_back(new std::thread(filter, videoFilter,
                 frame_queues[videoFilter->q_in_name], frame_queues[videoFilter->q_out_name]));
+        }
+
+        if (glWidget) {
+            if (!glWidget->vfq_in_name.empty()) glWidget->vfq_in = frame_queues[glWidget->vfq_in_name];
+            if (!glWidget->vfq_out_name.empty()) glWidget->vfq_out = frame_queues[glWidget->vfq_out_name];
         }
 
         /*
@@ -423,6 +437,7 @@ public:
             if (!display->vfq_out_name.empty()) display->vfq_out = frame_queues[display->vfq_out_name];
             if (!display->afq_out_name.empty()) display->afq_out = frame_queues[display->afq_out_name];
 
+            std::cout << "display init" << std::endl;
             display->init();
 
             if (audioDecoder) {

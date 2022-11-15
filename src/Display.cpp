@@ -32,7 +32,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 {
     int ret = 0;
 
-    if (use_callback)
+    if (!enable_sdl_video)
         return ret;
 
     try {
@@ -119,11 +119,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
-    if (use_callback) {
-        //f_display(f);
-        emit thingy_bob(f.m_frame->data[0]);
-    }
-    else {
+    if (enable_sdl_video) {
         if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
             ex.ck(SDL_UpdateYUVTexture(texture, NULL,
                 f.m_frame->data[0], f.m_frame->linesize[0],

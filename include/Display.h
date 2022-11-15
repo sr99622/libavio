@@ -23,8 +23,6 @@
 namespace avio
 {
 
-class GLWidget;
-
 enum class PlayState {
     PLAY,
     PAUSE,
@@ -130,19 +128,9 @@ public:
     Decoder* audioDecoder = nullptr;
     Filter* audioFilter = nullptr;
 
-    bool use_callback = false;
-    std::function<void(Frame&)> f_display;
-    void setCallback(const std::function<void(Frame&)>& callback) {
-        f_display = callback;
-        use_callback = true;
-    }
-
-    GLWidget* glWidget;
+    bool enable_sdl_video = true;
 
     ExceptionHandler ex;
-
-signals:
-    void thingy_bob(const uchar*);
 
 };
 
