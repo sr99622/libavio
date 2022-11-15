@@ -4,6 +4,7 @@
 #include <QOpenGLTexture>
 #include <QTimer>
 #include <iostream>
+#include "avio.h"
 
 #define PROGRAM_VERTEX_ATTRIBUTE 0
 #define PROGRAM_TEXCOORD_ATTRIBUTE 1
@@ -14,9 +15,9 @@ namespace avio
 
 GLWidget::GLWidget(int width, int height) : width(width), height(height)
 {
-     QTimer *timer = new QTimer(this);
-     connect(timer, SIGNAL(timeout()), this, SLOT(timeout()));
-     timer->start(1000);
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(poll()));
+    timer->start(poll_interval);
 }
 
 GLWidget::~GLWidget()
@@ -171,7 +172,6 @@ void GLWidget::setFormat(QImage::Format arg)
 
 void GLWidget::setData(const uchar* data)
 {
-    std::cout << "set data" << std::endl;
     QImage img(data, texture->width(), texture->height(), fmt);
     if (fmt != QImage::Format_RGB888)
         img = img.convertToFormat(QImage::Format_RGB888);
@@ -180,18 +180,17 @@ void GLWidget::setData(const uchar* data)
     update();
 }
 
-void GLWidget::timeout()
+void GLWidget::poll()
 {
-    std::cout << "timeout" << std::endl;
-    QImage img;
-    if ((count % 2) == 0)
-        img = QImage("/home/stephen/Pictures/test.jpg");
-    else    
-        img = QImage("/home/stephen/Pictures/sample.jpg");
-    img = img.scaled(1280, 720);
-    img = img.convertToFormat(QImage::Format_RGB888);
-    setData(img.bits());
-    count++;
+    if (vfq_in) {
+        try {
+            while (vfq_in->size() > 0) {
+                Frame f = vfq_in->pop();
+                setData(f.m_frame->data[0]);
+            }
+        }
+        catch (const QueueClosedException& e) { }
+    }
 }
 
 }
