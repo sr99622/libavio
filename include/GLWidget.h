@@ -43,10 +43,12 @@ public:
     bool running = true;
     int gl_width = 0;
     int gl_height = 0;
+    bool maintain_aspect_ratio = true;
 
 public slots:
     void setZoom(int);
     void setAspect(int);
+    void setAspectRatio(float);
     void setPanX(int);
     void setPanY(int);
     void setData(const uchar *);
