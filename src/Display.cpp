@@ -329,7 +329,6 @@ bool Display::display()
                 if (vfq_out)
                     vfq_out->push(f);
 
-
             }
             else {
                 ex.msg("Display receive null eof");
