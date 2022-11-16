@@ -150,6 +150,7 @@ void GLWidget::resizeGL(int width, int height)
     std::cout << "resizeGL: " << width << " x " << height << std::endl;
     if (gl_width > 0 && gl_height > 0) {
         std::cout << "gl_width: " << gl_width << " gl_height: " << gl_height << std::endl;
+        emit doo_wop(width, height);
     }
     else {
         std::cout << "texture not set" << std::endl;
@@ -159,6 +160,7 @@ void GLWidget::resizeGL(int width, int height)
 void GLWidget::setZoom(int arg) 
 {
     zoom = (float) arg / 50.0f;
+    std::cout << "setZoom" << zoom << std::endl;
     update();
 }
 

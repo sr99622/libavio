@@ -45,6 +45,9 @@ public:
     int gl_height = 0;
     bool maintain_aspect_ratio = true;
 
+signals:
+    void doo_wop(int, int);
+
 public slots:
     void setZoom(int);
     void setAspect(int);
