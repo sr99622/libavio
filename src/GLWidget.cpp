@@ -12,7 +12,7 @@ namespace avio
 {
 
 
-GLWidget::GLWidget(int width, int height) : width(width), height(height)
+GLWidget::GLWidget()
 {
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(poll()));
@@ -21,13 +21,15 @@ GLWidget::GLWidget(int width, int height) : width(width), height(height)
 
 GLWidget::~GLWidget()
 {
-    //timer->stop();
+    std::cout << "destructor start" << std::endl;
+    timer->stop();
     delete timer;
     makeCurrent();
     vbo.destroy();
     delete texture;
     delete program;
     doneCurrent();
+    std::cout << "destructor done" << std::endl;
 }
 
 QSize GLWidget::minimumSizeHint() const
@@ -37,7 +39,7 @@ QSize GLWidget::minimumSizeHint() const
 
 QSize GLWidget::sizeHint() const
 {
-    return QSize(400, 400);
+    return QSize(640, 480);
 }
 
 void GLWidget::initializeGL()
@@ -98,12 +100,6 @@ void GLWidget::initializeGL()
     vbo.create();
     vbo.bind();
     vbo.allocate(vertData.constData(), vertData.count() * sizeof(GLfloat));
-
-    texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    texture->setSize(width, height);
-    texture->setFormat(QOpenGLTexture::RGB8_UNorm);
-    texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
-
 }
 
 void GLWidget::paintGL()
@@ -129,6 +125,20 @@ void GLWidget::paintGL()
     program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
     program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
     program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
+
+    if (texture) {
+        if (texture->width() != gl_width || texture->height() != gl_height) {
+            delete texture;
+            texture = nullptr;
+        }
+    }
+
+    if (!texture) {
+        texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
+        texture->setSize(gl_width, gl_height);
+        texture->setFormat(QOpenGLTexture::RGB8_UNorm);
+        texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
+    }
 
     texture->bind();
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -187,7 +197,8 @@ void GLWidget::poll()
         try {
             while (vfq_in->size() > 0) {
                 Frame f = vfq_in->pop();
-                setData(f.m_frame->data[0]);
+                if (f.isValid())
+                    setData(f.m_frame->data[0]);
             }
         }
         catch (const QueueClosedException& e) { }

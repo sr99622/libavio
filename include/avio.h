@@ -472,6 +472,13 @@ public:
                 }
             }
 
+            if (glWidget) {
+                glWidget->vfq_in_name.clear();
+                glWidget->vfq_out_name.clear();
+                glWidget->vfq_in = nullptr;
+                glWidget->vfq_out = nullptr;
+            }
+
             //if (reader)
             //    delete reader;
 

@@ -21,7 +21,7 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
     Q_OBJECT
 
 public:
-    GLWidget(int width, int height);
+    GLWidget();
     ~GLWidget();
 
     QSize minimumSizeHint() const override;
@@ -40,6 +40,9 @@ public:
     void set_video_out(const std::string& name) { vfq_out_name = std::string(name); }
 
     int poll_interval = 1;
+    bool running = true;
+    int gl_width = 0;
+    int gl_height = 0;
 
 public slots:
     void setZoom(int);
@@ -66,13 +69,7 @@ private:
 
     QImage::Format fmt = QImage::Format_RGB888;
 
-    int width = 0;
-    int height = 0;
-
     QTimer *timer;
-
-    int count = 0;
-
 
 };
 
