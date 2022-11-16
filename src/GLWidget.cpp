@@ -39,7 +39,7 @@ QSize GLWidget::minimumSizeHint() const
 
 QSize GLWidget::sizeHint() const
 {
-    return QSize(640, 480);
+    return QSize(1920, 1080);
 }
 
 void GLWidget::initializeGL()
@@ -147,9 +147,13 @@ void GLWidget::paintGL()
 
 void GLWidget::resizeGL(int width, int height)
 {
-    int side = qMin(width, height);
     std::cout << "resizeGL: " << width << " x " << height << std::endl;
-    //glViewport((width - side) / 2, (height - side) / 2, side, side);
+    if (gl_width > 0 && gl_height > 0) {
+        std::cout << "gl_width: " << gl_width << " gl_height: " << gl_height << std::endl;
+    }
+    else {
+        std::cout << "texture not set" << std::endl;
+    }
 }
 
 void GLWidget::setZoom(int arg) 
@@ -161,7 +165,15 @@ void GLWidget::setZoom(int arg)
 void GLWidget::setAspect(int arg)
 {
     aspect = (float) arg / 50.0f;
+    std::cout << "setAspect: " << aspect << std::endl;
     update();   
+}
+
+void GLWidget::setAspectRatio(float arg)
+{
+    aspect = arg;
+    std::cout << "setAspectRatio: " << aspect << std::endl;
+    update();
 }
 
 void GLWidget::setPanX(int arg)
