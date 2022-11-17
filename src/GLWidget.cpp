@@ -147,10 +147,11 @@ void GLWidget::paintGL()
 
 void GLWidget::resizeGL(int width, int height)
 {
-    std::cout << "resizeGL: " << width << " x " << height << std::endl;
+    std::cout << "resizeGL w: " << width << " h " << height << std::endl;
+    emit gl_resized(width, height);
+
     if (gl_width > 0 && gl_height > 0) {
         std::cout << "gl_width: " << gl_width << " gl_height: " << gl_height << std::endl;
-        emit doo_wop(width, height);
     }
     else {
         std::cout << "texture not set" << std::endl;
@@ -160,21 +161,18 @@ void GLWidget::resizeGL(int width, int height)
 void GLWidget::setZoom(int arg) 
 {
     zoom = (float) arg / 50.0f;
-    std::cout << "setZoom" << zoom << std::endl;
     update();
 }
 
 void GLWidget::setAspect(int arg)
 {
     aspect = (float) arg / 50.0f;
-    std::cout << "setAspect: " << aspect << std::endl;
     update();   
 }
 
 void GLWidget::setAspectRatio(float arg)
 {
     aspect = arg;
-    std::cout << "setAspectRatio: " << aspect << std::endl;
     update();
 }
 
@@ -218,5 +216,13 @@ void GLWidget::poll()
         catch (const QueueClosedException& e) { }
     }
 }
+
+/*
+void GLWidget::mousePressEvent(QMouseEvent *event)
+{
+    QPointF pnt = event->pos();
+    std::cout << "mousePressEvent: " << pnt.x() << " y: " << pnt.y() << std::endl;
+}
+*/
 
 }
