@@ -6,6 +6,7 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>
 #include <QTimer>
+#include <QMouseEvent>
 #include <iostream>
 #include "Queue.h"
 #include "Frame.h"
@@ -46,7 +47,7 @@ public:
     bool maintain_aspect_ratio = true;
 
 signals:
-    void doo_wop(int, int);
+    void gl_resized(int, int);
 
 public slots:
     void setZoom(int);
@@ -61,6 +62,7 @@ protected:
     void initializeGL() override;
     void paintGL() override;
     void resizeGL(int width, int height) override;
+    //void mousePressEvent(QMouseEvent *event) override;
 
 private:
     QOpenGLTexture *texture = nullptr;
