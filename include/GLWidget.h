@@ -25,8 +25,14 @@ public:
     GLWidget();
     ~GLWidget();
 
-    QSize sizeHint() const override;
+    void setZoomFactor(float);
+    void setPanX(int);
+    void setPanY(int);
+    void setData(const uchar *);
     void setFormat(QImage::Format);
+    void updateAspectRatio();
+
+    QSize sizeHint() const override;
 
     std::string vfq_in_name;
     std::string vfq_out_name;
@@ -40,17 +46,12 @@ public:
     void set_video_out(const std::string& name) { vfq_out_name = std::string(name); }
 
     int poll_interval = 1;
-    int gl_width = 0;
-    int gl_height = 0;
+    int tex_width = 0;
+    int tex_height = 0;
     bool maintain_aspect_ratio = true;
 
 public slots:
-    void setZoomFactor(float);
-    void setPanX(int);
-    void setPanY(int);
-    void setData(const uchar *);
     void poll();
-    void updateAspectRatio();
 
 protected:
     void initializeGL() override;

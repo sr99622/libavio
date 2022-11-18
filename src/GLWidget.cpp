@@ -5,8 +5,8 @@
 #include <iostream>
 #include "avio.h"
 
-#define PROGRAM_VERTEX_ATTRIBUTE 0
-#define PROGRAM_TEXCOORD_ATTRIBUTE 1
+#define VERTEX_ATTRIBUTE 0
+#define TEXCOORD_ATTRIBUTE 1
 
 namespace avio
 {
@@ -65,8 +65,8 @@ void GLWidget::initializeGL()
     program = new QOpenGLShaderProgram;
     program->addShader(vshader);
     program->addShader(fshader);
-    program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
-    program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
+    program->bindAttributeLocation("vertex", VERTEX_ATTRIBUTE);
+    program->bindAttributeLocation("texCoord", TEXCOORD_ATTRIBUTE);
     program->link();
 
     program->bind();
@@ -81,11 +81,10 @@ void GLWidget::initializeGL()
 
     QVector<GLfloat> vertData;
     for (int j = 0; j < 4; ++j) {
-        // vertex position
         vertData.append(coords[j][0]);
         vertData.append(coords[j][1]);
         vertData.append(coords[j][2]);
-        // texture coordinate
+
         vertData.append(j == 0 || j == 3);
         vertData.append(j == 0 || j == 1);
     }
@@ -114,13 +113,13 @@ void GLWidget::paintGL()
 
     program->setUniformValue("matrix", m);
 
-    program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
-    program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
-    program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
-    program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
+    program->enableAttributeArray(VERTEX_ATTRIBUTE);
+    program->enableAttributeArray(TEXCOORD_ATTRIBUTE);
+    program->setAttributeBuffer(VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
+    program->setAttributeBuffer(TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
 
     if (texture) {
-        if (texture->width() != gl_width || texture->height() != gl_height) {
+        if (texture->width() != tex_width || texture->height() != tex_height) {
             delete texture;
             texture = nullptr;
         }
@@ -128,10 +127,10 @@ void GLWidget::paintGL()
 
     if (!texture) {
         texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
-        texture->setSize(gl_width, gl_height);
+        texture->setSize(tex_width, tex_height);
         texture->setFormat(QOpenGLTexture::RGB8_UNorm);
         texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
-        if (gl_width && gl_height)
+        if (tex_width && tex_height)
             updateAspectRatio();
     }
 
@@ -147,7 +146,6 @@ void GLWidget::updateAspectRatio()
             float imageAspect = (float)texture->width() / (float)texture->height();
             float widgetAspect = (float)width() / (float)height();
             float ratio = imageAspect / widgetAspect;
-
             aspect = pow(ratio, -0.5);
             zoom = (ratio > 1.0 ? pow(ratio, 0.5) : pow(ratio, -0.5));
         }
