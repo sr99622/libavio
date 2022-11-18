@@ -437,7 +437,6 @@ public:
             if (!display->vfq_out_name.empty()) display->vfq_out = frame_queues[display->vfq_out_name];
             if (!display->afq_out_name.empty()) display->afq_out = frame_queues[display->afq_out_name];
 
-            std::cout << "display init" << std::endl;
             display->init();
 
             if (audioDecoder) {

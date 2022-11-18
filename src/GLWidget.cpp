@@ -21,7 +21,6 @@ GLWidget::GLWidget()
 
 GLWidget::~GLWidget()
 {
-    std::cout << "destructor start" << std::endl;
     timer->stop();
     delete timer;
     makeCurrent();
@@ -29,17 +28,11 @@ GLWidget::~GLWidget()
     delete texture;
     delete program;
     doneCurrent();
-    std::cout << "destructor done" << std::endl;
-}
-
-QSize GLWidget::minimumSizeHint() const
-{
-    return QSize(50, 50);
 }
 
 QSize GLWidget::sizeHint() const
 {
-    return QSize(1920, 1080);
+    return QSize(640, 480);
 }
 
 void GLWidget::initializeGL()
@@ -109,10 +102,10 @@ void GLWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     float B[4] = { 
-        (-1.0f + pan_x) * zoom * aspect,
-        (+1.0f + pan_x) * zoom * aspect,
-        (+1.0f + pan_y) * zoom / aspect,
-        (-1.0f + pan_y) * zoom / aspect 
+        (-1.0f + pan_x) * zoom * factor * aspect,
+        (+1.0f + pan_x) * zoom * factor * aspect,
+        (+1.0f + pan_y) * zoom * factor / aspect,
+        (-1.0f + pan_y) * zoom * factor / aspect 
     };
 
     QMatrix4x4 m;
@@ -138,6 +131,8 @@ void GLWidget::paintGL()
         texture->setSize(gl_width, gl_height);
         texture->setFormat(QOpenGLTexture::RGB8_UNorm);
         texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
+        if (gl_width && gl_height)
+            updateAspectRatio();
     }
 
     texture->bind();
@@ -145,34 +140,28 @@ void GLWidget::paintGL()
 
 }
 
+void GLWidget::updateAspectRatio()
+{
+    if (maintain_aspect_ratio) {
+        if (texture) {
+            float imageAspect = (float)texture->width() / (float)texture->height();
+            float widgetAspect = (float)width() / (float)height();
+            float ratio = imageAspect / widgetAspect;
+
+            aspect = pow(ratio, -0.5);
+            zoom = (ratio > 1.0 ? pow(ratio, 0.5) : pow(ratio, -0.5));
+        }
+    }
+}
+
 void GLWidget::resizeGL(int width, int height)
 {
-    std::cout << "resizeGL w: " << width << " h " << height << std::endl;
-    emit gl_resized(width, height);
-
-    if (gl_width > 0 && gl_height > 0) {
-        std::cout << "gl_width: " << gl_width << " gl_height: " << gl_height << std::endl;
-    }
-    else {
-        std::cout << "texture not set" << std::endl;
-    }
+    updateAspectRatio();
 }
 
-void GLWidget::setZoom(int arg) 
+void GLWidget::setZoomFactor(float arg)
 {
-    zoom = (float) arg / 50.0f;
-    update();
-}
-
-void GLWidget::setAspect(int arg)
-{
-    aspect = (float) arg / 50.0f;
-    update();   
-}
-
-void GLWidget::setAspectRatio(float arg)
-{
-    aspect = arg;
+    factor = arg;
     update();
 }
 
@@ -216,13 +205,5 @@ void GLWidget::poll()
         catch (const QueueClosedException& e) { }
     }
 }
-
-/*
-void GLWidget::mousePressEvent(QMouseEvent *event)
-{
-    QPointF pnt = event->pos();
-    std::cout << "mousePressEvent: " << pnt.x() << " y: " << pnt.y() << std::endl;
-}
-*/
 
 }
