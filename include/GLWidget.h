@@ -6,16 +6,18 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>
 #include <QTimer>
-#include <QMouseEvent>
 #include <iostream>
 #include "Queue.h"
 #include "Frame.h"
 
-QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram);
+
+QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 QT_FORWARD_DECLARE_CLASS(QOpenGLTexture)
 
 namespace avio
 {
+
+QT_FORWARD_DECLARE_CLASS(Process)
 
 class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -31,6 +33,13 @@ public:
     void setData(const uchar *);
     void setFormat(QImage::Format);
     void updateAspectRatio();
+    void play(const char* uri);
+    void pause();
+    void stop();
+
+    Process* process = nullptr;
+    std::thread* process_thread;
+    static void buildProcess(void * parent, const char* uri);
 
     QSize sizeHint() const override;
 
@@ -50,8 +59,12 @@ public:
     int tex_height = 0;
     bool maintain_aspect_ratio = true;
 
+signals:
+    void doit();
+
 public slots:
     void poll();
+    void terminate();
 
 protected:
     void initializeGL() override;

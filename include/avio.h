@@ -28,6 +28,7 @@ static void show_pkt(AVPacket* pkt)
 
 static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq) 
 {
+    std::cout << "read start" << std::endl;
     if (reader->vpq_max_size > 0) vpq->set_max_size(reader->vpq_max_size);
     if (reader->apq_max_size > 0) apq->set_max_size(reader->apq_max_size);
 
@@ -112,10 +113,12 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { std::cout << " reader failed: " << e.what() << std::endl; }
+    std::cout << "read finish" << std::endl;
 }
 
 static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* frame_q) 
 {
+    std::cout << "decode start" << std::endl;
     decoder->frame_q = frame_q;
     decoder->pkt_q = pkt_q;
 
@@ -133,10 +136,12 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
     }
     catch (const QueueClosedException& e) { }
     catch (const Exception& e) { std::cout << decoder->strMediaType << " decoder failed: " << e.what() << std::endl; }
+    std::cout << "decode finish" << std::endl;
 }
 
 static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
 {
+    std::cout << "filter start" << std::endl;
     try {
         Frame f;
         filter->frame_out_q = q_out;
@@ -150,6 +155,7 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
         filter->frame_out_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) {}
+    std::cout << "filter finish" << std::endl;
 }
 
 static void write(Writer* writer, Encoder* encoder)
@@ -271,7 +277,6 @@ public:
     std::string mux_audio_q_name;
 
     std::vector<std::thread*> ops;
-    bool running = false;
 
     void key_event(int keyCode)
     {
@@ -354,7 +359,6 @@ public:
     void run()
     {
         av_log_set_level(AV_LOG_PANIC);
-        running = true;
 
         for (const std::string& name : pkt_q_names) {
             if (!name.empty()) {
@@ -391,7 +395,6 @@ public:
             if (!glWidget->vfq_out_name.empty()) glWidget->vfq_out = frame_queues[glWidget->vfq_out_name];
         }
 
-        /*
         if (audioDecoder) {
             ops.push_back(new std::thread(decode, audioDecoder,
                 pkt_queues[audioDecoder->pkt_q_name], frame_queues[audioDecoder->frame_q_name]));
@@ -401,7 +404,6 @@ public:
             ops.push_back(new std::thread(filter, audioFilter,
                 frame_queues[audioFilter->q_in_name], frame_queues[audioFilter->q_out_name]));
         }
-        */
 
         if (videoEncoder) {
             videoEncoder->pkt_q = pkt_queues[videoEncoder->pkt_q_name];
@@ -439,16 +441,6 @@ public:
 
             display->init();
 
-            if (audioDecoder) {
-                ops.push_back(new std::thread(decode, audioDecoder,
-                    pkt_queues[audioDecoder->pkt_q_name], frame_queues[audioDecoder->frame_q_name]));
-            }
-
-            if (audioFilter) {
-                ops.push_back(new std::thread(filter, audioFilter,
-                    frame_queues[audioFilter->q_in_name], frame_queues[audioFilter->q_out_name]));
-            }
-
             while (display->display()) {}
 
             if (writer) {
@@ -478,29 +470,14 @@ public:
                 glWidget->vfq_out = nullptr;
             }
 
-            //if (reader)
-            //    delete reader;
-
-            //if (videoDecoder)
-            //    delete videoDecoder;
-
-            //delete display;
         }
-
-        //std::exit(0);
 
         for (int i = 0; i < ops.size(); i++) {
             ops[i]->join();
             delete ops[i];
         }
 
-        //if (glWidget)
-        //    delete glWidget;
-
-        running = false;
-
-        //std::exit(0);
-
+        std::cout << "process done" << std::endl;
     }
 };
 

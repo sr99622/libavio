@@ -403,18 +403,20 @@ int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_form
             stream_channel_layout, stream_sample_format, stream_sample_rate, 0, NULL), SASO);
         ex.ck(swr_init(swr_ctx), SI);
 
-        int num_drivers = SDL_GetNumAudioDrivers();
-        for (int i = 0; i < num_drivers; i++)
-            std::cout << "audio driver: " << i << " : " << SDL_GetAudioDriver(i) << std::endl;
-
         if (!SDL_WasInit(SDL_INIT_AUDIO)) {
             if (SDL_Init(SDL_INIT_AUDIO))
                 throw Exception(std::string("SDL audio init error: ") + SDL_GetError());
         }
 
+        /*
+        int num_drivers = SDL_GetNumAudioDrivers();
+        for (int i = 0; i < num_drivers; i++)
+            std::cout << "audio driver: " << i << " : " << SDL_GetAudioDriver(i) << std::endl;
+
         int num_devices = SDL_GetNumAudioDevices(0);
         for (int i = 0; i < num_devices; i++)
             std::cout << "audio device: " << i << " : " << SDL_GetAudioDeviceName(i, 0) << std::endl;
+        */
 
         audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &sdl, &have, 0);
         if (audioDeviceID == 0) {
