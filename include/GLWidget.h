@@ -38,8 +38,7 @@ public:
     void stop();
 
     Process* process = nullptr;
-    std::thread* process_thread;
-    static void buildProcess(void * parent, const char* uri);
+    static void start(void * parent, const char* uri);
 
     QSize sizeHint() const override;
 
@@ -58,13 +57,14 @@ public:
     int tex_width = 0;
     int tex_height = 0;
     bool maintain_aspect_ratio = true;
+    long media_duration = 0;
+    long media_start_time = 0;
 
 signals:
-    void doit();
+    void progress(float);
 
 public slots:
     void poll();
-    void terminate();
 
 protected:
     void initializeGL() override;

@@ -28,7 +28,6 @@ static void show_pkt(AVPacket* pkt)
 
 static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq) 
 {
-    std::cout << "read start" << std::endl;
     if (reader->vpq_max_size > 0) vpq->set_max_size(reader->vpq_max_size);
     if (reader->apq_max_size > 0) apq->set_max_size(reader->apq_max_size);
 
@@ -115,12 +114,10 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { std::cout << " reader failed: " << e.what() << std::endl; }
-    std::cout << "read finish" << std::endl;
 }
 
 static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* frame_q) 
 {
-    std::cout << "decode start" << std::endl;
     decoder->frame_q = frame_q;
     decoder->pkt_q = pkt_q;
 
@@ -131,19 +128,17 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
             av_packet_free(&pkt);
         }
 
-        std::cout << decoder->strMediaType << " decoder rcvd null pkt eof " << std::endl;
+        //std::cout << decoder->strMediaType << " decoder rcvd null pkt eof " << std::endl;
 
         decoder->decode(NULL);
         decoder->frame_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) { }
     catch (const Exception& e) { std::cout << decoder->strMediaType << " decoder failed: " << e.what() << std::endl; }
-    std::cout << decoder->strMediaType << " decode finish" << std::endl;
 }
 
 static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
 {
-    std::cout << "filter start" << std::endl;
     try {
         Frame f;
         filter->frame_out_q = q_out;
@@ -157,7 +152,6 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
         filter->frame_out_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) {}
-    std::cout << "filter finish" << std::endl;
 }
 
 static void write(Writer* writer, Encoder* encoder)
@@ -445,22 +439,14 @@ public:
 
             while (display->display()) {}
 
-            std::cout << "suck my dick" << std::endl;
+            if (writer) {
+                while (!display->audio_eof)
+                    SDL_Delay(1);
+                writer->enabled = false;
+            }
 
             /*
             if (display->destroy_queues) {
-                if (writer) {
-                    while (!display->audio_eof)
-                        SDL_Delay(1);
-                    writer->enabled = false;
-                }
-
-                if (glWidget) {
-                    glWidget->vfq_in_name.clear();
-                    glWidget->vfq_out_name.clear();
-                    glWidget->vfq_in = nullptr;
-                    glWidget->vfq_out = nullptr;
-                }
 
                 for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
                     if (!q->first.empty()) {
@@ -480,14 +466,10 @@ public:
             
         }
 
-        std::cout << "fuck my ass" << std::endl;
-
         for (int i = 0; i < ops.size(); i++) {
             ops[i]->join();
             delete ops[i];
         }
-
-        std::cout << "process done" << std::endl;
     }
 };
 
