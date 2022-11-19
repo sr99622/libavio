@@ -208,7 +208,18 @@ void GLWidget::poll()
 
 void GLWidget::play(const char* uri)
 {
-    process_thread = new std::thread(buildProcess, this, uri);
+    std::cout << "play clicked" << std::endl;
+    if (process) {
+        std::cout << "process exists" << std::endl;
+        //if (process->reader) delete process->reader;
+        //if (process->videoDecoder) delete process->videoDecoder;
+        //if (process->audioDecoder) delete process->audioDecoder;
+        //if (process->videoFilter) delete process->videoFilter;
+        //if (process->display) delete process->display;
+        delete process;
+    }
+    std::thread process_thread(buildProcess, this, uri);
+    process_thread.detach();
 }
 
 void GLWidget::pause()
@@ -218,10 +229,13 @@ void GLWidget::pause()
 
 void GLWidget::stop()
 {
+    count++;
+    std::cout << "stop clicked count: " << count << std::endl;
     if (process) {
         process->key_event(SDLK_ESCAPE);
-        process_thread->join();
-        process = nullptr;
+        //process_thread->join();
+        //delete process;
+        //process = nullptr;
     }
 }
 
@@ -271,7 +285,7 @@ void GLWidget::buildProcess(void * parent, const char* uri)
     if (audioDecoder)
         delete audioDecoder;
 
-    widget->emit doit();
+    //widget->emit doit();
     std::cout << "glwidget process done 2" << std::endl;
 
 }
@@ -288,6 +302,8 @@ void GLWidget::terminate()
         process_thread->join();
         //delete process_thread;
     }
+
+    delete process_thread;
 }
 
 }

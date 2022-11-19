@@ -129,6 +129,7 @@ public:
     Filter* audioFilter = nullptr;
 
     bool enable_sdl_video = true;
+    bool destroy_queues = false;
 
     ExceptionHandler ex;
 

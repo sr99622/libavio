@@ -86,6 +86,8 @@ public:
 
 	void *display;
 
+	bool request_break = false;
+
 	ExceptionHandler ex;
 };
 

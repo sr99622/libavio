@@ -38,6 +38,8 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
     try {
         while (AVPacket* pkt = reader->read())
         {
+            if (reader->request_break)
+                break;
 
             if (reader->request_pipe_write) {
                 if (!pipe) {
@@ -136,7 +138,7 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
     }
     catch (const QueueClosedException& e) { }
     catch (const Exception& e) { std::cout << decoder->strMediaType << " decoder failed: " << e.what() << std::endl; }
-    std::cout << "decode finish" << std::endl;
+    std::cout << decoder->strMediaType << " decode finish" << std::endl;
 }
 
 static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
@@ -443,34 +445,42 @@ public:
 
             while (display->display()) {}
 
-            if (writer) {
-                while (!display->audio_eof)
-                    SDL_Delay(1);
-                writer->enabled = false;
-            }
+            std::cout << "suck my dick" << std::endl;
 
-            for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-                if (!q->first.empty()) {
-                    q->second->close();
-                    delete q->second;
+            /*
+            if (display->destroy_queues) {
+                if (writer) {
+                    while (!display->audio_eof)
+                        SDL_Delay(1);
+                    writer->enabled = false;
+                }
+
+                if (glWidget) {
+                    glWidget->vfq_in_name.clear();
+                    glWidget->vfq_out_name.clear();
+                    glWidget->vfq_in = nullptr;
+                    glWidget->vfq_out = nullptr;
+                }
+
+                for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
+                    if (!q->first.empty()) {
+                        q->second->close();
+                        delete q->second;
+                    }
+                }
+
+                for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
+                    if (!q->first.empty()) {
+                        q->second->close();
+                        delete q->second;
+                    }
                 }
             }
-
-            for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-                if (!q->first.empty()) {
-                    q->second->close();
-                    delete q->second;
-                }
-            }
-
-            if (glWidget) {
-                glWidget->vfq_in_name.clear();
-                glWidget->vfq_out_name.clear();
-                glWidget->vfq_in = nullptr;
-                glWidget->vfq_out = nullptr;
-            }
-
+            */
+            
         }
+
+        std::cout << "fuck my ass" << std::endl;
 
         for (int i = 0; i < ops.size(); i++) {
             ops[i]->join();

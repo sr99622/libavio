@@ -224,8 +224,10 @@ bool Display::display()
         PlayState state = getEvents(&events);
 
         if (state == PlayState::QUIT) {
-            audio_eof = true;
-            playing = false;
+            reader->request_break = true;
+            //audio_eof = true;
+            //playing = false;
+            //destroy_queues = true;
             break;
         }
         else if (state == PlayState::PAUSE) {
@@ -287,10 +289,17 @@ bool Display::display()
                             request_recent_clear = false;
                         }
                         vfq_in->pop(f);
-                        recent.push_back(f);
-                        if (recent.size() > recent_q_size)
-                            recent.pop_front();
-                        recent_idx = recent.size() - 1;
+                        if (f.isValid()) {
+                            recent.push_back(f);
+                            if (recent.size() > recent_q_size)
+                                recent.pop_front();
+                            recent_idx = recent.size() - 1;
+                        }
+                        else {
+                            ex.msg("Display receive null eof");
+                            playing = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -308,33 +317,26 @@ bool Display::display()
 
             paused_frame = f;
 
-            if (f.isValid()) {
-                ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
-                if (key_record_flag) {
-                    key_record_flag = false;
-                    toggleRecord();
-                }
-
-                if ((!afq_in || reader->vpq_max_size > 1) && !ignore_video_pts)
-                    SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
-                
-                if (!reader->seeking()) videoPresentation();
-                reader->last_video_pts = f.m_frame->pts;
-
-                if (single_step || reverse_step) {
-                    single_step = false;
-                    reverse_step = false;
-                }
-
-                if (vfq_out)
-                    vfq_out->push(f);
-
+            ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
+            if (key_record_flag) {
+                key_record_flag = false;
+                toggleRecord();
             }
-            else {
-                ex.msg("Display receive null eof");
-                playing = false;
-                break;
+
+            if ((!afq_in || reader->vpq_max_size > 1) && !ignore_video_pts)
+                SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
+            
+            if (!reader->seeking()) videoPresentation();
+            reader->last_video_pts = f.m_frame->pts;
+
+            if (single_step || reverse_step) {
+                single_step = false;
+                reverse_step = false;
             }
+
+            if (vfq_out)
+                vfq_out->push(f);
+
         }
         catch (const QueueClosedException& e) {
             playing = false;
