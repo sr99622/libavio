@@ -85,7 +85,7 @@ private:
     QImage::Format fmt = QImage::Format_RGB888;
 
     QTimer *timer;
-
+    int count = 0;
 };
 
 }

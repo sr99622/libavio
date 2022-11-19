@@ -1,4 +1,5 @@
 #include "../include/Filter.h"
+#include <SDL.h>
 
 namespace avio
 {
