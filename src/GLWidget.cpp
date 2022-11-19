@@ -17,7 +17,6 @@ GLWidget::GLWidget()
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(poll()));
     timer->start(poll_interval);
-    connect(this, SIGNAL(doit()), this, SLOT(terminate()));
 }
 
 GLWidget::~GLWidget()
@@ -198,8 +197,10 @@ void GLWidget::poll()
         try {
             while (vfq_in->size() > 0) {
                 Frame f = vfq_in->pop();
-                if (f.isValid())
+                if (f.isValid()) {
                     setData(f.m_frame->data[0]);
+                    emit progress((float)(f.m_rts - media_start_time) / (float)media_duration);
+                }
             }
         }
         catch (const QueueClosedException& e) { }
@@ -208,17 +209,10 @@ void GLWidget::poll()
 
 void GLWidget::play(const char* uri)
 {
-    std::cout << "play clicked" << std::endl;
-    if (process) {
-        std::cout << "process exists" << std::endl;
-        //if (process->reader) delete process->reader;
-        //if (process->videoDecoder) delete process->videoDecoder;
-        //if (process->audioDecoder) delete process->audioDecoder;
-        //if (process->videoFilter) delete process->videoFilter;
-        //if (process->display) delete process->display;
+    if (process) 
         delete process;
-    }
-    std::thread process_thread(buildProcess, this, uri);
+
+    std::thread process_thread(start, this, uri);
     process_thread.detach();
 }
 
@@ -229,17 +223,11 @@ void GLWidget::pause()
 
 void GLWidget::stop()
 {
-    count++;
-    std::cout << "stop clicked count: " << count << std::endl;
-    if (process) {
+    if (process)
         process->key_event(SDLK_ESCAPE);
-        //process_thread->join();
-        //delete process;
-        //process = nullptr;
-    }
 }
 
-void GLWidget::buildProcess(void * parent, const char* uri)
+void GLWidget::start(void * parent, const char* uri)
 {
     GLWidget* widget = (GLWidget*)parent;
     widget->process = new avio::Process();
@@ -248,6 +236,8 @@ void GLWidget::buildProcess(void * parent, const char* uri)
     widget->tex_width = reader.width();
     widget->tex_height = reader.height();
     reader.set_video_out("vpq_reader");
+    widget->media_duration = reader.duration();
+    widget->media_start_time = reader.start_time();
 
     avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO);
     videoDecoder.set_video_in(reader.video_out());
@@ -281,29 +271,9 @@ void GLWidget::buildProcess(void * parent, const char* uri)
 
     widget->process->run();
 
-    std::cout << "glwidget process done" << std::endl;
     if (audioDecoder)
         delete audioDecoder;
 
-    //widget->emit doit();
-    std::cout << "glwidget process done 2" << std::endl;
-
-}
-
-void GLWidget::terminate()
-{
-    std::cout << "terminate" << std::endl;
-    using namespace std::chrono_literals;
-    std::cout << "Hello waiter\n" << std::flush;
-    auto start = std::chrono::high_resolution_clock::now();
-    std::this_thread::sleep_for(200ms);
-
-    if (process_thread->joinable()) {
-        process_thread->join();
-        //delete process_thread;
-    }
-
-    delete process_thread;
 }
 
 }

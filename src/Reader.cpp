@@ -52,9 +52,7 @@ AVPacket* Reader::read()
         ex.ck(ret = av_read_frame(fmt_ctx, pkt), CmdTag::ARF);
     }
     catch (const Exception& e) {
-        if (ret == AVERROR_EOF)
-            ex.msg("Reader EOF", MsgPriority::INFO);
-        else
+        if (ret != AVERROR_EOF)
             ex.msg(e.what(), MsgPriority::CRITICAL, "Reader::read exception: ");
 
         av_packet_free(&pkt);

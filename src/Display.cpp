@@ -225,9 +225,6 @@ bool Display::display()
 
         if (state == PlayState::QUIT) {
             reader->request_break = true;
-            //audio_eof = true;
-            //playing = false;
-            //destroy_queues = true;
             break;
         }
         else if (state == PlayState::PAUSE) {
@@ -296,7 +293,7 @@ bool Display::display()
                             recent_idx = recent.size() - 1;
                         }
                         else {
-                            ex.msg("Display receive null eof");
+                            //ex.msg("Display receive null eof");
                             playing = false;
                             break;
                         }
@@ -474,7 +471,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     if (!d->vfq_in) {
                         SDL_PauseAudioDevice(d->audioDeviceID, true);
                         len = -1;
-                        d->ex.msg("audio callback received eof");
+                        //d->ex.msg("audio callback received eof");
                         d->audio_eof = true;
                         SDL_Event event;
                         event.type = SDL_QUIT;
