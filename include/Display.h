@@ -108,6 +108,7 @@ public:
     bool disable_audio = false;
     bool ignore_video_pts = false;
     bool audio_eof = false;
+    float volume = 1.0f;
 
     int width = 0;
     int height = 0;
