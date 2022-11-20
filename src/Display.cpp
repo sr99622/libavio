@@ -229,29 +229,23 @@ bool Display::display()
         }
         else if (state == PlayState::PAUSE) {
             togglePause();
-            break;
         }
 
         if (paused) 
         {
-            if (!single_step && !reverse_step) {
-                if (reader->seeking()) {
-                    paused = false;
-                }
-                else {
-                    f = paused_frame;
-                    videoPresentation();
-                    SDL_Delay(SDL_EVENT_LOOP_WAIT);
-                    break;
-                }
-            }
-            if (single_step) {
+            f = paused_frame;
+            
+            if (reader->seeking()) {
                 if (afq_in) {
-                    while (afq_in->size() > 0) {
+                    while (afq_in->size() > 0)
                         afq_in->pop();
-                    }
                 }
+                paused = false;
             }
+
+            videoPresentation();
+            SDL_Delay(SDL_EVENT_LOOP_WAIT);
+            break;
         }
 
         try 
@@ -262,49 +256,16 @@ bool Display::display()
                 f.m_rts = rtClock.stream_time();
             }
             else {
-                if (reverse_step) {
-                    if (recent.empty() || recent_idx < 0) {
-                        std::cout << "recent frame queue empty" << std::endl;
-                        reverse_step = false;
-                        break;
-                    }
-                    else {
-                        if (recent[recent_idx].m_frame->pts == f.m_frame->pts && recent_idx > 0) recent_idx--;
-                        f = recent[recent_idx];
-                        recent_idx--;
-                    }
-                }
-                else {
-                    if (recent_idx < (int)(recent.size() - 1) && !recent.empty()) {
-                        recent_idx++;
-                        if (recent[recent_idx].m_frame->pts == f.m_frame->pts && recent_idx < (int)(recent.size() - 1)) recent_idx++;
-                        f = recent[recent_idx];
-                    }
-                    else {
-                        if (request_recent_clear) {
-                            recent.clear();
-                            request_recent_clear = false;
-                        }
-                        vfq_in->pop(f);
-                        if (f.isValid()) {
-                            recent.push_back(f);
-                            if (recent.size() > recent_q_size)
-                                recent.pop_front();
-                            recent_idx = recent.size() - 1;
-                        }
-                        else {
-                            //ex.msg("Display receive null eof");
-                            playing = false;
-                            break;
-                        }
-                    }
+                vfq_in->pop(f);
+                if (!f.isValid()) {
+                    playing = false;
+                    break;
                 }
             }
 
             if (reader->seeking()) {
                 if (f.m_frame->pts != reader->seek_found_pts) {
                     paused = false;
-                    request_recent_clear = true;
                 }
                 else {
                     reader->seek_found_pts = AV_NOPTS_VALUE;
@@ -325,11 +286,6 @@ bool Display::display()
             
             if (!reader->seeking()) videoPresentation();
             reader->last_video_pts = f.m_frame->pts;
-
-            if (single_step || reverse_step) {
-                single_step = false;
-                reverse_step = false;
-            }
 
             if (vfq_out)
                 vfq_out->push(f);
