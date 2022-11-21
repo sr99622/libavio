@@ -164,15 +164,17 @@ void GLWidget::setZoomFactor(float arg)
     update();
 }
 
-void GLWidget::setPanX(int arg)
+void GLWidget::setPanX(float arg)
 {
-    pan_x = 1.0f - (float) arg / 50.0f;
+    //pan_x = 1.0f - (float) arg / 50.0f;
+    pan_x = arg;
     update();   
 }
 
-void GLWidget::setPanY(int arg)
+void GLWidget::setPanY(float arg)
 {
-    pan_y = 1.0f - (float) arg / 50.0f;
+    //pan_y = 1.0f - (float) arg / 50.0f;
+    pan_y = arg;
     update();   
 }
 
@@ -209,6 +211,7 @@ void GLWidget::poll()
 
 void GLWidget::play(const char* uri)
 {
+    std::cout << "play uri: " << uri << std::endl;
     if (process) 
         delete process;
 
@@ -230,49 +233,57 @@ void GLWidget::stop()
 void GLWidget::start(void * parent, const char* uri)
 {
     GLWidget* widget = (GLWidget*)parent;
-    widget->process = new avio::Process();
+    try {
+        widget->process = new avio::Process();
 
-    avio::Reader reader(uri);
-    widget->tex_width = reader.width();
-    widget->tex_height = reader.height();
-    reader.set_video_out("vpq_reader");
-    widget->media_duration = reader.duration();
-    widget->media_start_time = reader.start_time();
+        avio::Reader reader(uri);
+        reader.apq_max_size = 100;
+        reader.vpq_max_size = 100;
+        widget->tex_width = reader.width();
+        widget->tex_height = reader.height();
+        reader.set_video_out("vpq_reader");
+        widget->media_duration = reader.duration();
+        widget->media_start_time = reader.start_time();
 
-    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO);
-    videoDecoder.set_video_in(reader.video_out());
-    videoDecoder.set_video_out("vfq_decoder");
+        avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO);
+        videoDecoder.set_video_in(reader.video_out());
+        videoDecoder.set_video_out("vfq_decoder");
 
-    avio::Filter videoFilter(videoDecoder, "format=rgb24");
-    videoFilter.set_video_in(videoDecoder.video_out());
-    videoFilter.set_video_out("vfq_filter");
+        avio::Filter videoFilter(videoDecoder, "format=rgb24");
+        videoFilter.set_video_in(videoDecoder.video_out());
+        videoFilter.set_video_out("vfq_filter");
 
-    avio::Display display(reader);
-    display.set_video_in(videoFilter.video_out());
-    display.set_video_out("vfq_display");
-    display.enable_sdl_video = false;
-    widget->set_video_in(display.video_out());
+        avio::Display display(reader);
+        display.set_video_in(videoFilter.video_out());
+        display.set_video_out("vfq_display");
+        display.enable_sdl_video = false;
+        widget->set_video_in(display.video_out());
 
-    avio::Decoder* audioDecoder;
-    if (reader.has_audio()) {
-        reader.set_audio_out("apq_reader");
-        audioDecoder = new avio::Decoder(reader, AVMEDIA_TYPE_AUDIO);
-        audioDecoder->set_audio_in(reader.audio_out());
-        audioDecoder->set_audio_out("afq_decoder");
-        display.set_audio_in(audioDecoder->audio_out());
-        widget->process->add_decoder(*audioDecoder);
+        avio::Decoder* audioDecoder;
+        if (reader.has_audio()) {
+            reader.set_audio_out("apq_reader");
+            audioDecoder = new avio::Decoder(reader, AVMEDIA_TYPE_AUDIO);
+            audioDecoder->set_audio_in(reader.audio_out());
+            audioDecoder->set_audio_out("afq_decoder");
+            display.set_audio_in(audioDecoder->audio_out());
+            widget->process->add_decoder(*audioDecoder);
+        }
+
+        widget->process->add_reader(reader);
+        widget->process->add_decoder(videoDecoder);
+        widget->process->add_filter(videoFilter);
+        widget->process->add_display(display);
+        widget->process->add_widget(widget);
+
+        widget->process->run();
+
+        if (audioDecoder)
+            delete audioDecoder;
     }
-
-    widget->process->add_reader(reader);
-    widget->process->add_decoder(videoDecoder);
-    widget->process->add_filter(videoFilter);
-    widget->process->add_display(display);
-    widget->process->add_widget(widget);
-
-    widget->process->run();
-
-    if (audioDecoder)
-        delete audioDecoder;
+    catch (const Exception& e) {
+        std::cout << "GLWidget process error: " << e.what() << std::endl;
+        delete widget->process;
+    }
 
 }
 

@@ -1,3 +1,6 @@
+#ifndef AVIO_H
+#define AVIO_H
+
 #include "Exception.h"
 #include "Queue.h"
 #include "Reader.h"
@@ -474,3 +477,5 @@ public:
 };
 
 }
+
+#endif // AVIO_H

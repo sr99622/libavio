@@ -225,6 +225,7 @@ bool Display::display()
 
         if (state == PlayState::QUIT) {
             reader->request_break = true;
+            playing = false;
             break;
         }
         else if (state == PlayState::PAUSE) {
@@ -242,25 +243,27 @@ bool Display::display()
                 }
                 paused = false;
             }
+            else {
+                videoPresentation();
+                SDL_Delay(SDL_EVENT_LOOP_WAIT);
+            }
 
-            videoPresentation();
-            SDL_Delay(SDL_EVENT_LOOP_WAIT);
             break;
         }
 
         try 
         {
-            if (!vfq_in) {
-                SDL_Delay(SDL_EVENT_LOOP_WAIT);
-                f = Frame(640, 480, AV_PIX_FMT_YUV420P);
-                f.m_rts = rtClock.stream_time();
-            }
-            else {
+            if (vfq_in) {
                 vfq_in->pop(f);
                 if (!f.isValid()) {
                     playing = false;
                     break;
                 }
+            }
+            else {
+                SDL_Delay(SDL_EVENT_LOOP_WAIT);
+                f = Frame(640, 480, AV_PIX_FMT_YUV420P);
+                f.m_rts = rtClock.stream_time();
             }
 
             if (reader->seeking()) {

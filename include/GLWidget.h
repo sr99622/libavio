@@ -28,8 +28,8 @@ public:
     ~GLWidget();
 
     void setZoomFactor(float);
-    void setPanX(int);
-    void setPanY(int);
+    void setPanX(float);
+    void setPanY(float);
     void setData(const uchar *);
     void setFormat(QImage::Format);
     void updateAspectRatio();
@@ -79,8 +79,8 @@ private:
     float zoom   = 1.0f;
     float factor = 1.0f;
     float aspect = 1.0f;
-    float pan_x  = 1.0f;
-    float pan_y  = 1.0f;
+    float pan_x  = 0.0f;
+    float pan_y  = 0.0f;
 
     QImage::Format fmt = QImage::Format_RGB888;
 
