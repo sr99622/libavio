@@ -62,6 +62,7 @@ public:
 
 signals:
     void progress(float);
+    void starting();
 
 public slots:
     void poll();
