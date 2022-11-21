@@ -12,26 +12,21 @@ namespace avio {
 
 Reader::Reader(const char* filename)
 {
-    //try {
-        ex.ck(avformat_open_input(&fmt_ctx, filename, NULL, NULL), CmdTag::AOI);
-        ex.ck(avformat_find_stream_info(fmt_ctx, NULL), CmdTag::AFSI);
+    std::cout << "Reader opening " << filename << std::endl;
+    ex.ck(avformat_open_input(&fmt_ctx, filename, NULL, NULL), CmdTag::AOI);
+    ex.ck(avformat_find_stream_info(fmt_ctx, NULL), CmdTag::AFSI);
 
-        video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-        if (video_stream_index < 0) 
-            ex.msg("av_find_best_stream could not find video stream", MsgPriority::INFO);
+    video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+    if (video_stream_index < 0) 
+        ex.msg("av_find_best_stream could not find video stream", MsgPriority::INFO);
 
-        audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
-        if (audio_stream_index < 0) 
-            ex.msg("av_find_best_stream could not find audio stream", MsgPriority::INFO);
+    audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+    if (audio_stream_index < 0) 
+        ex.msg("av_find_best_stream could not find audio stream", MsgPriority::INFO);
 
-        std::filesystem::path path = filename;
-        extension = path.extension().string();
-    //}
-    //catch (const Exception& e) {
-    //    std::stringstream str; str << "Reader was unable to open " << filename << " : ";
-    //    ex.msg(e.what(), MsgPriority::CRITICAL, str.str());
-    //    std::exit(0);
-    //}
+    std::filesystem::path path = filename;
+    extension = path.extension().string();
+    std::cout << "Reader successfully opened" << std::endl;
 }
 
 Reader::~Reader()

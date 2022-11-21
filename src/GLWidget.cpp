@@ -21,6 +21,10 @@ GLWidget::GLWidget()
 
 GLWidget::~GLWidget()
 {
+    if (process) {
+        process->key_event(SDLK_ESCAPE);
+        delete process;
+    }
     timer->stop();
     delete timer;
     makeCurrent();
@@ -166,14 +170,12 @@ void GLWidget::setZoomFactor(float arg)
 
 void GLWidget::setPanX(float arg)
 {
-    //pan_x = 1.0f - (float) arg / 50.0f;
     pan_x = arg;
     update();   
 }
 
 void GLWidget::setPanY(float arg)
 {
-    //pan_y = 1.0f - (float) arg / 50.0f;
     pan_y = arg;
     update();   
 }
@@ -211,12 +213,14 @@ void GLWidget::poll()
 
 void GLWidget::play(const char* uri)
 {
-    std::cout << "play uri: " << uri << std::endl;
-    if (process) 
-        delete process;
-
-    std::thread process_thread(start, this, uri);
-    process_thread.detach();
+    try {
+        stop();
+        std::thread process_thread(start, this, uri);
+        process_thread.detach();
+    }
+    catch (const std::runtime_error& e) {
+        std::cout << "GLWidget play error: " << e.what() << std::endl;
+    }
 }
 
 void GLWidget::pause()
@@ -234,6 +238,7 @@ void GLWidget::start(void * parent, const char* uri)
 {
     GLWidget* widget = (GLWidget*)parent;
     try {
+
         widget->process = new avio::Process();
 
         avio::Reader reader(uri);
@@ -275,6 +280,7 @@ void GLWidget::start(void * parent, const char* uri)
         widget->process->add_display(display);
         widget->process->add_widget(widget);
 
+        widget->emit starting();
         widget->process->run();
 
         if (audioDecoder)

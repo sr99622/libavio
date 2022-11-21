@@ -31,8 +31,8 @@ static void show_pkt(AVPacket* pkt)
 
 static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq) 
 {
-    if (reader->vpq_max_size > 0) vpq->set_max_size(reader->vpq_max_size);
-    if (reader->apq_max_size > 0) apq->set_max_size(reader->apq_max_size);
+    if (reader->vpq_max_size > 0 && vpq) vpq->set_max_size(reader->vpq_max_size);
+    if (reader->apq_max_size > 0 && apq) apq->set_max_size(reader->apq_max_size);
 
     std::deque<AVPacket*> pkts;
     Pipe* pipe = nullptr;
@@ -40,8 +40,14 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
     try {
         while (AVPacket* pkt = reader->read())
         {
-            if (reader->request_break)
+            if (reader->request_break) {
+                std::cout << "break" << std::endl;
+/**/
+                if (vpq) while (vpq->size() > 0) vpq->pop();
+                if (apq) while (apq->size() > 0) apq->pop();
+/**/
                 break;
+            }
 
             if (reader->request_pipe_write) {
                 if (!pipe) {
@@ -112,6 +118,7 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
                     av_packet_free(&pkt);
             }
         }
+        std::cout << "push null" << std::endl;
         if (vpq) vpq->push(NULL);
         if (apq) apq->push(NULL);
     }
@@ -131,7 +138,7 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
             av_packet_free(&pkt);
         }
 
-        //std::cout << decoder->strMediaType << " decoder rcvd null pkt eof " << std::endl;
+        std::cout << decoder->strMediaType << " decoder rcvd null pkt eof " << std::endl;
 
         decoder->decode(NULL);
         decoder->frame_q->push(Frame(nullptr));
@@ -155,6 +162,8 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
         filter->frame_out_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) {}
+
+    std::cout << "filter recvd null eof" << std::endl;
 }
 
 static void write(Writer* writer, Encoder* encoder)
