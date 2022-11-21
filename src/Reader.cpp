@@ -12,7 +12,7 @@ namespace avio {
 
 Reader::Reader(const char* filename)
 {
-    try {
+    //try {
         ex.ck(avformat_open_input(&fmt_ctx, filename, NULL, NULL), CmdTag::AOI);
         ex.ck(avformat_find_stream_info(fmt_ctx, NULL), CmdTag::AFSI);
 
@@ -26,12 +26,12 @@ Reader::Reader(const char* filename)
 
         std::filesystem::path path = filename;
         extension = path.extension().string();
-    }
-    catch (const Exception& e) {
-        std::stringstream str; str << "Reader was unable to open " << filename << " : ";
-        ex.msg(e.what(), MsgPriority::CRITICAL, str.str());
-        std::exit(0);
-    }
+    //}
+    //catch (const Exception& e) {
+    //    std::stringstream str; str << "Reader was unable to open " << filename << " : ";
+    //    ex.msg(e.what(), MsgPriority::CRITICAL, str.str());
+    //    std::exit(0);
+    //}
 }
 
 Reader::~Reader()
