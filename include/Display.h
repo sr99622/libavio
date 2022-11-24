@@ -36,7 +36,7 @@
 #include "Writer.h"
 #include "Encoder.h"
 #include "Event.h"
-#include <QObject>
+#include "GLWidget.h"
 
 #define SDL_EVENT_LOOP_WAIT 10
 
@@ -49,9 +49,8 @@ enum class PlayState {
     QUIT
 };
 
-class Display : public QObject
+class Display
 {
-    Q_OBJECT
 
 public:
     Display(Reader& reader) : reader(&reader) { }
@@ -148,6 +147,7 @@ public:
     Writer* writer = nullptr;
     Decoder* audioDecoder = nullptr;
     Filter* audioFilter = nullptr;
+    GLWidget* glWidget = nullptr;
 
     bool enable_sdl_video = true;
 

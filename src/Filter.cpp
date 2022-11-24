@@ -141,6 +141,8 @@ void Filter::initAudio()
 
 Filter::~Filter()
 {
+    avfilter_free(sink_ctx);
+    avfilter_free(src_ctx);
 	avfilter_graph_free(&graph);
 	av_frame_free(&frame);
 }

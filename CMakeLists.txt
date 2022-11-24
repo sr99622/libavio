@@ -59,7 +59,6 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(MOC_INCLUDES
     include/GLWidget.h
-    include/Display.h
 )
 
 add_library(avio SHARED 

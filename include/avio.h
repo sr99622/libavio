@@ -60,11 +60,8 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
         while (AVPacket* pkt = reader->read())
         {
             if (reader->request_break) {
-                std::cout << "break" << std::endl;
-/**/
                 if (vpq) while (vpq->size() > 0) vpq->pop();
                 if (apq) while (apq->size() > 0) apq->pop();
-/**/
                 break;
             }
 
@@ -137,7 +134,6 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
                     av_packet_free(&pkt);
             }
         }
-        std::cout << "push null" << std::endl;
         if (vpq) vpq->push(NULL);
         if (apq) apq->push(NULL);
     }
@@ -156,9 +152,6 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
             decoder->decode(pkt);
             av_packet_free(&pkt);
         }
-
-        std::cout << decoder->strMediaType << " decoder rcvd null pkt eof " << std::endl;
-
         decoder->decode(NULL);
         decoder->frame_q->push(Frame(nullptr));
     }
@@ -181,8 +174,6 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
         filter->frame_out_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) {}
-
-    std::cout << "filter recvd null eof" << std::endl;
 }
 
 static void write(Writer* writer, Encoder* encoder)
@@ -476,24 +467,26 @@ public:
                 writer->enabled = false;
             }
 
-            /*
-            if (display->destroy_queues) {
 
-                for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-                    if (!q->first.empty()) {
-                        q->second->close();
-                        delete q->second;
+            for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
+                if (!q->first.empty()) {
+                    while (q->second->size() > 0) {
+                        AVPacket* pkt = q->second->pop();
+                        av_packet_free(&pkt);
                     }
-                }
-
-                for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-                    if (!q->first.empty()) {
-                        q->second->close();
-                        delete q->second;
-                    }
+                    q->second->close();
+                    delete q->second;
                 }
             }
-            */
+
+            for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
+                if (!q->first.empty()) {
+                    while (q->second->size() > 0)
+                        q->second->pop();
+                    q->second->close();
+                    delete q->second;
+                }
+            }
             
         }
 
@@ -502,6 +495,7 @@ public:
             delete ops[i];
         }
     }
+
 };
 
 }
