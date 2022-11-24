@@ -54,7 +54,7 @@ public:
     void pause();
     void stop();
 
-    Process* process = nullptr;
+    //Process* process = nullptr;
     static void start(void * parent, const char* uri);
 
     QSize sizeHint() const override;
@@ -76,10 +76,12 @@ public:
     bool maintain_aspect_ratio = true;
     long media_duration = 0;
     long media_start_time = 0;
+    bool running = false;
 
 signals:
     void progress(float);
     void starting();
+    void terminate();
 
 public slots:
     void poll();

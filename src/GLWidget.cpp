@@ -38,10 +38,10 @@ GLWidget::GLWidget()
 
 GLWidget::~GLWidget()
 {
-    if (process) {
-        process->key_event(SDLK_ESCAPE);
-        delete process;
-    }
+    //if (process) {
+    //   process->key_event(SDLK_ESCAPE);
+    //    delete process;
+    //}
     timer->stop();
     delete timer;
     makeCurrent();
@@ -232,6 +232,9 @@ void GLWidget::play(const char* uri)
 {
     try {
         stop();
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(2000ms);
+
         std::thread process_thread(start, this, uri);
         process_thread.detach();
     }
@@ -242,13 +245,12 @@ void GLWidget::play(const char* uri)
 
 void GLWidget::pause()
 {
-    process->key_event(SDLK_SPACE);
+    //process->key_event(SDLK_SPACE);
 }
 
 void GLWidget::stop()
 {
-    if (process)
-        process->key_event(SDLK_ESCAPE);
+    running = false;
 }
 
 void GLWidget::start(void * parent, const char* uri)
@@ -256,7 +258,7 @@ void GLWidget::start(void * parent, const char* uri)
     GLWidget* widget = (GLWidget*)parent;
     try {
 
-        widget->process = new avio::Process();
+        avio::Process process;
 
         avio::Reader reader(uri);
         reader.apq_max_size = 100;
@@ -276,6 +278,7 @@ void GLWidget::start(void * parent, const char* uri)
         videoFilter.set_video_out("vfq_filter");
 
         avio::Display display(reader);
+        display.glWidget = widget;
         display.set_video_in(videoFilter.video_out());
         display.set_video_out("vfq_display");
         display.enable_sdl_video = false;
@@ -288,26 +291,25 @@ void GLWidget::start(void * parent, const char* uri)
             audioDecoder->set_audio_in(reader.audio_out());
             audioDecoder->set_audio_out("afq_decoder");
             display.set_audio_in(audioDecoder->audio_out());
-            widget->process->add_decoder(*audioDecoder);
+            process.add_decoder(*audioDecoder);
         }
 
-        widget->process->add_reader(reader);
-        widget->process->add_decoder(videoDecoder);
-        widget->process->add_filter(videoFilter);
-        widget->process->add_display(display);
-        widget->process->add_widget(widget);
+        process.add_reader(reader);
+        process.add_decoder(videoDecoder);
+        process.add_filter(videoFilter);
+        process.add_display(display);
+        process.add_widget(widget);
 
         widget->emit starting();
-        widget->process->run();
+        widget->running = true;
+        process.run();
 
         if (audioDecoder)
             delete audioDecoder;
     }
     catch (const Exception& e) {
         std::cout << "GLWidget process error: " << e.what() << std::endl;
-        delete widget->process;
     }
-
 }
 
 }

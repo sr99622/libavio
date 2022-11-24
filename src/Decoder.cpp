@@ -62,7 +62,6 @@ Decoder::Decoder(Reader& reader, AVMediaType mediaType, AVHWDeviceType hw_device
         ex.ck(avcodec_parameters_to_context(dec_ctx, stream->codecpar), APTC);
 
         if (mediaType == AVMEDIA_TYPE_VIDEO && dec_ctx->pix_fmt != AV_PIX_FMT_YUV420P) {
-            std::cout << "creating format converter" << std::endl;
             ex.ck(sws_ctx = sws_getContext(dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
                 dec_ctx->width, dec_ctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL), SGC);
             cvt_frame = av_frame_alloc();
@@ -109,7 +108,6 @@ Decoder::Decoder(Reader& reader, AVMediaType mediaType, AVHWDeviceType hw_device
         }
 
         ex.ck(avcodec_open2(dec_ctx, dec, NULL), AO2);
-
     }
     catch (const Exception& e) {
         std::cout << strMediaType << " Decoder constructor exception: " << e.what() << std::endl;
