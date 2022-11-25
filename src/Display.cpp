@@ -38,11 +38,16 @@ void Display::init()
 
 Display::~Display()
 {
-    if (SDL_WasInit(SDL_INIT_AUDIO)) SDL_PauseAudioDevice(audioDeviceID, true);
+    if (SDL_WasInit(SDL_INIT_AUDIO)) {
+        SDL_LockAudioDevice(audioDeviceID);
+        SDL_CloseAudioDevice(audioDeviceID);
+    }
+    if (swr_ctx) swr_free(&swr_ctx);
     if (swr_buffer) delete[] swr_buffer;
     if (texture)  SDL_DestroyTexture(texture);
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window)   SDL_DestroyWindow(window);
+    if (screen)   SDL_FreeSurface(screen);
     SDL_Quit();
 }
 
