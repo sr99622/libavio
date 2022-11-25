@@ -80,7 +80,7 @@ Frame::Frame(int width, int height, AVPixelFormat pix_fmt)
 Frame::~Frame()
 {
 	av_frame_free(&m_frame);
-	if (mat_buf) delete[] mat_buf;
+	//if (mat_buf) delete[] mat_buf;
 }
 
 Frame& Frame::operator=(const Frame& other)

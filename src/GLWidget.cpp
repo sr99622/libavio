@@ -46,7 +46,12 @@ GLWidget::~GLWidget()
     delete timer;
     makeCurrent();
     vbo.destroy();
+    texture->destroy();
     delete texture;
+    program->release();
+    program->removeAllShaders();
+    delete vshader;
+    delete fshader;
     delete program;
     doneCurrent();
 }
@@ -60,7 +65,7 @@ void GLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
+    vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
     const char *vsrc =
         "attribute highp vec4 vertex;\n"
         "attribute mediump vec4 texCoord;\n"
@@ -73,7 +78,7 @@ void GLWidget::initializeGL()
         "}\n";
     vshader->compileSourceCode(vsrc);
 
-    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
+    fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
     const char *fsrc =
         "uniform sampler2D texture;\n"
         "varying mediump vec4 texc;\n"
@@ -117,47 +122,51 @@ void GLWidget::initializeGL()
 
 void GLWidget::paintGL()
 {
-    QColor clearColor(0, 0, 0);
-    glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    try {
+        QColor clearColor(0, 0, 0);
+        glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float B[4] = { 
-        (-1.0f + pan_x) * zoom * factor * aspect,
-        (+1.0f + pan_x) * zoom * factor * aspect,
-        (+1.0f + pan_y) * zoom * factor / aspect,
-        (-1.0f + pan_y) * zoom * factor / aspect 
-    };
+        float B[4] = { 
+            (-1.0f + pan_x) * zoom * factor * aspect,
+            (+1.0f + pan_x) * zoom * factor * aspect,
+            (+1.0f + pan_y) * zoom * factor / aspect,
+            (-1.0f + pan_y) * zoom * factor / aspect 
+        };
 
-    QMatrix4x4 m;
-    m.ortho(B[0], B[1], B[2], B[3], -4.0f, 15.0f);
-    m.translate(0.0f, 0.0f, -10.0f);
+        QMatrix4x4 m;
+        m.ortho(B[0], B[1], B[2], B[3], -4.0f, 15.0f);
+        m.translate(0.0f, 0.0f, -10.0f);
 
-    program->setUniformValue("matrix", m);
+        program->setUniformValue("matrix", m);
 
-    program->enableAttributeArray(VERTEX_ATTRIBUTE);
-    program->enableAttributeArray(TEXCOORD_ATTRIBUTE);
-    program->setAttributeBuffer(VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
-    program->setAttributeBuffer(TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
+        program->enableAttributeArray(VERTEX_ATTRIBUTE);
+        program->enableAttributeArray(TEXCOORD_ATTRIBUTE);
+        program->setAttributeBuffer(VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
+        program->setAttributeBuffer(TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
 
-    if (texture) {
-        if (texture->width() != tex_width || texture->height() != tex_height) {
-            delete texture;
-            texture = nullptr;
+        if (texture) {
+            if (texture->width() != tex_width || texture->height() != tex_height) {
+                delete texture;
+                texture = nullptr;
+            }
         }
+
+        if (!texture) {
+            texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
+            texture->setSize(tex_width, tex_height);
+            texture->setFormat(QOpenGLTexture::RGB8_UNorm);
+            texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
+            if (tex_width && tex_height)
+                updateAspectRatio();
+        }
+
+        texture->bind();
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
-
-    if (!texture) {
-        texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
-        texture->setSize(tex_width, tex_height);
-        texture->setFormat(QOpenGLTexture::RGB8_UNorm);
-        texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
-        if (tex_width && tex_height)
-            updateAspectRatio();
+    catch (const std::runtime_error& e) {
+        std::cout << "GLWidget paintGL error: " << e.what() << std::endl;
     }
-
-    texture->bind();
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
 }
 
 void GLWidget::updateAspectRatio()
@@ -215,9 +224,13 @@ void GLWidget::setData(const uchar* data)
 void GLWidget::poll()
 {
     if (vfq_in) {
+std::cout << "---------------------------- 1" << std::endl;
         try {
+std::cout << "---------------------------- 2" << std::endl;
             while (vfq_in->size() > 0) {
+std::cout << "---------------------------- 3" << std::endl;
                 Frame f = vfq_in->pop();
+std::cout << "---------------------------- 4" << std::endl;
                 if (f.isValid()) {
                     setData(f.m_frame->data[0]);
                     emit progress((float)(f.m_rts - media_start_time) / (float)media_duration);
@@ -225,15 +238,23 @@ void GLWidget::poll()
             }
         }
         catch (const QueueClosedException& e) { }
+        catch (const std::runtime_error& e) {
+            std::cout << "GLWidget poll error: " << e.what() << std::endl;
+        }
     }
 }
 
 void GLWidget::play(const char* uri)
 {
+    using namespace std::chrono_literals;
     try {
         stop();
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(2000ms);
+
+        while (processing) {
+            std::cout << "processing" << std::endl;
+            std::this_thread::sleep_for(1ms);
+        }
+        std::this_thread::sleep_for(20ms);
 
         std::thread process_thread(start, this, uri);
         process_thread.detach();
@@ -257,9 +278,10 @@ void GLWidget::start(void * parent, const char* uri)
 {
     GLWidget* widget = (GLWidget*)parent;
     try {
-
+std::cout << "test 1" << std::endl;
         avio::Process process;
 
+std::cout << "test 2" << std::endl;
         avio::Reader reader(uri);
         reader.apq_max_size = 100;
         reader.vpq_max_size = 100;
@@ -269,14 +291,17 @@ void GLWidget::start(void * parent, const char* uri)
         widget->media_duration = reader.duration();
         widget->media_start_time = reader.start_time();
 
+std::cout << "test 3" << std::endl;
         avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO);
         videoDecoder.set_video_in(reader.video_out());
         videoDecoder.set_video_out("vfq_decoder");
 
+std::cout << "test 4" << std::endl;
         avio::Filter videoFilter(videoDecoder, "format=rgb24");
         videoFilter.set_video_in(videoDecoder.video_out());
         videoFilter.set_video_out("vfq_filter");
 
+std::cout << "test 5" << std::endl;
         avio::Display display(reader);
         display.glWidget = widget;
         display.set_video_in(videoFilter.video_out());
@@ -284,6 +309,7 @@ void GLWidget::start(void * parent, const char* uri)
         display.enable_sdl_video = false;
         widget->set_video_in(display.video_out());
 
+std::cout << "test 6" << std::endl;
         avio::Decoder* audioDecoder;
         if (reader.has_audio()) {
             reader.set_audio_out("apq_reader");
@@ -294,18 +320,25 @@ void GLWidget::start(void * parent, const char* uri)
             process.add_decoder(*audioDecoder);
         }
 
+std::cout << "test 7" << std::endl;
         process.add_reader(reader);
         process.add_decoder(videoDecoder);
         process.add_filter(videoFilter);
         process.add_display(display);
         process.add_widget(widget);
 
+std::cout << "test 8" << std::endl;
         widget->emit starting();
         widget->running = true;
+        widget->processing = true;
+std::cout << "test 9" << std::endl;
         process.run();
+std::cout << "test 10" << std::endl;
 
         if (audioDecoder)
             delete audioDecoder;
+
+        widget->processing = false;
     }
     catch (const Exception& e) {
         std::cout << "GLWidget process error: " << e.what() << std::endl;

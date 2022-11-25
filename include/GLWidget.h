@@ -23,6 +23,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>
+#include <QOpenGLShader>
 #include <QTimer>
 #include <iostream>
 #include "Queue.h"
@@ -77,6 +78,7 @@ public:
     long media_duration = 0;
     long media_start_time = 0;
     bool running = false;
+    bool processing = false;
 
 signals:
     void progress(float);
@@ -95,6 +97,8 @@ private:
     QOpenGLTexture *texture = nullptr;
     QOpenGLShaderProgram *program = nullptr;
     QOpenGLBuffer vbo;
+    QOpenGLShader *vshader;
+    QOpenGLShader *fshader;
 
     float zoom   = 1.0f;
     float factor = 1.0f;

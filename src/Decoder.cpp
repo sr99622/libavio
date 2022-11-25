@@ -127,6 +127,7 @@ void Decoder::close()
     av_frame_free(&cvt_frame);
     avcodec_free_context(&dec_ctx);
     av_buffer_unref(&hw_device_ctx);
+    sws_freeContext(sws_ctx);
 }
 
 int Decoder::decode(AVPacket* pkt)
