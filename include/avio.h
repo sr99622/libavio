@@ -376,6 +376,7 @@ public:
 
     void run()
     {
+std::cout << "run 1" << std::endl;
         av_log_set_level(AV_LOG_PANIC);
 
         for (const std::string& name : pkt_q_names) {
@@ -385,6 +386,7 @@ public:
             }
         }
 
+std::cout << "run 2" << std::endl;
         for (const std::string& name : frame_q_names) {
             if (!name.empty()) {
                 if (frame_queues.find(name) == frame_queues.end())
@@ -392,22 +394,26 @@ public:
             }
         }
 
+std::cout << "run 3" << std::endl;
         if (reader) {
             ops.push_back(new std::thread(read, reader,
                 reader->has_video() ? pkt_queues[reader->vpq_name] : nullptr, 
                 reader->has_audio() ? pkt_queues[reader->apq_name] : nullptr));
         }
 
+std::cout << "run 4" << std::endl;
         if (videoDecoder) {
             ops.push_back(new std::thread(decode, videoDecoder,
                 pkt_queues[videoDecoder->pkt_q_name], frame_queues[videoDecoder->frame_q_name]));
         }
 
+std::cout << "run 5" << std::endl;
         if (videoFilter) {
             ops.push_back(new std::thread(filter, videoFilter,
                 frame_queues[videoFilter->q_in_name], frame_queues[videoFilter->q_out_name]));
         }
 
+std::cout << "run 6" << std::endl;
         if (glWidget) {
             if (!glWidget->vfq_in_name.empty()) glWidget->vfq_in = frame_queues[glWidget->vfq_in_name];
             if (!glWidget->vfq_out_name.empty()) glWidget->vfq_out = frame_queues[glWidget->vfq_out_name];
@@ -445,8 +451,10 @@ public:
         for (const std::string& name : pkt_q_drain_names)
             ops.push_back(new std::thread(pkt_drain, pkt_queues[name]));
 
+std::cout << "run 7" << std::endl;
         if (display) {
 
+std::cout << "run 8" << std::endl;
             if (writer) display->writer = writer;
             if (audioDecoder) display->audioDecoder = audioDecoder;
             if (audioFilter) display->audioFilter = audioFilter;
@@ -457,9 +465,12 @@ public:
             if (!display->vfq_out_name.empty()) display->vfq_out = frame_queues[display->vfq_out_name];
             if (!display->afq_out_name.empty()) display->afq_out = frame_queues[display->afq_out_name];
 
+std::cout << "run 9" << std::endl;
             display->init();
 
+std::cout << "run 10" << std::endl;
             while (display->display()) {}
+std::cout << "run 11" << std::endl;
 
             if (writer) {
                 while (!display->audio_eof)
@@ -468,34 +479,47 @@ public:
             }
 
 
-            for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-                if (!q->first.empty()) {
-                    while (q->second->size() > 0) {
-                        AVPacket* pkt = q->second->pop();
-                        av_packet_free(&pkt);
-                    }
-                    q->second->close();
-                    delete q->second;
-                }
-            }
-
-            for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-                if (!q->first.empty()) {
-                    while (q->second->size() > 0) {
-                        Frame f;
-                        q->second->pop(f);
-                    }
-                    q->second->close();
-                    delete q->second;
-                }
-            }
             
         }
 
+        for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
+            //if (!q->first.empty()) {
+                while (q->second->size() > 0) {
+                    AVPacket* pkt = q->second->pop();
+                    av_packet_free(&pkt);
+                }
+                q->second->close();
+                //delete q->second;
+            //}
+        }
+
+        for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
+            //if (!q->first.empty()) {
+                while (q->second->size() > 0) {
+                    Frame f;
+                    q->second->pop(f);
+                }
+                q->second->close();
+                //delete q->second;
+            //}
+        }
+
+std::cout << "run 12" << std::endl;
         for (int i = 0; i < ops.size(); i++) {
             ops[i]->join();
             delete ops[i];
         }
+std::cout << "run 13" << std::endl;
+
+        for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
+            delete q->second;
+        }
+
+        for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
+            delete q->second;
+        }
+
+std::cout << "run 14" << std::endl;
     }
 
 };

@@ -239,10 +239,12 @@ PlayState Display::getEvents(std::vector<SDL_Event>* events)
 
 bool Display::display()
 {
+std::cout << "display 1" << std::endl;
     bool playing = true;
 
     while (true)
     {
+std::cout << "display 2" << std::endl;
         if (glWidget) {
             if (!glWidget->running) {
                 playing = false;
@@ -283,6 +285,7 @@ bool Display::display()
 
         try 
         {
+std::cout << "display 2a" << std::endl;
             if (vfq_in) {
                 vfq_in->pop(f);
                 if (!f.isValid()) {
@@ -296,6 +299,7 @@ bool Display::display()
                 f = Frame(640, 480, AV_PIX_FMT_YUV420P);
                 f.m_rts = rtClock.stream_time();
             }
+std::cout << "display 2b" << std::endl;
 
             if (reader->seeking()) {
                 if (f.m_frame->pts != reader->seek_found_pts) {
@@ -321,9 +325,11 @@ bool Display::display()
             if (!reader->seeking()) videoPresentation();
             reader->last_video_pts = f.m_frame->pts;
 
+std::cout << "display 3a" << std::endl;
             if (vfq_out)
                 vfq_out->push(f);
 
+std::cout << "display 3b" << std::endl;
         }
         catch (const QueueClosedException& e) {
             playing = false;
@@ -338,6 +344,7 @@ bool Display::display()
         }
     }
 
+std::cout << "display 4" << std::endl;
     return playing;
 }
 

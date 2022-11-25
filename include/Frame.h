@@ -57,7 +57,7 @@ public:
 	AVFrame* m_frame = NULL;
 	uint64_t m_rts;
 	bool m_faded = false;  // used by hud to avoid duplicate background fade
-	uint8_t* mat_buf = nullptr;
+	//uint8_t* mat_buf = nullptr;
 
 	ExceptionHandler ex;
 
