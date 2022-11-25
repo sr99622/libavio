@@ -117,7 +117,7 @@ public:
     SDL_AudioDeviceID audioDeviceID;
     Clock rtClock;
 
-    SwrContext* swr_ctx;
+    SwrContext* swr_ctx = nullptr;
     AVSampleFormat sdl_sample_format = AV_SAMPLE_FMT_S16;
 
     uint8_t* swr_buffer = nullptr;

@@ -481,8 +481,10 @@ public:
 
             for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
                 if (!q->first.empty()) {
-                    while (q->second->size() > 0)
-                        q->second->pop();
+                    while (q->second->size() > 0) {
+                        Frame f;
+                        q->second->pop(f);
+                    }
                     q->second->close();
                     delete q->second;
                 }
