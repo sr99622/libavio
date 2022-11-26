@@ -83,7 +83,8 @@ public:
 signals:
     void progress(float);
     void starting();
-    void terminate();
+    void timerStart();
+    void timerStop();
 
 public slots:
     void poll();
@@ -99,6 +100,9 @@ private:
     QOpenGLBuffer vbo;
     QOpenGLShader *vshader;
     QOpenGLShader *fshader;
+
+    Frame f;
+    std::mutex mutex;
 
     float zoom   = 1.0f;
     float factor = 1.0f;
