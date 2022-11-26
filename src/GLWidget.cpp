@@ -32,20 +32,19 @@ namespace avio
 GLWidget::GLWidget()
 {
     timer = new QTimer(this);
+    timer->setInterval(poll_interval);
     connect(timer, SIGNAL(timeout()), this, SLOT(poll()));
-    timer->start(poll_interval);
+    connect(this, SIGNAL(timerStart()), timer, SLOT(start()));
+    connect(this, SIGNAL(timerStop()), timer, SLOT(stop()));
+    //emit timerStart();
 }
 
 GLWidget::~GLWidget()
 {
-    //if (process) {
-    //   process->key_event(SDLK_ESCAPE);
-    //    delete process;
-    //}
-    timer->stop();
-    delete timer;
+    emit timerStop();
     makeCurrent();
     vbo.destroy();
+    texture->release();
     texture->destroy();
     delete texture;
     program->release();
@@ -54,6 +53,7 @@ GLWidget::~GLWidget()
     delete fshader;
     delete program;
     doneCurrent();
+    delete timer;
 }
 
 QSize GLWidget::sizeHint() const
@@ -213,27 +213,39 @@ void GLWidget::setFormat(QImage::Format arg)
 
 void GLWidget::setData(const uchar* data)
 {
-    QImage img(data, texture->width(), texture->height(), fmt);
+    std::unique_lock<std::mutex> lock(mutex);
+    QImage img(f.m_frame->data[0], texture->width(), texture->height(), fmt);
     if (fmt != QImage::Format_RGB888)
         img = img.convertToFormat(QImage::Format_RGB888);
-    img = img.mirrored();
     texture->setData(QOpenGLTexture::RGB, QOpenGLTexture::UInt8, (const void*)img.bits());
     update();
 }
 
 void GLWidget::poll()
 {
+    std::unique_lock<std::mutex> lock(mutex);
     if (vfq_in) {
-std::cout << "---------------------------- 1" << std::endl;
         try {
-std::cout << "---------------------------- 2" << std::endl;
-            while (vfq_in->size() > 0) {
-std::cout << "---------------------------- 3" << std::endl;
-                Frame f = vfq_in->pop();
-std::cout << "---------------------------- 4" << std::endl;
+            if (vfq_in->size() > 0) {
+                vfq_in->pop(f);
                 if (f.isValid()) {
-                    setData(f.m_frame->data[0]);
-                    emit progress((float)(f.m_rts - media_start_time) / (float)media_duration);
+                    QImage img(f.m_frame->data[0], texture->width(), texture->height(), fmt);
+                    if (fmt != QImage::Format_RGB888)
+                        img = img.convertToFormat(QImage::Format_RGB888);
+
+                    
+                    
+                    //std::cout << "problem code here" << std::endl;
+                    texture->setData(QOpenGLTexture::RGB, QOpenGLTexture::UInt8, (const void*)img.bits());
+                    //std::cout << "this is where it dies" << std::endl;
+
+
+
+                    update();
+                    //setData(f.m_frame->data[0]);
+                    //emit progress((float)(f.m_rts - media_start_time) / (float)media_duration);
+                }
+                else {
                 }
             }
         }
@@ -251,10 +263,8 @@ void GLWidget::play(const char* uri)
         stop();
 
         while (processing) {
-            std::cout << "processing" << std::endl;
             std::this_thread::sleep_for(1ms);
         }
-        std::this_thread::sleep_for(20ms);
 
         std::thread process_thread(start, this, uri);
         process_thread.detach();
@@ -278,10 +288,8 @@ void GLWidget::start(void * parent, const char* uri)
 {
     GLWidget* widget = (GLWidget*)parent;
     try {
-std::cout << "test 1" << std::endl;
         avio::Process process;
 
-std::cout << "test 2" << std::endl;
         avio::Reader reader(uri);
         reader.apq_max_size = 100;
         reader.vpq_max_size = 100;
@@ -291,17 +299,14 @@ std::cout << "test 2" << std::endl;
         widget->media_duration = reader.duration();
         widget->media_start_time = reader.start_time();
 
-std::cout << "test 3" << std::endl;
         avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO);
         videoDecoder.set_video_in(reader.video_out());
         videoDecoder.set_video_out("vfq_decoder");
 
-std::cout << "test 4" << std::endl;
-        avio::Filter videoFilter(videoDecoder, "format=rgb24");
+        avio::Filter videoFilter(videoDecoder, "format=rgb24,vflip");
         videoFilter.set_video_in(videoDecoder.video_out());
         videoFilter.set_video_out("vfq_filter");
 
-std::cout << "test 5" << std::endl;
         avio::Display display(reader);
         display.glWidget = widget;
         display.set_video_in(videoFilter.video_out());
@@ -309,8 +314,7 @@ std::cout << "test 5" << std::endl;
         display.enable_sdl_video = false;
         widget->set_video_in(display.video_out());
 
-std::cout << "test 6" << std::endl;
-        avio::Decoder* audioDecoder;
+        avio::Decoder* audioDecoder = nullptr;
         if (reader.has_audio()) {
             reader.set_audio_out("apq_reader");
             audioDecoder = new avio::Decoder(reader, AVMEDIA_TYPE_AUDIO);
@@ -320,21 +324,18 @@ std::cout << "test 6" << std::endl;
             process.add_decoder(*audioDecoder);
         }
 
-std::cout << "test 7" << std::endl;
         process.add_reader(reader);
         process.add_decoder(videoDecoder);
         process.add_filter(videoFilter);
         process.add_display(display);
         process.add_widget(widget);
 
-std::cout << "test 8" << std::endl;
         widget->emit starting();
         widget->running = true;
         widget->processing = true;
-std::cout << "test 9" << std::endl;
+        widget->emit timerStart();
         process.run();
-std::cout << "test 10" << std::endl;
-
+        //widget->emit timerStop();
         if (audioDecoder)
             delete audioDecoder;
 
