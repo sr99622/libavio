@@ -212,16 +212,6 @@ void GLWidget::setFormat(QImage::Format arg)
     fmt = arg;
 }
 
-void GLWidget::setData(const uchar* data)
-{
-    std::unique_lock<std::mutex> lock(mutex);
-    QImage img(f.m_frame->data[0], texture->width(), texture->height(), fmt);
-    if (fmt != QImage::Format_RGB888)
-        img = img.convertToFormat(QImage::Format_RGB888);
-    texture->setData(QOpenGLTexture::RGB, QOpenGLTexture::UInt8, (const void*)img.bits());
-    update();
-}
-
 void GLWidget::poll()
 {
     std::unique_lock<std::mutex> lock(mutex);
@@ -257,7 +247,7 @@ void GLWidget::play(const char* uri)
     try {
         stop();
 
-        while (processing) {
+        while (process) {
             std::this_thread::sleep_for(1ms);
         }
 
@@ -267,11 +257,6 @@ void GLWidget::play(const char* uri)
     catch (const std::runtime_error& e) {
         std::cout << "GLWidget play error: " << e.what() << std::endl;
     }
-}
-
-void GLWidget::pause()
-{
-    //process->key_event(SDLK_SPACE);
 }
 
 void GLWidget::stop()
@@ -284,6 +269,7 @@ void GLWidget::start(void * parent, const char* uri)
     GLWidget* widget = (GLWidget*)parent;
     try {
         avio::Process process;
+        widget->process = &process;
 
         avio::Reader reader(uri);
         reader.apq_max_size = 100;
@@ -306,7 +292,6 @@ void GLWidget::start(void * parent, const char* uri)
         display.glWidget = widget;
         display.set_video_in(videoFilter.video_out());
         display.set_video_out("vfq_display");
-        display.enable_sdl_video = false;
         widget->set_video_in(display.video_out());
 
         avio::Decoder* audioDecoder = nullptr;
@@ -325,16 +310,14 @@ void GLWidget::start(void * parent, const char* uri)
         process.add_display(display);
         process.add_widget(widget);
 
-        widget->emit starting();
         widget->running = true;
-        widget->processing = true;
         widget->emit timerStart();
         process.run();
-        //widget->emit timerStop();
+
         if (audioDecoder)
             delete audioDecoder;
 
-        widget->processing = false;
+        widget->process = nullptr;
     }
     catch (const Exception& e) {
         std::cout << "GLWidget process error: " << e.what() << std::endl;

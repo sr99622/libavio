@@ -149,8 +149,6 @@ public:
     Filter* audioFilter = nullptr;
     GLWidget* glWidget = nullptr;
 
-    bool enable_sdl_video = true;
-
     ExceptionHandler ex;
 
 };

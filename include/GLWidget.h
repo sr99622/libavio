@@ -48,11 +48,9 @@ public:
     void setZoomFactor(float);
     void setPanX(float);
     void setPanY(float);
-    void setData(const uchar *);
     void setFormat(QImage::Format);
     void updateAspectRatio();
     void play(const char* uri);
-    void pause();
     void stop();
 
     static void start(void * parent, const char* uri);
@@ -77,11 +75,10 @@ public:
     long media_duration = 0;
     long media_start_time = 0;
     bool running = false;
-    bool processing = false;
+
+    avio::Process* process = nullptr;
 
 signals:
-    void progress(float);
-    void starting();
     void timerStart();
     void timerStop();
 

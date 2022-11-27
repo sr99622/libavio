@@ -478,8 +478,7 @@ public:
             videoFilter = nullptr;
             audioDecoder = nullptr;
             display = nullptr;
-
-            
+           
         }
 
         for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
