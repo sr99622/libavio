@@ -147,6 +147,8 @@ void GLWidget::paintGL()
 
         if (texture) {
             if (texture->width() != tex_width || texture->height() != tex_height) {
+                texture->release();
+                texture->destroy();
                 delete texture;
                 texture = nullptr;
             }
@@ -159,9 +161,9 @@ void GLWidget::paintGL()
             texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
             if (tex_width && tex_height)
                 updateAspectRatio();
+            texture->bind();
         }
 
-        texture->bind();
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
     catch (const std::runtime_error& e) {
