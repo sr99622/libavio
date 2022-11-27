@@ -55,7 +55,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 {
     int ret = 0;
 
-    if (!enable_sdl_video)
+    if (glWidget)
         return ret;
 
     try {
@@ -142,7 +142,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
-    if (enable_sdl_video) {
+    if (!glWidget) {
         if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
             ex.ck(SDL_UpdateYUVTexture(texture, NULL,
                 f.m_frame->data[0], f.m_frame->linesize[0],
