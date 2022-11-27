@@ -55,7 +55,6 @@ public:
     void pause();
     void stop();
 
-    //Process* process = nullptr;
     static void start(void * parent, const char* uri);
 
     QSize sizeHint() const override;

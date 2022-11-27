@@ -36,7 +36,6 @@ GLWidget::GLWidget()
     connect(timer, SIGNAL(timeout()), this, SLOT(poll()));
     connect(this, SIGNAL(timerStart()), timer, SLOT(start()));
     connect(this, SIGNAL(timerStop()), timer, SLOT(stop()));
-    //emit timerStart();
 }
 
 GLWidget::~GLWidget()
@@ -234,18 +233,12 @@ void GLWidget::poll()
                     QImage img(f.m_frame->data[0], texture->width(), texture->height(), fmt);
                     if (fmt != QImage::Format_RGB888)
                         img = img.convertToFormat(QImage::Format_RGB888);
-
-                    
                     
                     //std::cout << "problem code here" << std::endl;
                     texture->setData(QOpenGLTexture::RGB, QOpenGLTexture::UInt8, (const void*)img.bits());
                     //std::cout << "this is where it dies" << std::endl;
 
-
-
                     update();
-                    //setData(f.m_frame->data[0]);
-                    //emit progress((float)(f.m_rts - media_start_time) / (float)media_duration);
                 }
                 else {
                 }

@@ -483,29 +483,23 @@ public:
         }
 
         for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-            //if (!q->first.empty()) {
-                if (q->second) {
-                    while (q->second->size() > 0) {
-                        AVPacket* pkt = q->second->pop();
-                        av_packet_free(&pkt);
-                    }
-                    q->second->close();
+            if (q->second) {
+                while (q->second->size() > 0) {
+                    AVPacket* pkt = q->second->pop();
+                    av_packet_free(&pkt);
                 }
-                //delete q->second;
-            //}
+                q->second->close();
+            }
         }
 
         for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-            //if (!q->first.empty()) {
-                if (q->second) {
-                    while (q->second->size() > 0) {
-                        Frame f;
-                        q->second->pop(f);
-                    }
-                q->second->close();
+            if (q->second) {
+                while (q->second->size() > 0) {
+                    Frame f;
+                    q->second->pop(f);
                 }
-                //delete q->second;
-            //}
+            q->second->close();
+            }
         }
 
         for (int i = 0; i < ops.size(); i++) {
