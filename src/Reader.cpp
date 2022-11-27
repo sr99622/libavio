@@ -45,7 +45,7 @@ Reader::Reader(const char* filename)
 
     std::filesystem::path path = filename;
     extension = path.extension().string();
-    std::cout << "Reader successfully opened " << filename << std::endl;
+    std::cout << "Reader successfully opened " << std::endl;
 }
 
 Reader::~Reader()
