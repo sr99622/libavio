@@ -15,7 +15,7 @@ cmake --build . --config Release
 
 (Use administrator privilege)
 
-cmake --install .
+sudo cmake --install .
 ```
 
 Install FindAvio.cmake in your project CMAKE_MODULE_PATH to link
