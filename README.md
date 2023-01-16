@@ -4,6 +4,8 @@ Has dependency on FFMPEG and SDL2
 
 Use standard cmake procedure
 
+sample program has hard-coded file name, use ctrl+C
+to stop.
 
 ```bash
 sudo apt install libavcodec-dev
@@ -14,7 +16,7 @@ get clone https://github.com/sr99622/libavio.git
 cd libavio
 mkdir build
 cd build
-cmake ..
+cmake -DBUILD_SAMPLE=ON ..
 cmake --build . --config Release
 
 sudo cmake --install .

@@ -72,3 +72,13 @@ target_include_directories(avio PUBLIC
     ${SDL2_INCLUDE_DIRS}
 )
 
+if (BUILD_SAMPLE)
+    add_executable(sample
+        sample/main.cpp
+    )
+
+    target_link_libraries(sample PRIVATE
+        avio
+    )
+endif()
+
