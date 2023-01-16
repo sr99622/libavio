@@ -5,8 +5,8 @@
 #include <deque>
 #include "avio.h"
 
-avio::Reader reader("C:/Users/sr996/Videos/walker.mp4");
-avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_CUDA);
+avio::Reader reader("/home/stephen/Videos/news.mp4");
+avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_NONE);
 avio::Decoder audioDecoder(reader, AVMEDIA_TYPE_AUDIO);
 avio::Display display(reader);
 avio::Queue<AVPacket*> video_pkt_q(1);

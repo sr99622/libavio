@@ -50,12 +50,12 @@ add_library(avio SHARED
 )
 
 if (WIN32)
-    target_link_libraries(avio PRIVATE
+    target_link_libraries(avio PUBLIC
         FFmpeg::FFmpeg
         SDL2::SDL2
     )
 else()
-    target_link_libraries(avio PRIVATE
+    target_link_libraries(avio PUBLIC
         FFmpeg::FFmpeg
         SDL2::SDL2
         pthread
