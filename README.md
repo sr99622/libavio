@@ -5,7 +5,7 @@ Has dependency on FFMPEG and SDL2
 Use standard cmake procedure
 
 sample program has hard-coded file name, use ctrl+C
-to stop.
+to stop on windows, sudo kill -SIGKILL pid on linux.
 
 ```bash
 sudo apt install libavcodec-dev
