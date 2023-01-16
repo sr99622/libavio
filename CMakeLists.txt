@@ -1,7 +1,7 @@
-#********************************************************************
+#*******************************************************************************
 # libavio/CMakeLists.txt
 #
-# Copyright (c) 2022  Stephen Rhodes
+# Copyright (c) 2022 Stephen Rhodes 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,102 +15,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#********************************************************************/
+#******************************************************************************/
 
 cmake_minimum_required(VERSION 3.17)
 
-project(avio)
+project(libavio VERSION 1.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "-D__STDC_CONSTANT_MACROS")
-if (WIN32)
-    add_compile_options("/EHsc")
-endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-if(MSVC)
+if(WIN32)
+    add_compile_options("/EHsc")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
     set(BUILD_SHARED_LIBS TRUE)
 endif()
 
-include(GNUInstallDirs)
-# set arch-specific include dir
-set(CMAKE_INSTALL_INCLUDEDIR "include/${CMAKE_LIBRARY_ARCHITECTURE}")
+find_package(FFmpeg REQUIRED)
+find_package(SDL2 REQUIRED)
 
-if (UNIX)
-    message("finding alsa")
-    set (ALSA_INCLUDE_DIR_CANDIDATE $ENV{CONDA_PREFIX}/include/alsa)
-    if (EXISTS "${ALSA_INCLUDE_DIR_CANDIDATE}")
-        set (ALSA_INCLUDE_DIR ${ALSA_INCLUDE_DIR_CANDIDATE})
-        message("-- Found ALSA include directory ${ALSA_INCLUDE_DIR}")
-    endif()
-    set (ALSA_LIBRARIES_CANDIDATE $ENV{CONDA_PREFIX}/lib/libasound.so)
-    if (EXISTS "${ALSA_LIBRARIES_CANDIDATE}")
-        set (ALSA_LIBRARIES ${ALSA_LIBRARIES_CANDIDATE})
-        message("-- Found ALSA libraries ${ALSA_LIBRARIES}")
-    endif()
-endif()
-
-find_package(SDL2)
-find_package(FFmpeg)
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-
-set(CMAKE_AUTOMOC ON)
-set(MOC_INCLUDES
-    include/GLWidget.h
+add_library(avio SHARED
+    src/Clock.cpp
+    src/Decoder.cpp
+    src/Display.cpp
+    src/Encoder.cpp
+    src/Exception.cpp
+    src/Filter.cpp
+    src/Frame.cpp
+    src/Pipe.cpp
+    src/Reader.cpp
+    src/Writer.cpp
 )
 
-add_library(avio SHARED 
-                        src/Reader.cpp
-                        src/Exception.cpp
-                        src/Event.cpp
-                        src/Frame.cpp
-                        src/Decoder.cpp
-                        src/Filter.cpp
-                        src/Clock.cpp
-                        src/Display.cpp
-                        src/Encoder.cpp
-                        src/Writer.cpp
-                        src/Pipe.cpp
-                        src/GLWidget.cpp
-                        ${MOC_INCLUDES}
-                    )
-                
-target_link_libraries(avio PRIVATE 
-                SDL2::SDL2
-                Qt5::Widgets
-                ${FFMPEG_LIBRARIES}
-             )
+if (WIN32)
+    target_link_libraries(avio PRIVATE
+        FFmpeg::FFmpeg
+        SDL2::SDL2
+    )
+else()
+    target_link_libraries(avio PRIVATE
+        FFmpeg::FFmpeg
+        SDL2::SDL2
+        pthread
+    )
+endif()
+
+set_target_properties(avio PROPERTIES
+    SOVERSION 1
+)
 
 target_include_directories(avio PUBLIC
-                    include
-                    ${FFMPEG_INCLUDE_DIRS}
-                  )
+    include
+    ${FFMPEG_INCLUDE_DIRS}
+    ${SDL2_INCLUDE_DIRS}
+)
 
-if (MSVC)
-    install(TARGETS avio
-                    LIBRARY DESTINATION lib
-                    ARCHIVE DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    COMPONENT library)
-else()
-    install(TARGETS avio DESTINATION "${CMAKE_INSTALL_LIBDIR}/")
-endif()
-install(FILES 
-            include/avio.h 
-            include/Clock.h
-            include/Decoder.h
-            include/Display.h
-            include/Encoder.h
-            include/Event.h
-            include/Exception.h
-            include/Filter.h
-            include/Frame.h
-            include/Pipe.h
-            include/Queue.h
-            include/Reader.h
-            include/Writer.h
-            include/GLWidget.h
-            
-            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

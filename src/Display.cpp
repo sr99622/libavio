@@ -17,8 +17,9 @@
 *
 *********************************************************************/
 
-#include "Display.h"
 #include <filesystem>
+#include "Display.h"
+#include "avio.h"
 
 namespace avio 
 {
@@ -26,10 +27,10 @@ namespace avio
 void Display::init()
 {
     try {
-        if (audioFilter)
-            initAudio(audioFilter->sample_rate(), audioFilter->sample_format(), audioFilter->channels(), audioFilter->channel_layout(), audioFilter->frame_size());
-        else if (audioDecoder)
-            initAudio(audioDecoder->sample_rate(), audioDecoder->sample_format(), audioDecoder->channels(), audioDecoder->channel_layout(), audioDecoder->frame_size());
+        if (P->audioFilter)
+            initAudio(P->audioFilter->sample_rate(), P->audioFilter->sample_format(), P->audioFilter->channels(), P->audioFilter->channel_layout(), P->audioFilter->frame_size());
+        else if (P->audioDecoder)
+            initAudio(P->audioDecoder->sample_rate(), P->audioDecoder->sample_format(), P->audioDecoder->channels(), P->audioDecoder->channel_layout(), P->audioDecoder->frame_size());
     }
     catch (const Exception& e) {
         ex.msg(e.what(), MsgPriority::CRITICAL, "Display constructor exception: ");
@@ -55,8 +56,8 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 {
     int ret = 0;
 
-    if (glWidget)
-        return ret;
+    //if (P->glWidget)
+    //    return ret;
 
     try {
         Uint32 sdl_format = 0;
@@ -142,7 +143,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
-    if (!glWidget) {
+    //if (!P->glWidget) {
         if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
             ex.ck(SDL_UpdateYUVTexture(texture, NULL,
                 f.m_frame->data[0], f.m_frame->linesize[0],
@@ -157,13 +158,13 @@ void Display::videoPresentation()
         SDL_RenderClear(renderer);
         ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
         SDL_RenderPresent(renderer);
-    }
-}
-
-void Display::clearInputQueues()
-{
-	if (vfq_in) while (vfq_in->size() > 0) vfq_in->pop();
-	if (afq_in) while (afq_in->size() > 0) afq_in->pop();
+    //}
+    //else {
+    //    if (P->glWidget->media_duration) {
+    //        float pct = (float)f.m_rts / (float)P->glWidget->media_duration;
+    //        P->glWidget->emit progress(pct);
+    //    }
+    //}
 }
 
 PlayState Display::getEvents(std::vector<SDL_Event>* events)
@@ -181,7 +182,7 @@ PlayState Display::getEvents(std::vector<SDL_Event>* events)
 
     for (int i = 0; i < events->size(); i++) {
         SDL_Event event = events->at(i);
-        if (event.type == SDL_QUIT) 
+        if (event.type == SDL_QUIT)
             state = PlayState::QUIT;
         else if (event.type == SDL_KEYDOWN) {
             if (event.key.keysym.sym == SDLK_ESCAPE) {
@@ -189,48 +190,6 @@ PlayState Display::getEvents(std::vector<SDL_Event>* events)
             }
             else if (event.key.keysym.sym == SDLK_SPACE) {
                 state = PlayState::PAUSE;
-            }
-            else if (event.key.keysym.sym == SDLK_LEFT && event.key.repeat == 0) {
-                if (vfq_in) {
-                    reader->seek_target_pts = reader->last_video_pts - av_q2d(av_inv_q(reader->video_time_base()));
-                }
-                else {
-                    float pct = (f.m_rts - reader->start_time()) / (float)reader->duration();
-                    if (pct > 0.02)
-                        pct -= 0.01;
-                    else
-                        pct = 0.0;
-                    reader->request_seek(pct);
-                }
-                clearInputQueues();
-            }
-            else if (event.key.keysym.sym == SDLK_RIGHT && event.key.repeat == 0) {
-                if (vfq_in) {
-                    reader->seek_target_pts = reader->last_video_pts + av_q2d(av_inv_q(reader->video_time_base()));
-                }
-                else {
-                    float pct = (f.m_rts - reader->start_time()) / (float)reader->duration();
-                    if (pct < 0.98) {
-                        pct += 0.01;
-                        reader->request_seek(pct);
-                    }
-                }
-                clearInputQueues();
-            }
-            else if (event.key.keysym.sym == SDLK_s) {
-                if (paused) single_step = true;
-            }
-            else if (event.key.keysym.sym == SDLK_a) {
-                if (paused) reverse_step = true;
-            }
-            else if (event.key.keysym.sym == SDLK_r) {
-                key_record_flag = true;
-            }
-            else if (event.key.keysym.sym == SDLK_j) {
-                snapshot();
-            }
-            else if (event.key.keysym.sym == SDLK_o) {
-                reader->request_pipe_write = !reader->request_pipe_write;
             }
         }
     }
@@ -243,18 +202,17 @@ bool Display::display()
 
     while (true)
     {
-        if (glWidget) {
-            if (!glWidget->running) {
-                playing = false;
-                break;
-            }
-        }
+        //if (P->glWidget) {
+        //    if (!P->glWidget->running) {
+        //        playing = false;
+        //        break;
+        //    }
+        //}
 
         std::vector<SDL_Event> events;
         PlayState state = getEvents(&events);
 
         if (state == PlayState::QUIT) {
-            std::cout << "request_break" << std::endl;
             reader->request_break = true;
             break;
         }
@@ -265,28 +223,40 @@ bool Display::display()
         if (paused) 
         {
             f = paused_frame;
+            bool flag_out = true;
             
-            if (reader->seeking()) {
+            while (reader->seeking()) {
                 if (afq_in) {
                     while (afq_in->size() > 0)
                         afq_in->pop();
                 }
-                paused = false;
+                
+                if (vfq_in->size() > 0) vfq_in->pop_move(f);
+                if (f.isValid()) {
+                    if (f.m_frame->pts == reader->seek_found_pts) {
+                        reader->seek_found_pts = AV_NOPTS_VALUE;
+                        flag_out = false;
+                    }
+                }
+                else {
+                    std::cout << "Display received invalid frame during seek" << std::endl;
+                    playing = false;
+                    break;
+                }
+                
             }
-            else {
-                videoPresentation();
-                SDL_Delay(SDL_EVENT_LOOP_WAIT);
-            }
+            videoPresentation();
+            SDL_Delay(SDL_EVENT_LOOP_WAIT);
 
-            break;
+            if (flag_out)
+                break;
         }
 
         try 
         {
             if (vfq_in) {
-                vfq_in->pop(f);
+                vfq_in->pop_move(f);
                 if (!f.isValid()) {
-                    std::cout << "display recvd null eof" << std::endl;
                     playing = false;
                     break;
                 }
@@ -297,35 +267,21 @@ bool Display::display()
                 f.m_rts = rtClock.stream_time();
             }
 
-            if (reader->seeking()) {
-                if (f.m_frame->pts != reader->seek_found_pts) {
-                    paused = false;
-                }
-                else {
-                    reader->seek_found_pts = AV_NOPTS_VALUE;
-                    paused = user_paused;
-                }
-            }
+            //paused_frame = f;
 
-            paused_frame = f;
-
-            if (!glWidget)
+            //if (!P->glWidget)
                 ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
 
-            if (key_record_flag) {
-                key_record_flag = false;
-                toggleRecord();
-            }
-
-            if ((!afq_in || reader->vpq_max_size > 1) && !ignore_video_pts)
-                SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
-            
-            if (!reader->seeking()) videoPresentation();
+            SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
+            videoPresentation();
             reader->last_video_pts = f.m_frame->pts;
 
             if (vfq_out) {
                 if (vfq_out->size() == 0)
                     vfq_out->push(f);
+            }
+            else {
+                f.invalidate();
             }
 
         }
@@ -380,17 +336,15 @@ int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_form
             sdl.format = AUDIO_U8;
             break;
         default:
-            const char* result = "unkown sample format";
+            const char* result = "unknown sample format";
             const char* name = av_get_sample_fmt_name(sdl_sample_format);
             if (name)
                 result = name;
             std::cout << "ERROR: incompatible sample format: " << result << std::endl;
             std::cout << "supported formats: AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_U8" << std::endl;
-            std::exit(0);
         }
 
         audio_buffer_len = av_samples_get_buffer_size(NULL, sdl.channels, sdl.samples, sdl_sample_format, 1);
-        sdl_buffer.set_max_size(audio_buffer_len * 10);
 
         ex.ck(swr_ctx = swr_alloc_set_opts(NULL, stream_channel_layout, sdl_sample_format, stream_sample_rate,
             stream_channel_layout, stream_sample_format, stream_sample_rate, 0, NULL), SASO);
@@ -400,16 +354,6 @@ int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_form
             if (SDL_Init(SDL_INIT_AUDIO))
                 throw Exception(std::string("SDL audio init error: ") + SDL_GetError());
         }
-
-        /*
-        int num_drivers = SDL_GetNumAudioDrivers();
-        for (int i = 0; i < num_drivers; i++)
-            std::cout << "audio driver: " << i << " : " << SDL_GetAudioDriver(i) << std::endl;
-
-        int num_devices = SDL_GetNumAudioDevices(0);
-        for (int i = 0; i < num_devices; i++)
-            std::cout << "audio device: " << i << " : " << SDL_GetAudioDeviceName(i, 0) << std::endl;
-        */
 
         audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &sdl, &have, 0);
         if (audioDeviceID == 0) {
@@ -421,7 +365,6 @@ int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_form
     }
     catch (const Exception& e) {
         ex.msg(e.what(), MsgPriority::CRITICAL, "Display::initAudio exception: ");
-        std::exit(0);
     }
 
     return ret;
@@ -431,20 +374,18 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 {
     Display* d = (Display*)userdata;
     memset(audio_buffer, 0, len);
-    uint8_t temp[len] = {0};
+    uint8_t* temp = (uint8_t*)malloc(len);
+    memset(temp, 0, len);
     Frame f;
+    int ptr = 0;
 
     if (d->paused)
         return;
 
     try {
-        if (d->disable_audio || d->user_paused)
-            return;
-
         while (len > 0) {
-            if (d->sdl_buffer.size() < d->audio_buffer_len) {
-                d->afq_in->pop(f);
-                if (d->afq_out) d->afq_out->push(f);
+            if (ptr < d->audio_buffer_len) {
+                d->afq_in->pop_move(f);
 
                 if (f.isValid()) {
                     uint64_t channels = f.m_frame->channels;
@@ -459,8 +400,10 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     }
 
                     swr_convert(d->swr_ctx, &d->swr_buffer, nb_samples, data, nb_samples);
-                    for (int i = 0; i < d->swr_buffer_size; i++)
-                        d->sdl_buffer.push(d->swr_buffer[i]);
+                    int mark = std::min(len, d->swr_buffer_size);
+                    memcpy(temp + ptr, d->swr_buffer, mark);
+                    ptr += mark;
+                    len -= mark;
                 }
                 else {
                     std::cout << "audio callback revcd null eof" << std::endl;
@@ -477,19 +420,23 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                 }
             }
 
-            while (d->sdl_buffer.size() > 0 && len > 0) {
-                temp[d->audio_buffer_len - len] = d->sdl_buffer.pop();
-                len--;
-            }
-
-            SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
+            if (!d->mute)
+                SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
 
             d->rtClock.sync(f.m_rts); 
             d->reader->seek_found_pts = AV_NOPTS_VALUE;
 
+            if (d->afq_out) 
+                d->afq_out->push(f);
+            else
+                f.invalidate();
+
+
         }
     }
     catch (const QueueClosedException& e) { }
+
+    free(temp);
 }
 
 bool Display::isPaused()
@@ -501,25 +448,24 @@ void Display::togglePause()
 {
     paused = !paused;
     rtClock.pause(paused);
-    user_paused = paused;
 }
 
 void Display::toggleRecord()
 {
-    if (!writer && !reader->pipe_out) {
+    if (!P->writer && !reader->pipe_out) {
         std::cout << "Error: no writer specified" << std::endl;
         return;
     }
 
     recording = !recording;
 
-    if (writer) {
+    if (P->writer) {
         if (prepend_recent_write && recording) {
             for (int i = 0; i < recent.size() - 1; i++)
                 vfq_out->push(recent[i]);
         }
 
-        writer->enabled = recording;
+        P->writer->enabled = recording;
     }
     else if (reader->pipe_out) {
         reader->request_pipe_write = recording;

@@ -36,6 +36,7 @@ public:
 	~Decoder();
 	int decode(AVPacket* pkt);
 	void close();
+	void flush();
 
 	int sample_rate() { return dec_ctx->sample_rate; }
 	int channels() { return dec_ctx->channels; }
@@ -60,6 +61,8 @@ public:
 	AVCodecContext* dec_ctx = NULL;
 	AVBufferRef* hw_device_ctx = NULL;
 	SwsContext* sws_ctx = NULL;
+
+	AVHWDeviceType hw_device_type;
 
 	int stream_index;
 	Reader* reader;
