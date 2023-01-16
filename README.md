@@ -38,9 +38,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-cmake/FindFFmpeg.cmake License
-Copyright (c) 2006, Matthias Kretz, <kretz@kde.org>
-Copyright (c) 2008, Alexander Neundorf, <neundorf@kde.org>
-Copyright (c) 2011, Michael Jansen, <kde@michael-jansen.biz>
-Redistribution and use is allowed according to the terms of the BSD license.
