@@ -20,6 +20,9 @@
 #ifndef AVIO_H
 #define AVIO_H
 
+#include <iomanip>
+#include <map>
+
 #include "Exception.h"
 #include "Queue.h"
 #include "Reader.h"
@@ -29,7 +32,8 @@
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
-#include "GLWidget.h"
+
+#define P ((Process*)process)
 
 namespace avio
 {
@@ -53,33 +57,68 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
     if (reader->vpq_max_size > 0 && vpq) vpq->set_max_size(reader->vpq_max_size);
     if (reader->apq_max_size > 0 && apq) apq->set_max_size(reader->apq_max_size);
 
-    std::deque<AVPacket*> pkts;
     Pipe* pipe = nullptr;
+    std::deque<AVPacket*> pkts;
+    int keyframe_count = 0;
+    int keyframe_marker = 0;
 
     try {
-        while (AVPacket* pkt = reader->read())
+        while (true)
         {
+            AVPacket* pkt = reader->read();
+            if (!pkt)
+                break;
+
+            reader->running = true;
             if (reader->request_break) {
-                if (vpq) while (vpq->size() > 0) vpq->pop();
-                if (apq) while (apq->size() > 0) apq->pop();
+                reader->clear_stream_queues();
                 break;
             }
 
+            if (reader->seek_target_pts != AV_NOPTS_VALUE) {
+
+                AVPacket* tmp = reader->seek();
+
+                while (pkts.size() > 0) {
+                    AVPacket* jnk = pkts.front();
+                    pkts.pop_front();
+                    av_packet_free(&jnk);
+                }
+
+                if (tmp) {
+                    av_packet_free(&pkt);
+                    pkt = tmp;
+                    reader->clear_stream_queues();
+                }
+                else {
+                    break;
+                }
+            }
+
             if (reader->request_pipe_write) {
+                // pkts queue caches recent packets based off key frame packet
                 if (!pipe) {
                     pipe = new Pipe(*reader);
-                    std::string filename = reader->get_pipe_out_filename();
-                    pipe->open(filename);
-                    while (pkts.size() > 0) {
-                        AVPacket* tmp = pkts.front();
-                        pkts.pop_front();
-                        pipe->write(tmp);
-                        av_packet_free(&tmp);
+                    pipe->process = reader->process;
+                    if (pipe->open(reader->pipe_out_filename)) {
+                        while (pkts.size() > 0) {
+                            AVPacket* tmp = pkts.front();
+                            pkts.pop_front();
+                            pipe->write(tmp);
+                            av_packet_free(&tmp);
+                        }
+                    }
+                    else {
+                        delete pipe;
+                        pipe = nullptr;
                     }
                 }
-                AVPacket* tmp = av_packet_clone(pkt);
-                pipe->write(tmp);
-                av_packet_free(&tmp);
+                // verify pipe was opened successfully before continuing
+                if (pipe) {
+                    AVPacket* tmp = av_packet_clone(pkt);
+                    pipe->write(tmp);
+                    av_packet_free(&tmp);
+                }
             }
             else {
                 if (pipe) {
@@ -89,25 +128,20 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
                 }
                 if (pkt->stream_index == reader->video_stream_index) {
                     if (pkt->flags) {
-                        while (pkts.size() > 0) {
-                            AVPacket* tmp = pkts.front();
-                            pkts.pop_front();
-                            av_packet_free(&tmp);
+                        // key frame packet found in stream
+                        if (++keyframe_count >= reader->keyframe_cache_size()) {
+                            while (pkts.size() > keyframe_marker) {
+                                AVPacket* tmp = pkts.front();
+                                pkts.pop_front();
+                                av_packet_free(&tmp);
+                            }
+                            keyframe_count--;
                         }
+                        keyframe_marker = pkts.size();
                     }
                 }
                 AVPacket* tmp = av_packet_clone(pkt);
                 pkts.push_back(tmp);
-            }
-
-            if (reader->seek_target_pts != AV_NOPTS_VALUE) {
-                av_packet_free(&pkt);
-                pkt = reader->seek();
-                if (!pkt) {
-                    break;
-                }
-                if (vpq) while(vpq->size() > 0) vpq->pop();
-                if (apq) while(apq->size() > 0) apq->pop();
             }
 
             if (reader->stop_play_at_pts != AV_NOPTS_VALUE && pkt->stream_index == reader->seek_stream_index()) {
@@ -119,9 +153,8 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
 
             if (pkt->stream_index == reader->video_stream_index) {
                 if (reader->show_video_pkts) show_pkt(pkt);
-                if (vpq) {
+                if (vpq)
                     vpq->push(pkt);
-                }
                 else
                     av_packet_free(&pkt);
             }
@@ -139,6 +172,9 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { std::cout << " reader failed: " << e.what() << std::endl; }
+
+    reader->signal_eof();
+    reader->running = false;
 }
 
 static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* frame_q) 
@@ -156,7 +192,14 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
         decoder->frame_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) { }
-    catch (const Exception& e) { std::cout << decoder->strMediaType << " decoder failed: " << e.what() << std::endl; }
+    catch (const Exception& e) { 
+        std::stringstream str;
+        str << decoder->strMediaType << " decoder failed: " << e.what();
+        std::cout << str.str() << std::endl;
+        decoder->reader->exit_error_msg = str.str();
+        decoder->decode(NULL);
+        decoder->frame_q->push(Frame(nullptr));
+    }
 }
 
 static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
@@ -277,7 +320,7 @@ public:
     Encoder*  videoEncoder = nullptr;
     Encoder*  audioEncoder = nullptr;
     Display*  display      = nullptr;
-    GLWidget* glWidget     = nullptr;
+    //GLWidget* glWidget     = nullptr;
 
     PKT_Q_MAP pkt_queues;
     FRAME_Q_MAP frame_queues;
@@ -296,6 +339,9 @@ public:
 
     std::vector<std::thread*> ops;
 
+    Process() { av_log_set_level(AV_LOG_PANIC); }
+    ~Process() { }
+
     void key_event(int keyCode)
     {
         SDL_Event event;
@@ -306,7 +352,9 @@ public:
 
     void add_reader(Reader& reader_in)
     {
+        reader_in.process = (void*)this;
         reader = &reader_in;
+        
         if (!reader_in.vpq_name.empty()) pkt_q_names.push_back(reader_in.vpq_name);
         if (!reader_in.apq_name.empty()) pkt_q_names.push_back(reader_in.apq_name);
     }
@@ -347,6 +395,23 @@ public:
         frame_q_names.push_back(encoder_in.frame_q_name);
     }
 
+    void add_display(Display& display_in)
+    {
+        display_in.process = (void*)this;
+        display = &display_in;
+
+        if (!display->vfq_out_name.empty())
+            frame_q_names.push_back(display->vfq_out_name);
+        if (!display->afq_out_name.empty())
+            frame_q_names.push_back(display->afq_out_name);
+    }
+
+    //void add_widget(GLWidget* widget_in)
+   // {
+    //    widget_in->process = (void*)this;
+    //    glWidget = widget_in;
+    //}
+
     void add_frame_drain(const std::string& frame_q_name)
     {
         frame_q_drain_names.push_back(frame_q_name);
@@ -357,27 +422,46 @@ public:
         pkt_q_drain_names.push_back(pkt_q_name);
     }
 
-    void add_display(Display& display_in)
+    void cleanup()
     {
-        display = &display_in;
+        for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
+            if (q->second) {
+                while (q->second->size() > 0) {
+                    AVPacket* pkt = q->second->pop();
+                    av_packet_free(&pkt);
+                }
+                q->second->close();
+            }
+        }
 
-        if (!display->vfq_out_name.empty())
-            frame_q_names.push_back(display->vfq_out_name);
-        if (!display->afq_out_name.empty())
-            frame_q_names.push_back(display->afq_out_name);
-    }
+        for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
+            if (q->second) {
+                while (q->second->size() > 0) {
+                    Frame f;
+                    q->second->pop(f);
+                }
+            q->second->close();
+            }
+        }
 
-    void add_widget(GLWidget* widget_in)
-    {
-        glWidget = widget_in;
-        if (!display->vfq_out_name.empty())
-            frame_q_names.push_back(display->vfq_out_name);
+        for (int i = 0; i < ops.size(); i++) {
+            ops[i]->join();
+            delete ops[i];
+        }
+
+        for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
+            if (q->second)
+                delete q->second;
+        }
+
+        for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
+            if (q->second)
+                delete q->second;
+        }
     }
 
     void run()
     {
-        av_log_set_level(AV_LOG_PANIC);
-
         for (const std::string& name : pkt_q_names) {
             if (!name.empty()) {
                 if (pkt_queues.find(name) == pkt_queues.end())
@@ -408,10 +492,10 @@ public:
                 frame_queues[videoFilter->q_in_name], frame_queues[videoFilter->q_out_name]));
         }
 
-        if (glWidget) {
-            if (!glWidget->vfq_in_name.empty()) glWidget->vfq_in = frame_queues[glWidget->vfq_in_name];
-            if (!glWidget->vfq_out_name.empty()) glWidget->vfq_out = frame_queues[glWidget->vfq_out_name];
-        }
+        //if (glWidget) {
+        //    if (!glWidget->vfq_in_name.empty()) glWidget->vfq_in = frame_queues[glWidget->vfq_in_name];
+        //    if (!glWidget->vfq_out_name.empty()) glWidget->vfq_out = frame_queues[glWidget->vfq_out_name];
+        //}
 
         if (audioDecoder) {
             ops.push_back(new std::thread(decode, audioDecoder,
@@ -447,10 +531,6 @@ public:
 
         if (display) {
 
-            if (writer) display->writer = writer;
-            if (audioDecoder) display->audioDecoder = audioDecoder;
-            if (audioFilter) display->audioFilter = audioFilter;
-
             if (!display->vfq_in_name.empty()) display->vfq_in = frame_queues[display->vfq_in_name];
             if (!display->afq_in_name.empty()) display->afq_in = frame_queues[display->afq_in_name];
 
@@ -459,13 +539,48 @@ public:
 
             display->init();
 
+            //if (glWidget)
+            //    glWidget->emit timerStart();
+
             while (display->display()) {}
 
-            if (glWidget)
-                glWidget->emit timerStop();
+            std::cout << "display done" << std::endl;
 
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(200ms);
+            //if (glWidget)
+            //    glWidget->emit timerStop();
+
+            // reader shutdown routine if downstream module shuts down process
+            // there is probably a better way to handle this situation
+            if (!reader->exit_error_msg.empty()) {
+                int count = 0;
+                std::cout << "reader attempting shutdown" << std::endl;
+                reader->request_break = true;
+                while (reader->running) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    if (count++ > 1000) {
+                        if (!reader->apq_name.empty()) {
+                            Queue<AVPacket*>* q = pkt_queues[reader->apq_name];
+                            if (q) {
+                                while (q->size() > 0) {
+                                    AVPacket* pkt = q->pop();
+                                    av_packet_free(&pkt);
+                                }
+                            }
+                        }
+                        if (!reader->vpq_name.empty()) {
+                            Queue<AVPacket*>* q = pkt_queues[reader->vpq_name];
+                            if (q) {
+                                while (q->size() > 0) {
+                                    AVPacket* pkt = q->pop();
+                                    av_packet_free(&pkt);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                throw Exception(reader->exit_error_msg);
+            }
 
             if (writer) {
                 while (!display->audio_eof)
@@ -473,49 +588,9 @@ public:
                 writer->enabled = false;
             }
 
-            reader = nullptr;
-            videoDecoder = nullptr;
-            videoFilter = nullptr;
-            audioDecoder = nullptr;
-            display = nullptr;
-           
         }
 
-        for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-            if (q->second) {
-                while (q->second->size() > 0) {
-                    AVPacket* pkt = q->second->pop();
-                    av_packet_free(&pkt);
-                }
-                q->second->close();
-            }
-        }
-
-        for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-            if (q->second) {
-                while (q->second->size() > 0) {
-                    Frame f;
-                    q->second->pop(f);
-                }
-            q->second->close();
-            }
-        }
-
-        for (int i = 0; i < ops.size(); i++) {
-            ops[i]->join();
-            delete ops[i];
-        }
-
-        for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-            if (q->second)
-                delete q->second;
-        }
-
-        for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-            if (q->second)
-                delete q->second;
-        }
-
+        cleanup();
     }
 
 };

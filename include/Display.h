@@ -25,7 +25,6 @@
 #include <SDL.h>
 #include <chrono>
 #include <deque>
-#include <functional>
 #include "Exception.h"
 #include "Queue.h"
 #include "Frame.h"
@@ -35,8 +34,6 @@
 #include "Reader.h"
 #include "Writer.h"
 #include "Encoder.h"
-#include "Event.h"
-#include "GLWidget.h"
 
 #define SDL_EVENT_LOOP_WAIT 10
 
@@ -56,6 +53,9 @@ public:
     Display(Reader& reader) : reader(&reader) { }
     ~Display();
 
+    void* process;
+    Reader* reader;
+
     void init();
     int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);
     int initVideo(int width, int height, AVPixelFormat pix_fmt);
@@ -65,11 +65,9 @@ public:
     bool display();
     void pin_osd(bool arg);
     void enable_status(bool arg);
-    void clearInputQueues();
     void snapshot();
     
     bool paused = false;
-    bool user_paused = false;
     Frame paused_frame;
     bool isPaused();
     void togglePause();
@@ -77,7 +75,6 @@ public:
     bool reverse_step = false;
     int recent_idx = -1;
 
-    bool key_record_flag = false;
     bool recording = false;
     void toggleRecord();
 
@@ -122,12 +119,10 @@ public:
 
     uint8_t* swr_buffer = nullptr;
     int swr_buffer_size = 0;
-    Queue<char> sdl_buffer;
     int audio_buffer_len = 0;
-    bool disable_audio = false;
-    bool ignore_video_pts = false;
     bool audio_eof = false;
     float volume = 1.0f;
+    bool mute = false;
 
     int width = 0;
     int height = 0;
@@ -142,12 +137,6 @@ public:
     bool request_recent_clear = false;
     int recent_q_size = 200;
     bool prepend_recent_write = false;
-
-    Reader* reader = nullptr;
-    Writer* writer = nullptr;
-    Decoder* audioDecoder = nullptr;
-    Filter* audioFilter = nullptr;
-    GLWidget* glWidget = nullptr;
 
     ExceptionHandler ex;
 

@@ -23,29 +23,56 @@ extern "C"
 }
 
 #include <filesystem>
+#include <time.h>
 
 #include "Reader.h"
-#include "Decoder.h"
+#include "avio.h"
+
+#define MAX_TIMEOUT 5
+
+time_t timeout_start = time(NULL);
+
+static int interrupt_callback(void *ctx)
+{
+    avio::Reader* reader = (avio::Reader*)ctx;
+    time_t diff = time(NULL) - timeout_start;
+
+    if (diff > MAX_TIMEOUT || reader->request_break) {
+        return 1;
+    }
+    return 0;
+}
 
 namespace avio {
 
 Reader::Reader(const char* filename)
 {
-    std::cout << "Reader opening " << filename << std::endl;
-    ex.ck(avformat_open_input(&fmt_ctx, filename, NULL, NULL), CmdTag::AOI);
+    AVDictionary* opts = NULL;
+
+    if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(59, 0, 0)) 
+        av_dict_set(&opts, "timeout", "5000000", 0);
+    else 
+        av_dict_set(&opts, "stimeout", "5000000", 0);
+
+    ex.ck(avformat_open_input(&fmt_ctx, filename, NULL, &opts), CmdTag::AOI);
+ 
+    av_dict_free(&opts);
+    timeout_start = time(NULL);
+    AVIOInterruptCB cb = { interrupt_callback, this };
+    fmt_ctx->interrupt_callback = cb;
+
     ex.ck(avformat_find_stream_info(fmt_ctx, NULL), CmdTag::AFSI);
 
     video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     if (video_stream_index < 0) 
-        ex.msg("av_find_best_stream could not find video stream", MsgPriority::INFO);
+        ex.msg("did not find video stream", MsgPriority::INFO);
 
     audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if (audio_stream_index < 0) 
-        ex.msg("av_find_best_stream could not find audio stream", MsgPriority::INFO);
+        ex.msg("did not find audio stream", MsgPriority::INFO);
 
-    std::filesystem::path path = filename;
-    extension = path.extension().string();
-    std::cout << "Reader successfully opened " << std::endl;
+    //if (video_codec() == AV_CODEC_ID_HEVC) throw Exception("HEVC compression is not supported by default configuration");
+
 }
 
 Reader::~Reader()
@@ -63,11 +90,20 @@ AVPacket* Reader::read()
 
     try {
         if (!fmt_ctx) throw Exception("fmt_ctx null");
+        timeout_start = time(NULL);
         ex.ck(ret = av_read_frame(fmt_ctx, pkt), CmdTag::ARF);
+        timeout_start = time(NULL);
     }
     catch (const Exception& e) {
-        if (ret != AVERROR_EOF)
+        if (ret != AVERROR_EOF) {
             ex.msg(e.what(), MsgPriority::CRITICAL, "Reader::read exception: ");
+            if (ret == AVERROR_EXIT || ret == AVERROR(ETIMEDOUT)) {
+                std::cout << "Camera connection timed out"  << std::endl;
+                //if (P->glWidget) {
+                //    P->glWidget->emit cameraTimeout();
+                //}
+            }
+        }
 
         av_packet_free(&pkt);
         closed = true;
@@ -86,10 +122,9 @@ AVPacket* Reader::seek()
         ex.ck(av_seek_frame(fmt_ctx, seek_stream_index(), seek_target_pts, flags), CmdTag::ASF);
     }
     catch (const Exception& e) {
-        std::cout << e.what() << std::endl;
+        std::cout << "Reader seek exception: " << e.what() << std::endl;
+        return NULL;
     }
-
-    seek_target_pts = AV_NOPTS_VALUE;
 
     AVPacket* pkt = NULL;
     while (pkt = read()) {
@@ -98,8 +133,14 @@ AVPacket* Reader::seek()
             break;
         }
     }
+    seek_target_pts = AV_NOPTS_VALUE;
 
     return pkt;
+}
+
+bool Reader::isPaused()
+{
+    return ((Process*)process)->display->paused;
 }
 
 void Reader::request_seek(float pct)
@@ -182,7 +223,7 @@ AVPixelFormat Reader::pix_fmt()
 
 const char* Reader::str_pix_fmt()
 {
-    const char* result = "unkown pixel format";
+    const char* result = "unknown pixel format";
     if (video_stream_index >= 0) {
         const char* name = av_get_pix_fmt_name((AVPixelFormat)fmt_ctx->streams[video_stream_index]->codecpar->format);
         if (name)
@@ -201,7 +242,7 @@ AVCodecID Reader::video_codec()
 
 const char* Reader::str_video_codec()
 {
-    const char* result = "unkown codec";
+    const char* result = "unknown codec";
     if (video_stream_index >= 0) {
         result = avcodec_get_name(fmt_ctx->streams[video_stream_index]->codecpar->codec_id);
     }
@@ -282,7 +323,7 @@ AVSampleFormat Reader::sample_format()
 
 const char* Reader::str_sample_format()
 {
-    const char* result = "unkown sample format";
+    const char* result = "unknown sample format";
     if (audio_stream_index >= 0) {
         const char* name = av_get_sample_fmt_name((AVSampleFormat)fmt_ctx->streams[audio_stream_index]->codecpar->format);
         if (name)
@@ -301,7 +342,7 @@ AVCodecID Reader::audio_codec()
 
 const char* Reader::str_audio_codec()
 {
-    const char* result = "unkown codec";
+    const char* result = "unknown codec";
     if (audio_stream_index >= 0) {
         result = avcodec_get_name(fmt_ctx->streams[audio_stream_index]->codecpar->codec_id);
     }
@@ -324,6 +365,50 @@ AVRational Reader::audio_time_base()
     return result;
 }
 
+int Reader::keyframe_cache_size()
+{
+    int result = 1;
+    //if (P->glWidget) 
+    //    result = P->glWidget->keyframe_cache_size;
+    return result;
+}
+
+void Reader::clear_stream_queues()
+{
+    PKT_Q_MAP::iterator pkt_q;
+    for (pkt_q = P->pkt_queues.begin(); pkt_q != P->pkt_queues.end(); ++pkt_q) {
+        while (pkt_q->second->size() > 0) {
+            AVPacket* tmp = pkt_q->second->pop();
+            av_packet_free(&tmp);
+        }
+    }
+    FRAME_Q_MAP::iterator frame_q;
+    for (frame_q = P->frame_queues.begin(); frame_q != P->frame_queues.end(); ++frame_q) {
+        while (frame_q->second->size() > 0) {
+            Frame f;
+            frame_q->second->pop(f);
+        }
+    }
+}
+
+void Reader::clear_decoders()
+{
+    if (P->videoDecoder) P->videoDecoder->flush();
+    if (P->audioDecoder) P->audioDecoder->flush();
+}
+
+void Reader::signal_eof()
+{
+    //if (P->glWidget)
+    //    P->glWidget->running = false;
+}
+
+
+void Reader::free_pkt(AVPacket* pkt)
+{
+    av_packet_free(&pkt);
+}
+/*
 std::string Reader::get_pipe_out_filename()
 {
     std::string filename;
@@ -333,7 +418,7 @@ std::string Reader::get_pipe_out_filename()
         std::tm tm = *std::localtime(&t);
         std::stringstream str;
         str << std::put_time(&tm, "%y%m%d%H%M%S");
-        filename = str.str() + extension;
+        //filename = str.str() + extension;
     }
     else {
         filename = pipe_out_filename;
@@ -344,6 +429,7 @@ std::string Reader::get_pipe_out_filename()
 
     return filename;
 }
+*/
 
 }
 

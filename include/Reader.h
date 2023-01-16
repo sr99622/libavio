@@ -20,7 +20,11 @@
 #ifndef READER_H
 #define READER_H
 
-#include <iomanip>
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+}
+
 #include "Exception.h"
 #include "Queue.h"
 
@@ -34,6 +38,8 @@ public:
 	Reader(const char* filename);
 	~Reader();
 	AVPacket* read();
+
+	void* process;
 
 	void request_seek(float pct);
 	int64_t seek_target_pts = AV_NOPTS_VALUE;
@@ -74,8 +80,7 @@ public:
 	int64_t audio_bit_rate();
 	AVRational audio_time_base();
 
-	std::string get_pipe_out_filename();
-	std::string extension;
+	int keyframe_cache_size();
 	bool request_pipe_write = false;
 	bool pipe_out = false;
 	bool pipe_out_enabled = false;
@@ -103,9 +108,15 @@ public:
 	void set_video_out(const std::string& name) { vpq_name = std::string(name); }
 	void set_audio_out(const std::string& name) { apq_name = std::string(name); }
 
-	void *display;
-
 	bool request_break = false;
+	bool running = false;
+	std::string exit_error_msg;
+
+	void clear_stream_queues();
+	bool isPaused();
+	void clear_decoders();
+	void signal_eof();
+	void free_pkt(AVPacket* pkt);
 
 	ExceptionHandler ex;
 };
