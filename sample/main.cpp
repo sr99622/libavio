@@ -10,7 +10,7 @@ int main(int argc, char** argv)
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
 
-    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO);
+    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_VAAPI);
     videoDecoder.set_video_in(reader.video_out());
     videoDecoder.set_video_out("vfq_decoder");
 
