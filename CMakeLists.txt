@@ -73,12 +73,34 @@ target_include_directories(avio PUBLIC
 )
 
 if (BUILD_SAMPLE)
-    add_executable(sample
-        sample/main.cpp
+    find_package(Qt5 COMPONENTS Widgets REQUIRED)
+
+    add_executable(sample_cmd
+        sample_cmd/main.cpp
     )
 
-    target_link_libraries(sample PRIVATE
+    target_link_libraries(sample_cmd PRIVATE
         avio
+    )
+
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+
+    add_executable(sample_gui
+        sample_gui/src/glwidget.cpp
+        sample_gui/src/main.cpp
+        sample_gui/src/mainwindow.cpp
+        sample_gui/include/glwidget.h
+        sample_gui/include/mainwindow.h
+    )
+
+    target_link_libraries(sample_gui PRIVATE
+        Qt5::Widgets
+        avio
+    )
+
+    target_include_directories(sample_gui PUBLIC
+        sample_gui/include
     )
 endif()
 
