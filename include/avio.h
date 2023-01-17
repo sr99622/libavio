@@ -205,16 +205,16 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
 static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
 {
     try {
-        Frame f;
         filter->frame_out_q = q_out;
         while (true)
         {
-            q_in->pop(f);
+            Frame f;
+            q_in->pop_move(f);
             filter->filter(f);
             if (!f.isValid())
                 break;
         }
-        filter->frame_out_q->push(Frame(nullptr));
+        filter->frame_out_q->push_move(Frame(nullptr));
     }
     catch (const QueueClosedException& e) {}
 }
@@ -322,6 +322,8 @@ public:
     Display*  display      = nullptr;
     //GLWidget* glWidget     = nullptr;
 
+    std::vector<std::thread*> ops;
+
     PKT_Q_MAP pkt_queues;
     FRAME_Q_MAP frame_queues;
     std::vector<std::string> pkt_q_names;
@@ -337,7 +339,7 @@ public:
     std::string mux_video_q_name;
     std::string mux_audio_q_name;
 
-    std::vector<std::thread*> ops;
+    bool running = false;
 
     Process() { av_log_set_level(AV_LOG_PANIC); }
     ~Process() { }
