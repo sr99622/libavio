@@ -56,9 +56,6 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 {
     int ret = 0;
 
-    //if (P->glWidget)
-    //    return ret;
-
     try {
         Uint32 sdl_format = 0;
         int w = width;
@@ -143,28 +140,20 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
-    //if (!P->glWidget) {
-        if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
-            ex.ck(SDL_UpdateYUVTexture(texture, NULL,
-                f.m_frame->data[0], f.m_frame->linesize[0],
-                f.m_frame->data[1], f.m_frame->linesize[1],
-                f.m_frame->data[2], f.m_frame->linesize[2]), 
-                SDL_GetError());
-        }
-        else {
-            ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
-        }
+    if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
+        ex.ck(SDL_UpdateYUVTexture(texture, NULL,
+            f.m_frame->data[0], f.m_frame->linesize[0],
+            f.m_frame->data[1], f.m_frame->linesize[1],
+            f.m_frame->data[2], f.m_frame->linesize[2]), 
+            SDL_GetError());
+    }
+    else {
+        ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
+    }
 
-        SDL_RenderClear(renderer);
-        ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
-        SDL_RenderPresent(renderer);
-    //}
-    //else {
-    //    if (P->glWidget->media_duration) {
-    //        float pct = (float)f.m_rts / (float)P->glWidget->media_duration;
-    //        P->glWidget->emit progress(pct);
-    //    }
-    //}
+    SDL_RenderClear(renderer);
+    ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
+    SDL_RenderPresent(renderer);
 }
 
 PlayState Display::getEvents(std::vector<SDL_Event>* events)
@@ -202,13 +191,6 @@ bool Display::display()
 
     while (true)
     {
-        //if (P->glWidget) {
-        //    if (!P->glWidget->running) {
-        //        playing = false;
-        //        break;
-        //    }
-        //}
-
         std::vector<SDL_Event> events;
         PlayState state = getEvents(&events);
 
@@ -246,7 +228,12 @@ bool Display::display()
                 }
                 
             }
-            videoPresentation();
+            if (videoCallback) {
+                videoCallback(caller, f);
+            }
+            else {
+                videoPresentation();
+            }
             SDL_Delay(SDL_EVENT_LOOP_WAIT);
 
             if (flag_out)
@@ -268,13 +255,17 @@ bool Display::display()
                 f.m_rts = rtClock.stream_time();
             }
 
-            //paused_frame = f;
-
-            //if (!P->glWidget)
-                ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
+            paused_frame = f;
 
             SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
-            videoPresentation();
+
+            if (videoCallback) {
+                videoCallback(caller, f);
+            }
+            else {
+                ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
+                videoPresentation();
+            }
             reader->last_video_pts = f.m_frame->pts;
 
             if (vfq_out) {
@@ -461,11 +452,6 @@ void Display::toggleRecord()
     recording = !recording;
 
     if (P->writer) {
-        if (prepend_recent_write && recording) {
-            for (int i = 0; i < recent.size() - 1; i++)
-                vfq_out->push(recent[i]);
-        }
-
         P->writer->enabled = recording;
     }
     else if (reader->pipe_out) {
