@@ -213,7 +213,8 @@ bool Display::display()
         PlayState state = getEvents(&events);
 
         if (state == PlayState::QUIT) {
-            reader->request_break = true;
+            //reader->request_break = true;
+            playing = false;
             break;
         }
         else if (state == PlayState::PAUSE) {
