@@ -59,8 +59,8 @@ void GLWidget::start(void* parent)
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
 
-    //avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_VAAPI);
-    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_NONE);
+    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_VAAPI);
+    //avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_NONE);
     videoDecoder.set_video_in(reader.video_out());
     videoDecoder.set_video_out("vfq_decoder");
 

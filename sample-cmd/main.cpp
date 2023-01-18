@@ -34,6 +34,7 @@ int main(int argc, char** argv)
     process.add_decoder(audioDecoder);
     process.add_display(display);
 
+    process.running = true;
     process.run();
 
     return 0;
