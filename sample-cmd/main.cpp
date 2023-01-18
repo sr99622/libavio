@@ -14,7 +14,8 @@ int main(int argc, char** argv)
     videoDecoder.set_video_in(reader.video_out());
     videoDecoder.set_video_out("vfq_decoder");
 
-    avio::Filter videoFilter(videoDecoder, "scale=1280x720,format=rgb24");
+    //avio::Filter videoFilter(videoDecoder, "scale=1280x720,format=rgb24");
+    avio::Filter videoFilter(videoDecoder, "null");
     videoFilter.set_video_in(videoDecoder.video_out());
     videoFilter.set_video_out("vfq_filter");
     //videoFilter.show_frames = true;
