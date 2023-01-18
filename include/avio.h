@@ -20,9 +20,6 @@
 #ifndef AVIO_H
 #define AVIO_H
 
-#include <iomanip>
-#include <map>
-
 #include "Exception.h"
 #include "Queue.h"
 #include "Reader.h"
@@ -32,6 +29,11 @@
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
+#include <iomanip>
+#include <functional>
+#include <map>
+
+
 
 #define P ((Process*)process)
 
@@ -320,9 +322,7 @@ public:
     Encoder*  videoEncoder = nullptr;
     Encoder*  audioEncoder = nullptr;
     Display*  display      = nullptr;
-    //GLWidget* glWidget     = nullptr;
-
-    std::vector<std::thread*> ops;
+    void*     widget       = nullptr;
 
     PKT_Q_MAP pkt_queues;
     FRAME_Q_MAP frame_queues;
@@ -339,10 +339,52 @@ public:
     std::string mux_video_q_name;
     std::string mux_audio_q_name;
 
+    std::vector<std::thread*> ops;
+
+    //std::function<void(Process*)> assignFrameQueues = nullptr;
+    //std::function<void(Process*, float)> progressCallback = nullptr;
+    std::function<void(Process*)> cameraTimeoutCallback = nullptr;
+    std::function<void(Process*, const std::string&)> openWriterFailedCallback = nullptr;
+
     bool running = false;
 
     Process() { av_log_set_level(AV_LOG_PANIC); }
     ~Process() { }
+
+    bool isPaused()
+    {
+        bool result = false;
+        if (display) result = display->paused;
+        return result;
+    }
+
+    void setMute(bool arg)
+    {
+        if (display) display->mute = arg;
+    }
+
+    void setVolume(int arg)
+    {
+        if (display) display->volume = (float)arg / 100.0f;
+    }
+
+    void togglePaused()
+    {
+        if (display) display->togglePause();
+    }
+
+    void seek(float arg)
+    {
+        if (reader) reader->request_seek(arg);
+    }
+
+    void toggle_pipe_out(const std::string& filename)
+    {
+        if (reader) {
+            reader->pipe_out_filename = filename;
+            reader->request_pipe_write = !reader->request_pipe_write;
+        }
+    }
 
     void key_event(int keyCode)
     {
@@ -408,12 +450,6 @@ public:
             frame_q_names.push_back(display->afq_out_name);
     }
 
-    //void add_widget(GLWidget* widget_in)
-   // {
-    //    widget_in->process = (void*)this;
-    //    glWidget = widget_in;
-    //}
-
     void add_frame_drain(const std::string& frame_q_name)
     {
         frame_q_drain_names.push_back(frame_q_name);
@@ -478,6 +514,8 @@ public:
             }
         }
 
+        //if (assignFrameQueues) assignFrameQueues(this);
+
         if (reader) {
             ops.push_back(new std::thread(read, reader,
                 reader->has_video() ? pkt_queues[reader->vpq_name] : nullptr, 
@@ -493,11 +531,6 @@ public:
             ops.push_back(new std::thread(filter, videoFilter,
                 frame_queues[videoFilter->q_in_name], frame_queues[videoFilter->q_out_name]));
         }
-
-        //if (glWidget) {
-        //    if (!glWidget->vfq_in_name.empty()) glWidget->vfq_in = frame_queues[glWidget->vfq_in_name];
-        //    if (!glWidget->vfq_out_name.empty()) glWidget->vfq_out = frame_queues[glWidget->vfq_out_name];
-        //}
 
         if (audioDecoder) {
             ops.push_back(new std::thread(decode, audioDecoder,
@@ -541,15 +574,9 @@ public:
 
             display->init();
 
-            //if (glWidget)
-            //    glWidget->emit timerStart();
-
             while (display->display()) {}
 
             std::cout << "display done" << std::endl;
-
-            //if (glWidget)
-            //    glWidget->emit timerStop();
 
             // reader shutdown routine if downstream module shuts down process
             // there is probably a better way to handle this situation

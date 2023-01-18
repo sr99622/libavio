@@ -77,8 +77,8 @@ void GLWidget::start(void* parent)
     display.set_video_in(videoFilter.video_out());
     //display.set_video_in(videoDecoder.video_out());
     display.set_audio_in(audioDecoder.audio_out());
-    display.caller = parent;
-    display.videoCallback = std::function(GLWidget::videoCallback);
+    display.renderCaller = parent;
+    display.renderCallback = std::function(GLWidget::videoCallback);
 
     process.add_reader(reader);
     process.add_decoder(videoDecoder);
@@ -86,6 +86,7 @@ void GLWidget::start(void* parent)
     process.add_decoder(audioDecoder);
     process.add_display(display);
 
+    process.running = true;
     process.run();
 
 }

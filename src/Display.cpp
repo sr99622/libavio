@@ -191,12 +191,16 @@ bool Display::display()
 
     while (true)
     {
+        if (!P->running) {
+            playing = false;
+            break;
+        }
+
         std::vector<SDL_Event> events;
         PlayState state = getEvents(&events);
 
         if (state == PlayState::QUIT) {
-            //reader->request_break = true;
-            playing = false;
+            reader->request_break = true;
             break;
         }
         else if (state == PlayState::PAUSE) {
@@ -228,8 +232,9 @@ bool Display::display()
                 }
                 
             }
-            if (videoCallback) {
-                videoCallback(caller, f);
+
+            if (renderCallback) {
+                //renderCallback(renderCaller, f);
             }
             else {
                 videoPresentation();
@@ -259,8 +264,8 @@ bool Display::display()
 
             SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
 
-            if (videoCallback) {
-                videoCallback(caller, f);
+            if (renderCallback) {
+                renderCallback(renderCaller, f);
             }
             else {
                 ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
@@ -268,9 +273,15 @@ bool Display::display()
             }
             reader->last_video_pts = f.m_frame->pts;
 
+            if (progressCallback) {
+                if (P->reader->duration()) {
+                    float pct = (float)f.m_rts / (float)P->reader->duration();
+                    progressCallback(progressCaller, pct);
+                }
+            }
+
             if (vfq_out) {
-                if (vfq_out->size() == 0)
-                    vfq_out->push(f);
+                vfq_out->push_move(f);
             }
             else {
                 f.invalidate();
@@ -418,11 +429,10 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
             d->rtClock.sync(f.m_rts); 
             d->reader->seek_found_pts = AV_NOPTS_VALUE;
 
-            if (d->afq_out) 
-                d->afq_out->push(f);
+            if (d->afq_out)
+                d->afq_out->push_move(f);
             else
                 f.invalidate();
-
 
         }
     }
@@ -452,6 +462,11 @@ void Display::toggleRecord()
     recording = !recording;
 
     if (P->writer) {
+        //if (prepend_recent_write && recording) {
+        //    for (int i = 0; i < recent.size() - 1; i++)
+        //        vfq_out->push(recent[i]);
+        //}
+
         P->writer->enabled = recording;
     }
     else if (reader->pipe_out) {
