@@ -12,7 +12,7 @@ sudo apt install libavcodec-dev
 sudp apt install libavdevice-dev
 sudo apt install libsdl2-dev
 
-get clone https://github.com/sr99622/libavio.git
+get clone --recurse-submodules https://github.com/sr99622/libavio.git
 cd libavio
 mkdir build
 cd build
