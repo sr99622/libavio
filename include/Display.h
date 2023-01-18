@@ -72,17 +72,16 @@ public:
     Frame paused_frame;
     bool isPaused();
     void togglePause();
-    //bool single_step = false;
-    //bool reverse_step = false;
-    //int recent_idx = -1;
 
     bool recording = false;
     void toggleRecord();
 
     Frame f;
 
-    void* caller;
-    std::function<void(void*, const Frame&)> videoCallback;
+    void* renderCaller;
+    std::function<void(void*, const Frame&)> renderCallback;
+    void* progressCaller;
+    std::function<void(void*, float)> progressCallback;
 
     std::string audioDeviceStatus() const;
     const char* sdlAudioFormatName(SDL_AudioFormat format) const;
@@ -136,11 +135,6 @@ public:
     uint64_t duration;
 
     std::chrono::steady_clock clock;
-
-    //std::deque<Frame> recent;
-    //bool request_recent_clear = false;
-    //int recent_q_size = 200;
-    //bool prepend_recent_write = false;
 
     ExceptionHandler ex;
 

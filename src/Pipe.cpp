@@ -110,6 +110,8 @@ bool Pipe::open(const std::string& filename)
 
         //if (P->glWidget)
         //    P->glWidget->emit openWriterFailed(str.str());
+        if (P->openWriterFailedCallback)
+            P->openWriterFailedCallback(P, str.str());
 
         return false;
     }

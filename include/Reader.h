@@ -116,7 +116,6 @@ public:
 	bool isPaused();
 	void clear_decoders();
 	void signal_eof();
-	void free_pkt(AVPacket* pkt);
 
 	ExceptionHandler ex;
 };

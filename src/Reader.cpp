@@ -102,6 +102,8 @@ AVPacket* Reader::read()
                 //if (P->glWidget) {
                 //    P->glWidget->emit cameraTimeout();
                 //}
+                if (P->cameraTimeoutCallback)
+                    P->cameraTimeoutCallback(P);
             }
         }
 
@@ -401,13 +403,9 @@ void Reader::signal_eof()
 {
     //if (P->glWidget)
     //    P->glWidget->running = false;
+    P->running = false;
 }
 
-
-void Reader::free_pkt(AVPacket* pkt)
-{
-    av_packet_free(&pkt);
-}
 /*
 std::string Reader::get_pipe_out_filename()
 {
