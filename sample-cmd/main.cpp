@@ -2,11 +2,16 @@
 
 int main(int argc, char** argv)
 {
-    std::cout << "hello world" << std::endl;
+    if (argc < 2) {
+        std::cout << "Usage: sample-cmd filename" << std::endl;
+        return 1;
+    }
+
+    std::cout << "playing file: " << argv[1] << std::endl;
 
     avio::Process process;
 
-    avio::Reader reader("/home/stephen/Videos/news.mp4");
+    avio::Reader reader(argv[1]);
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
 
