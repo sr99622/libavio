@@ -328,7 +328,6 @@ public:
     FRAME_Q_MAP frame_queues;
     std::vector<std::string> pkt_q_names;
     std::vector<std::string> frame_q_names;
-    std::map<std::string, std::string> display_q_names;
     std::vector<std::string> frame_q_drain_names;
     std::vector<std::string> pkt_q_drain_names;
     std::vector<std::string> merge_filenames;
