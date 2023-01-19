@@ -75,6 +75,14 @@ target_include_directories(avio PUBLIC
 if (BUILD_SAMPLE)
     find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
+    add_executable(sample-dbg
+        sample-dbg/main.cpp
+    )
+
+    target_link_libraries(sample-dbg
+        avio
+    )
+
     add_executable(sample-cmd
         sample-cmd/main.cpp
     )
