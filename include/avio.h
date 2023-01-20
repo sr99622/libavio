@@ -55,10 +55,20 @@ static void show_pkt(AVPacket* pkt)
     std::cout << str.str() << std::endl;
 }
 
-static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq) 
+//static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq) 
+static void read(Process* process) 
 {
-    if (reader->vpq_max_size > 0 && vpq) vpq->set_max_size(reader->vpq_max_size);
-    if (reader->apq_max_size > 0 && apq) apq->set_max_size(reader->apq_max_size);
+    Reader* reader = process->reader;
+    if (reader->has_video() && !reader->vpq_name.empty()) {
+        reader->vpq = process->pkt_queues[reader->vpq_name];
+        if (reader->vpq_max_size > 0)
+            reader->vpq->set_max_size(reader->vpq_max_size);
+    }
+    if (reader->has_audio() && !reader->apq_name.empty()) {
+        reader->apq = process->pkt_queues[reader->apq_name];
+        if (reader->apq_max_size > 0)
+            reader->apq->set_max_size(reader->apq_max_size);
+    }
 
     Pipe* pipe = nullptr;
     std::deque<AVPacket*> pkts;
@@ -72,9 +82,24 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
             if (!pkt)
                 break;
 
-            reader->running = true;
-            if (reader->request_break) {
-                reader->clear_stream_queues();
+            //reader->running = true;
+            //if (reader->request_break) {
+            //    reader->clear_stream_queues();
+            //    break;
+            //}
+
+            if (!process->running) {
+                process->clear_queues();
+                while (pkts.size() > 0) {
+                    AVPacket* jnk = pkts.front();
+                    pkts.pop_front();
+                    av_packet_free(&jnk);
+                }
+                av_packet_free(&pkt);
+                if (pipe) {
+                    pipe->close();
+                    delete pipe;
+                }
                 break;
             }
 
@@ -91,7 +116,7 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
                 if (tmp) {
                     av_packet_free(&pkt);
                     pkt = tmp;
-                    reader->clear_stream_queues();
+                    process->clear_queues();
                 }
                 else {
                     break;
@@ -156,28 +181,27 @@ static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq)
 
             if (pkt->stream_index == reader->video_stream_index) {
                 if (reader->show_video_pkts) show_pkt(pkt);
-                if (vpq)
-                    vpq->push(pkt);
+                if (reader->vpq)
+                    reader->vpq->push(pkt);
                 else
                     av_packet_free(&pkt);
             }
 
             else if (pkt->stream_index == reader->audio_stream_index) {
                 if (reader->show_audio_pkts) show_pkt(pkt);
-                if (apq)
-                    apq->push(pkt);
+                if (reader->apq)
+                    reader->apq->push(pkt);
                 else
                     av_packet_free(&pkt);
             }
         }
-        if (vpq) vpq->push(NULL);
-        if (apq) apq->push(NULL);
+        if (reader->vpq) reader->vpq->push(nullptr);
+        if (reader->apq) reader->apq->push(nullptr);
     }
-    catch (const QueueClosedException& e) {}
     catch (const Exception& e) { std::cout << " reader failed: " << e.what() << std::endl; }
 
-    reader->signal_eof();
-    reader->running = false;
+    //reader->signal_eof();
+    //reader->running = false;
 }
 
 static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* frame_q) 
@@ -191,7 +215,8 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
             decoder->decode(pkt);
             av_packet_free(&pkt);
         }
-        decoder->decode(NULL);
+        decoder->decode(nullptr);
+        decoder->flush();
         decoder->frame_q->push(Frame(nullptr));
     }
     catch (const QueueClosedException& e) { }
@@ -199,8 +224,8 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
         std::cout << str.str() << std::endl;
-        decoder->reader->exit_error_msg = str.str();
-        decoder->decode(NULL);
+        //decoder->reader->exit_error_msg = str.str();
+        decoder->decode(nullptr);
         decoder->frame_q->push(Frame(nullptr));
     }
 }

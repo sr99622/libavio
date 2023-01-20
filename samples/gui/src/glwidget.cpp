@@ -28,7 +28,7 @@ void GLWidget::paintEvent(QPaintEvent* event)
     painter.end();
 }
 
-void GLWidget::videoCallback(void* caller, const avio::Frame& frame)
+void GLWidget::renderCallback(void* caller, const avio::Frame& frame)
 {
     if (!frame.isValid()) {
         std::cout << "call recvd invalid frame" << std::endl;
@@ -45,17 +45,25 @@ void GLWidget::videoCallback(void* caller, const avio::Frame& frame)
         
 }
 
+void GLWidget::stop()
+{
+    std::cout << "GLWidget::stop" << std::endl;
+    if (process) process->running = false;
+}
+
 void GLWidget::play()
 {
     std::thread process_thread(start, this);
     process_thread.detach();
 }
 
-void GLWidget::start(void* parent)
+void GLWidget::start(void* widget)
 {
+    GLWidget* glWidget = (GLWidget*)widget;
     avio::Process process;
+    glWidget->process = &process;
 
-    avio::Reader reader("/home/stephen/Videos/news.mp4");
+    avio::Reader reader("/home/stephen/Videos/short.mp4");
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
 
@@ -77,8 +85,8 @@ void GLWidget::start(void* parent)
     display.set_video_in(videoFilter.video_out());
     //display.set_video_in(videoDecoder.video_out());
     display.set_audio_in(audioDecoder.audio_out());
-    display.renderCaller = parent;
-    display.renderCallback = std::function(GLWidget::videoCallback);
+    display.renderCaller = widget;
+    display.renderCallback = std::function(GLWidget::renderCallback);
 
     process.add_reader(reader);
     process.add_decoder(videoDecoder);
@@ -86,9 +94,9 @@ void GLWidget::start(void* parent)
     process.add_decoder(audioDecoder);
     process.add_display(display);
 
-    process.running = true;
+    //process.running = true;
     process.run();
-
+    glWidget->process = nullptr;
 }
 
 QSize GLWidget::sizeHint() const

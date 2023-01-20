@@ -15,11 +15,16 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-    QPushButton* btnTest;
+    QPushButton* btnPlay;
+    QPushButton* btnStop;
     GLWidget* glWidget;
 
+protected:
+    void closeEvent(QCloseEvent* event) override;
+
 public slots:
-    void onBtnTestClicked();
+    void onBtnPlayClicked();
+    void onBtnStopClicked();
 
 };
 

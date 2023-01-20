@@ -41,6 +41,31 @@ void Process::toggle_pipe_out(const std::string& filename)
     }
 }
 
+void Process::clear_queues()
+{
+    PKT_Q_MAP::iterator pkt_q;
+    for (pkt_q = pkt_queues.begin(); pkt_q != pkt_queues.end(); ++pkt_q) {
+        while (pkt_q->second->size() > 0) {
+            AVPacket* tmp = pkt_q->second->pop();
+            av_packet_free(&tmp);
+        }
+    }
+    FRAME_Q_MAP::iterator frame_q;
+    for (frame_q = frame_queues.begin(); frame_q != frame_queues.end(); ++frame_q) {
+        while (frame_q->second->size() > 0) {
+            Frame f;
+            frame_q->second->pop(f);
+        }
+    }
+
+}
+
+void Process::clear_decoders()
+{
+    if (videoDecoder) videoDecoder->flush();
+    if (audioDecoder) audioDecoder->flush();
+}
+
 void Process::key_event(int keyCode)
 {
     SDL_Event event;
@@ -155,6 +180,8 @@ void Process::cleanup()
 
 void Process::run()
 {
+    running = true;
+    
     for (const std::string& name : pkt_q_names) {
         if (!name.empty()) {
             if (pkt_queues.find(name) == pkt_queues.end())
@@ -172,9 +199,10 @@ void Process::run()
     //if (assignFrameQueues) assignFrameQueues(this);
 
     if (reader) {
-        ops.push_back(new std::thread(read, reader,
-            reader->has_video() ? pkt_queues[reader->vpq_name] : nullptr, 
-            reader->has_audio() ? pkt_queues[reader->apq_name] : nullptr));
+        ops.push_back(new std::thread(read, this));
+        //ops.push_back(new std::thread(read, reader,
+        //    reader->has_video() ? pkt_queues[reader->vpq_name] : nullptr, 
+        //    reader->has_audio() ? pkt_queues[reader->apq_name] : nullptr));
     }
 
     if (videoDecoder) {
@@ -235,6 +263,7 @@ void Process::run()
 
         // reader shutdown routine if downstream module shuts down process
         // there is probably a better way to handle this situation
+        /*
         if (!reader->exit_error_msg.empty()) {
             int count = 0;
             std::cout << "reader attempting shutdown" << std::endl;
@@ -265,6 +294,7 @@ void Process::run()
             }
             throw Exception(reader->exit_error_msg);
         }
+        */
 
         if (writer) {
             while (!display->audio_eof)

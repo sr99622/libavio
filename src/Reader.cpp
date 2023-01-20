@@ -37,7 +37,7 @@ static int interrupt_callback(void *ctx)
     avio::Reader* reader = (avio::Reader*)ctx;
     time_t diff = time(NULL) - timeout_start;
 
-    if (diff > MAX_TIMEOUT || reader->request_break) {
+    if (diff > MAX_TIMEOUT /*|| reader->request_break*/) {
         return 1;
     }
     return 0;
@@ -82,8 +82,8 @@ Reader::~Reader()
 
 AVPacket* Reader::read()
 {
-    if (closed)
-        return NULL;
+    //if (closed)
+    //    return NULL;
 
     int ret = 0;
     AVPacket* pkt = av_packet_alloc();
@@ -108,7 +108,7 @@ AVPacket* Reader::read()
         }
 
         av_packet_free(&pkt);
-        closed = true;
+        //closed = true;
     }
 
     return pkt;
@@ -140,10 +140,10 @@ AVPacket* Reader::seek()
     return pkt;
 }
 
-bool Reader::isPaused()
-{
-    return ((Process*)process)->display->paused;
-}
+//bool Reader::isPaused()
+//{
+//    return ((Process*)process)->display->paused;
+//}
 
 void Reader::request_seek(float pct)
 {
@@ -375,6 +375,7 @@ int Reader::keyframe_cache_size()
     return result;
 }
 
+/*
 void Reader::clear_stream_queues()
 {
     PKT_Q_MAP::iterator pkt_q;
@@ -398,13 +399,14 @@ void Reader::clear_decoders()
     if (P->videoDecoder) P->videoDecoder->flush();
     if (P->audioDecoder) P->audioDecoder->flush();
 }
+*/
 
-void Reader::signal_eof()
-{
+//void Reader::signal_eof()
+//{
     //if (P->glWidget)
     //    P->glWidget->running = false;
-    P->running = false;
-}
+    //P->running = false;
+//}
 
 /*
 std::string Reader::get_pipe_out_filename()

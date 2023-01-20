@@ -53,7 +53,6 @@ public:
     Encoder*  videoEncoder = nullptr;
     Encoder*  audioEncoder = nullptr;
     Display*  display      = nullptr;
-    void*     widget       = nullptr;
 
     PKT_Q_MAP pkt_queues;
     FRAME_Q_MAP frame_queues;
@@ -93,6 +92,8 @@ public:
     void add_display(Display& display_in);
     void add_frame_drain(const std::string& frame_q_name);
     void add_packet_drain(const std::string& pkt_q_name);
+    void clear_queues();
+    void clear_decoders();
     void cleanup();
     void run();
 
