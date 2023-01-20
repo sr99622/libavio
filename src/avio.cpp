@@ -7,7 +7,7 @@ namespace py = pybind11;
 namespace avio
 {
 
-PYBIND11_MODULE(pyavio, m)
+PYBIND11_MODULE(avio, m)
 {
     m.doc() = "pybind11 av plugin";
     py::class_<Process>(m, "Process")

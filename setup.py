@@ -118,19 +118,19 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="pyavio",
+    name="avio",
     version="1.0.0",
     author="Stephen Rhodes",
     author_email="sr99622@gmail.com",
     description="A python media processing module",
     long_description="",
-    ext_modules=[CMakeExtension("pyavio")],
+    ext_modules=[CMakeExtension("avio")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
 #    install_requires=["ffmpeg", "pysdl2-dll"],
     extras_require={"test": ["pytest>=6.0"]},
     python_requires=">=3.6",
-#    packages=['pyavio'],
+#    packages=['avio'],
 #    package_data={'avio' : ['Roboto-Regular.ttf']},
 #    include_package_data = True,
 )
