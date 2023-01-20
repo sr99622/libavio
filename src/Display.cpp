@@ -140,6 +140,9 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
 
 void Display::videoPresentation()
 {
+    if (!f.isValid())
+        return;
+
     if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
         ex.ck(SDL_UpdateYUVTexture(texture, NULL,
             f.m_frame->data[0], f.m_frame->linesize[0],
@@ -191,18 +194,11 @@ bool Display::display()
 
     while (true)
     {
-        //if (!P->running) {
-        //    playing = false;
-        //    break;
-        //}
-
         std::vector<SDL_Event> events;
         PlayState state = getEvents(&events);
 
         if (state == PlayState::QUIT) {
-            //reader->request_break = true;
-            std::cout << "PlayState::QUIT" << std::endl;
-            break;
+            P->running = false;
         }
         else if (state == PlayState::PAUSE) {
             togglePause();
@@ -213,7 +209,7 @@ bool Display::display()
             f = paused_frame;
             bool flag_out = true;
             
-            while (reader->seeking()) {
+            while (reader->seeking() || state == PlayState::QUIT) {
                 if (afq_in) {
                     while (afq_in->size() > 0)
                         afq_in->pop();
@@ -227,11 +223,10 @@ bool Display::display()
                     }
                 }
                 else {
-                    std::cout << "Display received invalid frame during seek" << std::endl;
+                    std::cout << "Display received eof" << std::endl;
                     playing = false;
                     break;
                 }
-                
             }
 
             if (renderCallback) {
@@ -240,6 +235,7 @@ bool Display::display()
             else {
                 videoPresentation();
             }
+
             SDL_Delay(SDL_EVENT_LOOP_WAIT);
 
             if (flag_out)

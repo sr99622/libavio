@@ -110,16 +110,6 @@ public:
 	void set_video_out(const std::string& name) { vpq_name = std::string(name); }
 	void set_audio_out(const std::string& name) { apq_name = std::string(name); }
 
-	//bool request_break = false;
-	//bool running = false;
-	//std::string exit_error_msg;
-	//void signal_eof();
-	//bool closed = false;
-
-	//void clear_stream_queues();
-	//bool isPaused();
-	//void clear_decoders();
-
 	ExceptionHandler ex;
 };
 

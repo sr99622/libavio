@@ -37,7 +37,7 @@ static int interrupt_callback(void *ctx)
     avio::Reader* reader = (avio::Reader*)ctx;
     time_t diff = time(NULL) - timeout_start;
 
-    if (diff > MAX_TIMEOUT /*|| reader->request_break*/) {
+    if (diff > MAX_TIMEOUT) {
         return 1;
     }
     return 0;
@@ -82,9 +82,6 @@ Reader::~Reader()
 
 AVPacket* Reader::read()
 {
-    //if (closed)
-    //    return NULL;
-
     int ret = 0;
     AVPacket* pkt = av_packet_alloc();
 
@@ -99,16 +96,14 @@ AVPacket* Reader::read()
             ex.msg(e.what(), MsgPriority::CRITICAL, "Reader::read exception: ");
             if (ret == AVERROR_EXIT || ret == AVERROR(ETIMEDOUT)) {
                 std::cout << "Camera connection timed out"  << std::endl;
-                //if (P->glWidget) {
-                //    P->glWidget->emit cameraTimeout();
-                //}
+
                 if (P->cameraTimeoutCallback)
                     P->cameraTimeoutCallback(P);
+
             }
         }
 
         av_packet_free(&pkt);
-        //closed = true;
     }
 
     return pkt;
@@ -139,11 +134,6 @@ AVPacket* Reader::seek()
 
     return pkt;
 }
-
-//bool Reader::isPaused()
-//{
-//    return ((Process*)process)->display->paused;
-//}
 
 void Reader::request_seek(float pct)
 {
@@ -375,61 +365,6 @@ int Reader::keyframe_cache_size()
     return result;
 }
 
-/*
-void Reader::clear_stream_queues()
-{
-    PKT_Q_MAP::iterator pkt_q;
-    for (pkt_q = P->pkt_queues.begin(); pkt_q != P->pkt_queues.end(); ++pkt_q) {
-        while (pkt_q->second->size() > 0) {
-            AVPacket* tmp = pkt_q->second->pop();
-            av_packet_free(&tmp);
-        }
-    }
-    FRAME_Q_MAP::iterator frame_q;
-    for (frame_q = P->frame_queues.begin(); frame_q != P->frame_queues.end(); ++frame_q) {
-        while (frame_q->second->size() > 0) {
-            Frame f;
-            frame_q->second->pop(f);
-        }
-    }
-}
-
-void Reader::clear_decoders()
-{
-    if (P->videoDecoder) P->videoDecoder->flush();
-    if (P->audioDecoder) P->audioDecoder->flush();
-}
-*/
-
-//void Reader::signal_eof()
-//{
-    //if (P->glWidget)
-    //    P->glWidget->running = false;
-    //P->running = false;
-//}
-
-/*
-std::string Reader::get_pipe_out_filename()
-{
-    std::string filename;
-
-    if (pipe_out_filename.empty()) {
-        std::time_t t = std::time(nullptr);
-        std::tm tm = *std::localtime(&t);
-        std::stringstream str;
-        str << std::put_time(&tm, "%y%m%d%H%M%S");
-        //filename = str.str() + extension;
-    }
-    else {
-        filename = pipe_out_filename;
-    }
-
-    if (!pipe_out_dir.empty())
-        filename = pipe_out_dir + "/" + filename;
-
-    return filename;
-}
-*/
 
 }
 
