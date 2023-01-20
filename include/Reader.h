@@ -90,12 +90,14 @@ public:
 	AVFormatContext* fmt_ctx = NULL;
 	int video_stream_index = -1;
 	int audio_stream_index = -1;
-	bool closed = false;
 	int64_t last_video_pts = 0;
 	int64_t last_audio_pts = 0;
 
 	bool show_video_pkts = false;
 	bool show_audio_pkts = false;
+
+	Queue<AVPacket*>* vpq = nullptr;
+	Queue<AVPacket*>* apq = nullptr;
 
 	std::string vpq_name;
 	std::string apq_name;
@@ -108,14 +110,15 @@ public:
 	void set_video_out(const std::string& name) { vpq_name = std::string(name); }
 	void set_audio_out(const std::string& name) { apq_name = std::string(name); }
 
-	bool request_break = false;
-	bool running = false;
-	std::string exit_error_msg;
+	//bool request_break = false;
+	//bool running = false;
+	//std::string exit_error_msg;
+	//void signal_eof();
+	//bool closed = false;
 
-	void clear_stream_queues();
-	bool isPaused();
-	void clear_decoders();
-	void signal_eof();
+	//void clear_stream_queues();
+	//bool isPaused();
+	//void clear_decoders();
 
 	ExceptionHandler ex;
 };

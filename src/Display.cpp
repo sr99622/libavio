@@ -200,7 +200,8 @@ bool Display::display()
         PlayState state = getEvents(&events);
 
         if (state == PlayState::QUIT) {
-            reader->request_break = true;
+            //reader->request_break = true;
+            std::cout << "PlayState::QUIT" << std::endl;
             break;
         }
         else if (state == PlayState::PAUSE) {
@@ -412,7 +413,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     std::cout << "audio callback revcd null eof" << std::endl;
                     SDL_PauseAudioDevice(d->audioDeviceID, true);
                     if (!d->vfq_in) {
-                        SDL_PauseAudioDevice(d->audioDeviceID, true);
+                        //SDL_PauseAudioDevice(d->audioDeviceID, true);
                         len = -1;
                         d->audio_eof = true;
                         SDL_Event event;
