@@ -1,28 +1,33 @@
 # libavio
 
-Has dependency on FFMPEG and SDL2
-
-Use standard cmake procedure
-
-sample program has hard-coded file name
+Has dependency on Qt5, FFMPEG, Python and SDL2
 
 
 ```bash
 sudo apt install libavcodec-dev
 sudp apt install libavdevice-dev
 sudo apt install libsdl2-dev
+sudo apt install qtbase5-dev
 
 get clone --recurse-submodules https://github.com/sr99622/libavio.git
 cd libavio
 mkdir build
 cd build
-cmake -DBUILD_SAMPLE=ON ..
+cmake -DBUILD_SAMPLES=ON ..
 cmake --build . --config Release
-
 sudo cmake --install .
 ```
 
 Install FindAvio.cmake in your project CMAKE_MODULE_PATH to link
+
+To install avio python module
+```
+python3 setup.py install
+```
+To uninstall
+```
+pip uninstall avio
+```
 
 
 Copyright (c) 2022  Stephen Rhodes
