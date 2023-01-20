@@ -77,29 +77,29 @@ target_include_directories(libavio PUBLIC
 
 add_subdirectory(pybind11)
 
-pybind11_add_module(pyavio 
-                        src/avio.cpp
-                        src/Reader.cpp
-                        src/Exception.cpp
-                        src/Frame.cpp
-                        src/Decoder.cpp
-                        src/Filter.cpp
-                        src/Clock.cpp
-                        src/Display.cpp
-                        src/Encoder.cpp
-                        src/Writer.cpp
-                        src/Pipe.cpp
-                        src/Process.cpp
+pybind11_add_module(avio 
+    src/avio.cpp
+    src/Reader.cpp
+    src/Exception.cpp
+    src/Frame.cpp
+    src/Decoder.cpp
+    src/Filter.cpp
+    src/Clock.cpp
+    src/Display.cpp
+    src/Encoder.cpp
+    src/Writer.cpp
+    src/Pipe.cpp
+    src/Process.cpp
 )
                 
-target_link_libraries(pyavio PRIVATE 
-                        Python3::Python
-                        FFmpeg::FFmpeg
-                        SDL2::SDL2
+target_link_libraries(avio PRIVATE 
+    Python3::Python
+    FFmpeg::FFmpeg
+    SDL2::SDL2
 )
 
-target_include_directories(pyavio PUBLIC
-                    include
+target_include_directories(avio PUBLIC
+    include
 )
 
 if (BUILD_SAMPLE)
