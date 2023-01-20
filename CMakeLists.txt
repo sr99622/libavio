@@ -35,8 +35,9 @@ endif()
 
 find_package(FFmpeg REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package (Python3 COMPONENTS Interpreter Development NumPy)
 
-add_library(avio SHARED
+add_library(libavio SHARED
     src/Clock.cpp
     src/Decoder.cpp
     src/Display.cpp
@@ -45,31 +46,60 @@ add_library(avio SHARED
     src/Filter.cpp
     src/Frame.cpp
     src/Pipe.cpp
+    src/Process.cpp
     src/Reader.cpp
     src/Writer.cpp
 )
 
 if (WIN32)
-    target_link_libraries(avio PUBLIC
+    target_link_libraries(libavio PUBLIC
         FFmpeg::FFmpeg
         SDL2::SDL2
     )
 else()
-    target_link_libraries(avio PUBLIC
+    target_link_libraries(libavio PUBLIC
         FFmpeg::FFmpeg
         SDL2::SDL2
         pthread
     )
 endif()
 
-set_target_properties(avio PROPERTIES
+set_target_properties(libavio PROPERTIES
+    OUTPUT_NAME avio
     SOVERSION 1
 )
 
-target_include_directories(avio PUBLIC
+target_include_directories(libavio PUBLIC
     include
     ${FFMPEG_INCLUDE_DIRS}
     ${SDL2_INCLUDE_DIRS}
+)
+
+add_subdirectory(pybind11)
+
+pybind11_add_module(pyavio 
+                        src/avio.cpp
+                        src/Reader.cpp
+                        src/Exception.cpp
+                        src/Frame.cpp
+                        src/Decoder.cpp
+                        src/Filter.cpp
+                        src/Clock.cpp
+                        src/Display.cpp
+                        src/Encoder.cpp
+                        src/Writer.cpp
+                        src/Pipe.cpp
+                        src/Process.cpp
+)
+                
+target_link_libraries(pyavio PRIVATE 
+                        Python3::Python
+                        FFmpeg::FFmpeg
+                        SDL2::SDL2
+)
+
+target_include_directories(pyavio PUBLIC
+                    include
 )
 
 if (BUILD_SAMPLE)
@@ -80,7 +110,7 @@ if (BUILD_SAMPLE)
     )
 
     target_link_libraries(sample-dbg
-        avio
+        libavio
     )
 
     add_executable(sample-cmd
@@ -88,7 +118,7 @@ if (BUILD_SAMPLE)
     )
 
     target_link_libraries(sample-cmd PRIVATE
-        avio
+        libavio
     )
 
     set(CMAKE_AUTOMOC ON)
@@ -104,7 +134,7 @@ if (BUILD_SAMPLE)
 
     target_link_libraries(sample-gui PRIVATE
         Qt5::Widgets
-        avio
+        libavio
     )
 
     target_include_directories(sample-gui PUBLIC
