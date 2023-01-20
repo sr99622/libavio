@@ -1,6 +1,7 @@
 # libavio
 
-Has dependency on Qt5, FFMPEG, Python and SDL2
+Has dependency on FFMPEG, Python and SDL2
+GUI sample has dependency on Qt5
 
 
 ```bash
