@@ -64,8 +64,6 @@ public:
     void videoPresentation();
     PlayState getEvents(std::vector<SDL_Event>* events);
     bool display();
-    //void pin_osd(bool arg);
-    //void enable_status(bool arg);
     void snapshot();
     
     bool paused = false;

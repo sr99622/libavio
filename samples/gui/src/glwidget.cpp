@@ -94,7 +94,6 @@ void GLWidget::start(void* widget)
     process.add_decoder(audioDecoder);
     process.add_display(display);
 
-    //process.running = true;
     process.run();
     glWidget->process = nullptr;
 }

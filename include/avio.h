@@ -55,7 +55,6 @@ static void show_pkt(AVPacket* pkt)
     std::cout << str.str() << std::endl;
 }
 
-//static void read(Reader* reader, Queue<AVPacket*>* vpq, Queue<AVPacket*>* apq) 
 static void read(Process* process) 
 {
     Reader* reader = process->reader;
@@ -81,12 +80,6 @@ static void read(Process* process)
             AVPacket* pkt = reader->read();
             if (!pkt)
                 break;
-
-            //reader->running = true;
-            //if (reader->request_break) {
-            //    reader->clear_stream_queues();
-            //    break;
-            //}
 
             if (!process->running) {
                 process->clear_queues();
@@ -198,10 +191,10 @@ static void read(Process* process)
         if (reader->vpq) reader->vpq->push(nullptr);
         if (reader->apq) reader->apq->push(nullptr);
     }
-    catch (const Exception& e) { std::cout << " reader failed: " << e.what() << std::endl; }
-
-    //reader->signal_eof();
-    //reader->running = false;
+    catch (const QueueClosedException& e) { }
+    catch (const Exception& e) { 
+        std::cout << " reader failed: " << e.what() << std::endl; 
+    }
 }
 
 static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* frame_q) 

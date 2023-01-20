@@ -196,13 +196,8 @@ void Process::run()
         }
     }
 
-    //if (assignFrameQueues) assignFrameQueues(this);
-
     if (reader) {
         ops.push_back(new std::thread(read, this));
-        //ops.push_back(new std::thread(read, reader,
-        //    reader->has_video() ? pkt_queues[reader->vpq_name] : nullptr, 
-        //    reader->has_audio() ? pkt_queues[reader->apq_name] : nullptr));
     }
 
     if (videoDecoder) {
@@ -260,41 +255,6 @@ void Process::run()
         while (display->display()) {}
 
         std::cout << "display done" << std::endl;
-
-        // reader shutdown routine if downstream module shuts down process
-        // there is probably a better way to handle this situation
-        /*
-        if (!reader->exit_error_msg.empty()) {
-            int count = 0;
-            std::cout << "reader attempting shutdown" << std::endl;
-            reader->request_break = true;
-            while (reader->running) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                if (count++ > 1000) {
-                    if (!reader->apq_name.empty()) {
-                        Queue<AVPacket*>* q = pkt_queues[reader->apq_name];
-                        if (q) {
-                            while (q->size() > 0) {
-                                AVPacket* pkt = q->pop();
-                                av_packet_free(&pkt);
-                            }
-                        }
-                    }
-                    if (!reader->vpq_name.empty()) {
-                        Queue<AVPacket*>* q = pkt_queues[reader->vpq_name];
-                        if (q) {
-                            while (q->size() > 0) {
-                                AVPacket* pkt = q->pop();
-                                av_packet_free(&pkt);
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-            throw Exception(reader->exit_error_msg);
-        }
-        */
 
         if (writer) {
             while (!display->audio_eof)
