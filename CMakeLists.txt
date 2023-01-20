@@ -25,7 +25,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if(WIN32)
     add_compile_options("/EHsc")
@@ -79,17 +79,17 @@ add_subdirectory(pybind11)
 
 pybind11_add_module(avio 
     src/avio.cpp
-    src/Reader.cpp
-    src/Exception.cpp
-    src/Frame.cpp
-    src/Decoder.cpp
-    src/Filter.cpp
     src/Clock.cpp
+    src/Decoder.cpp
     src/Display.cpp
     src/Encoder.cpp
-    src/Writer.cpp
+    src/Exception.cpp
+    src/Filter.cpp
+    src/Frame.cpp
     src/Pipe.cpp
     src/Process.cpp
+    src/Reader.cpp
+    src/Writer.cpp
 )
                 
 target_link_libraries(avio PRIVATE 
@@ -102,43 +102,7 @@ target_include_directories(avio PUBLIC
     include
 )
 
-if (BUILD_SAMPLE)
-    find_package(Qt5 COMPONENTS Widgets REQUIRED)
-
-    add_executable(sample-dbg
-        sample-dbg/main.cpp
-    )
-
-    target_link_libraries(sample-dbg
-        libavio
-    )
-
-    add_executable(sample-cmd
-        sample-cmd/main.cpp
-    )
-
-    target_link_libraries(sample-cmd PRIVATE
-        libavio
-    )
-
-    set(CMAKE_AUTOMOC ON)
-    set(CMAKE_AUTORCC ON)
-
-    add_executable(sample-gui
-        sample-gui/src/glwidget.cpp
-        sample-gui/src/main.cpp
-        sample-gui/src/mainwindow.cpp
-        sample-gui/include/glwidget.h
-        sample-gui/include/mainwindow.h
-    )
-
-    target_link_libraries(sample-gui PRIVATE
-        Qt5::Widgets
-        libavio
-    )
-
-    target_include_directories(sample-gui PUBLIC
-        sample-gui/include
-    )
+if (BUILD_SAMPLES)
+    add_subdirectory(samples)
 endif()
 
