@@ -191,7 +191,7 @@ static void read(Process* process)
         if (reader->vpq) reader->vpq->push(nullptr);
         if (reader->apq) reader->apq->push(nullptr);
     }
-    catch (const QueueClosedException& e) { }
+    //catch (const QueueClosedException& e) { }
     catch (const Exception& e) { 
         std::cout << " reader failed: " << e.what() << std::endl; 
     }
@@ -212,7 +212,7 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
         decoder->flush();
         decoder->frame_q->push(Frame(nullptr));
     }
-    catch (const QueueClosedException& e) { }
+    //catch (const QueueClosedException& e) { }
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
@@ -237,7 +237,9 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
         }
         filter->frame_out_q->push_move(Frame(nullptr));
     }
-    catch (const QueueClosedException& e) {}
+    catch (const Exception& e) {
+        std::cout << "filter loop exception: " << e.what() << std::endl;
+    }
 }
 
 static void write(Writer* writer, Encoder* encoder)
@@ -287,8 +289,9 @@ static void write(Writer* writer, Encoder* encoder)
             }
         }
     }
-    catch (const QueueClosedException& e) 
+    catch (const Exception& e) 
     { 
+        std::cout << "writer loop exception: " << e.what() << std::endl;
         if (writer->opened) {
             if (encoder->opened) {
                 Frame tmp(nullptr);
@@ -302,27 +305,21 @@ static void write(Writer* writer, Encoder* encoder)
 
 static void pkt_drain(Queue<AVPacket*>* pkt_q) 
 {
-    try {
         while (AVPacket* pkt = pkt_q->pop())
         {
             av_packet_free(&pkt);
         }
-    }
-    catch (const QueueClosedException& e) {}
 }
 
 static void frame_drain(Queue<Frame>* frame_q) 
 {
     Frame f;
-    try {
         while (true) 
         {
             frame_q->pop(f);
             if (!f.isValid())
                 break;
         }
-    }
-    catch (const QueueClosedException& e) {}
 }
 
 

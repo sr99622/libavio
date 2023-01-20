@@ -148,7 +148,7 @@ void Process::cleanup()
                 AVPacket* pkt = q->second->pop();
                 av_packet_free(&pkt);
             }
-            q->second->close();
+            //q->second->close();
         }
     }
 
@@ -158,7 +158,7 @@ void Process::cleanup()
                 Frame f;
                 q->second->pop(f);
             }
-        q->second->close();
+        //q->second->close();
         }
     }
 
