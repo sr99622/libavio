@@ -285,11 +285,11 @@ bool Display::display()
             }
 
         }
-        catch (const QueueClosedException& e) {
-            playing = false;
-            ex.msg(e.what(), MsgPriority::INFO, "Display::display exception: ");
-            break;
-        }
+        //catch (const QueueClosedException& e) {
+        //    playing = false;
+        //    ex.msg(e.what(), MsgPriority::INFO, "Display::display exception: ");
+        //    break;
+        //}
         catch (const Exception& e) {
             ex.msg(e.what(), MsgPriority::CRITICAL, "Display::display exception: ");
             ex.msg(std::string("last frame description: ") + f.description());
@@ -433,7 +433,9 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
         }
     }
-    catch (const QueueClosedException& e) { }
+    catch (const Exception& e) { 
+        std::cout << "audio callback exception: " << e.what() << std::endl;
+    }
 
     free(temp);
 }
