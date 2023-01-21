@@ -3,9 +3,11 @@
 
 #include <QMainWindow>
 #include <QPushButton>
+#include <QSlider>
 
 #include "avio.h"
 #include "glwidget.h"
+#include "progress.h"
 
 class MainWindow : public QMainWindow
 {
@@ -15,8 +17,11 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
+    void setPlayButton();
+
     QPushButton* btnPlay;
     QPushButton* btnStop;
+    Progress* progress;
     GLWidget* glWidget;
 
 protected:
@@ -25,6 +30,9 @@ protected:
 public slots:
     void onBtnPlayClicked();
     void onBtnStopClicked();
+    void mediaPlayingStarted(qint64);
+    void mediaPlayingStopped();
+    void mediaProgress(float);
 
 };
 
