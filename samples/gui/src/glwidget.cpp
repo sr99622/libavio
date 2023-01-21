@@ -1,4 +1,5 @@
 #include <iostream>
+#include <SDL.h>
 #include <QPainter>
 #include "glwidget.h"
 
@@ -45,10 +46,24 @@ void GLWidget::renderCallback(void* caller, const avio::Frame& frame)
         
 }
 
+void GLWidget::progressCallback(void* caller, float pct)
+{
+    GLWidget* g = (GLWidget*)caller;
+    g->emit mediaProgress(pct);
+}
+
 void GLWidget::stop()
 {
     std::cout << "GLWidget::stop" << std::endl;
-    if (process) process->running = false;
+    if (process) {
+        process->running = false;
+        if (process->isPaused()) {
+            std::cout << "process paused" << std::endl;
+            SDL_Event event;
+            event.type = SDL_QUIT;
+            SDL_PushEvent(&event);
+        }
+    }
 }
 
 void GLWidget::play()
@@ -57,13 +72,19 @@ void GLWidget::play()
     process_thread.detach();
 }
 
+void GLWidget::seek(float arg)
+{
+    std::cout << "GLWidget::seek: " << arg << std::endl;
+    if (process) process->seek(arg);
+}
+
 void GLWidget::start(void* widget)
 {
     GLWidget* glWidget = (GLWidget*)widget;
     avio::Process process;
     glWidget->process = &process;
 
-    avio::Reader reader("/home/stephen/Videos/short.mp4");
+    avio::Reader reader("/home/stephen/Videos/news.mp4");
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
 
@@ -87,6 +108,8 @@ void GLWidget::start(void* widget)
     display.set_audio_in(audioDecoder.audio_out());
     display.renderCaller = widget;
     display.renderCallback = std::function(GLWidget::renderCallback);
+    display.progressCaller = widget;
+    display.progressCallback = std::function(GLWidget::progressCallback);
 
     process.add_reader(reader);
     process.add_decoder(videoDecoder);
@@ -94,8 +117,10 @@ void GLWidget::start(void* widget)
     process.add_decoder(audioDecoder);
     process.add_display(display);
 
+    glWidget->emit mediaPlayingStarted(reader.duration());
     process.run();
     glWidget->process = nullptr;
+    glWidget->emit mediaPlayingStopped();
 }
 
 QSize GLWidget::sizeHint() const

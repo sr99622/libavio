@@ -56,8 +56,10 @@ add_executable(gui
     gui/src/glwidget.cpp
     gui/src/main.cpp
     gui/src/mainwindow.cpp
+    gui/src/progress.cpp
     gui/include/glwidget.h
     gui/include/mainwindow.h
+    gui/include/progress.h
 )
 
 target_link_libraries(gui PRIVATE

@@ -142,6 +142,8 @@ void Process::add_packet_drain(const std::string& pkt_q_name)
 
 void Process::cleanup()
 {
+    /*
+    std::cout << "cleanup start" << std::endl;
     for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
         if (q->second) {
             while (q->second->size() > 0) {
@@ -152,6 +154,7 @@ void Process::cleanup()
         }
     }
 
+    std::cout << "cleanup 1" << std::endl;
     for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
         if (q->second) {
             while (q->second->size() > 0) {
@@ -161,21 +164,26 @@ void Process::cleanup()
         //q->second->close();
         }
     }
+    */
 
+    std::cout << "cleanup 2" << std::endl;
     for (int i = 0; i < ops.size(); i++) {
         ops[i]->join();
         delete ops[i];
     }
 
+    std::cout << "cleanup 3" << std::endl;
     for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
         if (q->second)
             delete q->second;
     }
 
+    std::cout << "cleanup 4" << std::endl;
     for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
         if (q->second)
             delete q->second;
     }
+    std::cout << "cleanup finish" << std::endl;
 }
 
 void Process::run()

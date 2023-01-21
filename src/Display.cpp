@@ -271,8 +271,8 @@ bool Display::display()
             reader->last_video_pts = f.m_frame->pts;
 
             if (progressCallback) {
-                if (P->reader->duration()) {
-                    float pct = (float)f.m_rts / (float)P->reader->duration();
+                if (reader->duration()) {
+                    float pct = (float)f.m_rts / (float)reader->duration();
                     progressCallback(progressCaller, pct);
                 }
             }
