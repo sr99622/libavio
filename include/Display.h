@@ -33,8 +33,6 @@
 #include "Decoder.h"
 #include "Filter.h"
 #include "Reader.h"
-#include "Writer.h"
-#include "Encoder.h"
 
 #define SDL_EVENT_LOOP_WAIT 10
 

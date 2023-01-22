@@ -41,14 +41,12 @@ add_library(libavio SHARED
     src/Clock.cpp
     src/Decoder.cpp
     src/Display.cpp
-    src/Encoder.cpp
     src/Exception.cpp
     src/Filter.cpp
     src/Frame.cpp
     src/Pipe.cpp
     src/Process.cpp
     src/Reader.cpp
-    src/Writer.cpp
 )
 
 if (WIN32)
@@ -82,14 +80,12 @@ pybind11_add_module(avio
     src/Clock.cpp
     src/Decoder.cpp
     src/Display.cpp
-    src/Encoder.cpp
     src/Exception.cpp
     src/Filter.cpp
     src/Frame.cpp
     src/Pipe.cpp
     src/Process.cpp
     src/Reader.cpp
-    src/Writer.cpp
 )
                 
 target_link_libraries(avio PRIVATE 

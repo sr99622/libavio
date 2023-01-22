@@ -16,15 +16,15 @@ PYBIND11_MODULE(avio, m)
         .def("add_decoder", &Process::add_decoder)
         .def("add_filter", &Process::add_filter)
         .def("add_display", &Process::add_display)
-        .def("add_encoder", &Process::add_encoder)
+        .def("run", &Process::run);
+//        .def("add_encoder", &Process::add_encoder)
 //        .def("set_python", &Process::set_python)
 //        .def("set_python_init_arg", &Process::set_python_init_arg)
 //        .def("merge", &Process::merge)
 //        .def("trim", &Process::trim)
-        .def("run", &Process::run)
-        .def("add_frame_drain", &Process::add_frame_drain)
-        .def("add_packet_drain", &Process::add_packet_drain)
-        .def_readwrite("merge_filenames", &Process::merge_filenames);
+//        .def("add_frame_drain", &Process::add_frame_drain)
+//        .def("add_packet_drain", &Process::add_packet_drain)
+//        .def_readwrite("merge_filenames", &Process::merge_filenames);
     py::class_<Reader>(m, "Reader")
         .def(py::init<const char*>())
         .def("start_time", &Reader::start_time)
@@ -148,6 +148,9 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("height", &Display::height)
         .def_readwrite("pix_fmt", &Display::pix_fmt)
         .def_readwrite("fullscreen", &Display::fullscreen);
+    py::class_<Pipe>(m, "Pipe")
+        .def(py::init<Reader&>());
+/*
     py::class_<Writer>(m, "Writer")
         .def(py::init<const std::string&>())
         .def_readwrite("enabled", &Writer::enabled)
@@ -155,8 +158,6 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("filename", &Writer::filename)
         .def_readwrite("show_video_pkts", &Writer::show_video_pkts)
         .def_readwrite("show_audio_pkts", &Writer::show_audio_pkts);
-    py::class_<Pipe>(m, "Pipe")
-        .def(py::init<Reader&>());
     py::class_<Encoder>(m, "Encoder")
         .def(py::init<Writer&, AVMediaType>())
         .def("video_in", &Encoder::video_in)
@@ -192,6 +193,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("frame_q_max_size", &Encoder::frame_q_max_size)
         .def_readwrite("pkt_q_name", &Encoder::pkt_q_name)
         .def_readwrite("frame_q_name", &Encoder::frame_q_name);
+*/
     py::class_<AVRational>(m, "AVRational")
         .def(py::init<>())
         .def_readwrite("num", &AVRational::num)

@@ -24,8 +24,6 @@
 #include "Queue.h"
 #include "Reader.h"
 #include "Decoder.h"
-#include "Encoder.h"
-#include "Writer.h"
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
@@ -240,86 +238,6 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
     catch (const Exception& e) {
         std::cout << "filter loop exception: " << e.what() << std::endl;
     }
-}
-
-static void write(Writer* writer, Encoder* encoder)
-{
-    try {
-
-        Frame f;
-        while (true) 
-        {
-            encoder->frame_q->pop(f);
-            if (encoder->show_frames) std::cout << f.description() << std::endl;
-            if (writer->enabled) {
-
-                if (!encoder->opened)
-                    encoder->init();
-
-                if (!writer->opened) {
-                    std::string filename;
-                    if (!writer->write_dir.empty())
-                        filename = writer->write_dir + "/";
-
-                    if (writer->filename.empty()) {
-                        std::time_t t = std::time(nullptr);
-                        std::tm tm = *std::localtime(&t);
-                        std::stringstream str;
-                        str << std::put_time(&tm, "%y%m%d%H%M%S");
-                        filename += str.str() + "." + writer->m_format;
-                    }
-                    else {
-                        filename += writer->filename;
-                    }
-                    writer->open(filename);
-                }
-
-                if (writer->opened && encoder->opened) encoder->encode(f);
-            }
-            else {
-
-                if (writer->opened) {
-                    if (encoder->opened) {
-                        Frame tmp(nullptr);
-                        encoder->encode(tmp);
-                        encoder->close();
-                    }
-                    writer->close();
-                }
-            }
-        }
-    }
-    catch (const Exception& e) 
-    { 
-        std::cout << "writer loop exception: " << e.what() << std::endl;
-        if (writer->opened) {
-            if (encoder->opened) {
-                Frame tmp(nullptr);
-                encoder->encode(tmp);
-                encoder->close();
-            }
-            writer->close();
-        }
-    }
-}
-
-static void pkt_drain(Queue<AVPacket*>* pkt_q) 
-{
-        while (AVPacket* pkt = pkt_q->pop())
-        {
-            av_packet_free(&pkt);
-        }
-}
-
-static void frame_drain(Queue<Frame>* frame_q) 
-{
-    Frame f;
-        while (true) 
-        {
-            frame_q->pop(f);
-            if (!f.isValid())
-                break;
-        }
 }
 
 
