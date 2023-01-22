@@ -10,7 +10,7 @@ sudp apt install libavdevice-dev
 sudo apt install libsdl2-dev
 sudo apt install qtbase5-dev
 
-get clone --recurse-submodules https://github.com/sr99622/libavio.git
+git clone --recurse-submodules https://github.com/sr99622/libavio.git
 cd libavio
 mkdir build
 cd build
