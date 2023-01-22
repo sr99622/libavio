@@ -453,22 +453,22 @@ void Display::togglePause()
 
 void Display::toggleRecord()
 {
-    if (!P->writer && !reader->pipe_out) {
+    if (!reader->pipe_out) {
         std::cout << "Error: no writer specified" << std::endl;
         return;
     }
 
     recording = !recording;
 
-    if (P->writer) {
-        //if (prepend_recent_write && recording) {
-        //    for (int i = 0; i < recent.size() - 1; i++)
-        //        vfq_out->push(recent[i]);
-        //}
-
-        P->writer->enabled = recording;
-    }
-    else if (reader->pipe_out) {
+    //if (P->writer) {
+    //    //if (prepend_recent_write && recording) {
+    //    //    for (int i = 0; i < recent.size() - 1; i++)
+    //    //        vfq_out->push(recent[i]);
+    //    //}
+    //
+    //    P->writer->enabled = recording;
+    //}
+    if (reader->pipe_out) {
         reader->request_pipe_write = recording;
     }
 

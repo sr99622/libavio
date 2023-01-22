@@ -24,8 +24,6 @@
 #include "Queue.h"
 #include "Reader.h"
 #include "Decoder.h"
-#include "Encoder.h"
-#include "Writer.h"
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
@@ -49,18 +47,12 @@ public:
     Decoder*  audioDecoder = nullptr;
     Filter*   videoFilter  = nullptr;
     Filter*   audioFilter  = nullptr;
-    Writer*   writer       = nullptr;
-    Encoder*  videoEncoder = nullptr;
-    Encoder*  audioEncoder = nullptr;
     Display*  display      = nullptr;
 
     PKT_Q_MAP pkt_queues;
     FRAME_Q_MAP frame_queues;
     std::vector<std::string> pkt_q_names;
     std::vector<std::string> frame_q_names;
-    std::vector<std::string> frame_q_drain_names;
-    std::vector<std::string> pkt_q_drain_names;
-    std::vector<std::string> merge_filenames;
     
     int interleaved_q_size = 0;
     std::string interleaved_q_name;
@@ -88,10 +80,7 @@ public:
     void add_reader(Reader& reader_in);
     void add_decoder(Decoder& decoder_in);
     void add_filter(Filter& filter_in);
-    void add_encoder(Encoder& encoder_in);
     void add_display(Display& display_in);
-    void add_frame_drain(const std::string& frame_q_name);
-    void add_packet_drain(const std::string& pkt_q_name);
     void clear_queues();
     void clear_decoders();
     void cleanup();
