@@ -189,20 +189,38 @@ static void read(Process* process)
         if (reader->vpq) reader->vpq->push(nullptr);
         if (reader->apq) reader->apq->push(nullptr);
     }
-    //catch (const QueueClosedException& e) { }
     catch (const Exception& e) { 
         std::cout << " reader failed: " << e.what() << std::endl; 
     }
 }
 
-static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* frame_q) 
+static void decode(Process* process, AVMediaType mediaType) 
 {
-    decoder->frame_q = frame_q;
-    decoder->pkt_q = pkt_q;
+
+    Decoder* decoder = nullptr;
+    switch (mediaType) {
+        case AVMEDIA_TYPE_VIDEO:
+            decoder = process->videoDecoder;
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            decoder = process->audioDecoder;
+            break;
+    }
+
+    if (!decoder) {
+        std::cout << "no decoder in decode loop" << std::endl; 
+    }
+
+    decoder->frame_q = process->frame_queues[decoder->frame_q_name];
+    decoder->pkt_q = process->pkt_queues[decoder->pkt_q_name];
 
     try {
-        while (AVPacket* pkt = pkt_q->pop())
+        while (true)
         {
+            AVPacket* pkt = decoder->pkt_q->pop();
+            if (!pkt)
+                break;
+
             decoder->decode(pkt);
             av_packet_free(&pkt);
         }
@@ -210,12 +228,10 @@ static void decode(Decoder* decoder, Queue<AVPacket*>* pkt_q, Queue<Frame>* fram
         decoder->flush();
         decoder->frame_q->push(Frame(nullptr));
     }
-    //catch (const QueueClosedException& e) { }
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
         std::cout << str.str() << std::endl;
-        //decoder->reader->exit_error_msg = str.str();
         decoder->decode(nullptr);
         decoder->frame_q->push(Frame(nullptr));
     }

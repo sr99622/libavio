@@ -161,8 +161,7 @@ void Process::run()
     }
 
     if (videoDecoder) {
-        ops.push_back(new std::thread(decode, videoDecoder,
-            pkt_queues[videoDecoder->pkt_q_name], frame_queues[videoDecoder->frame_q_name]));
+        ops.push_back(new std::thread(decode, this, AVMEDIA_TYPE_VIDEO));
     }
 
     if (videoFilter) {
@@ -171,8 +170,7 @@ void Process::run()
     }
 
     if (audioDecoder) {
-        ops.push_back(new std::thread(decode, audioDecoder,
-            pkt_queues[audioDecoder->pkt_q_name], frame_queues[audioDecoder->frame_q_name]));
+        ops.push_back(new std::thread(decode, this, AVMEDIA_TYPE_AUDIO));
     }
 
     if (audioFilter) {
