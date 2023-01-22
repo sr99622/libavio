@@ -44,6 +44,7 @@ add_library(libavio SHARED
     src/Exception.cpp
     src/Filter.cpp
     src/Frame.cpp
+    src/Packet.cpp
     src/Pipe.cpp
     src/Process.cpp
     src/Reader.cpp
@@ -83,6 +84,7 @@ pybind11_add_module(avio
     src/Exception.cpp
     src/Filter.cpp
     src/Frame.cpp
+    src/Packet.cpp
     src/Pipe.cpp
     src/Process.cpp
     src/Reader.cpp
