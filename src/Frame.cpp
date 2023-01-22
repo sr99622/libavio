@@ -29,32 +29,33 @@ Frame::Frame() :
 
 }
 
-Frame::Frame(const Frame& other) :
-	m_rts(other.m_rts),
-	m_frame(copyFrame(other.m_frame))
-{
-
-}
-
-Frame::Frame(Frame&& other) noexcept :
-	m_rts(other.m_rts)
+Frame::Frame(const Frame& other)
 {
 	m_rts = other.m_rts;
-	m_frame = other.m_frame;
-	other.m_frame = nullptr;
+	if (m_frame) av_frame_free(&m_frame);
+	m_frame = copyFrame(other.m_frame);
 }
 
 Frame& Frame::operator=(const Frame& other)
 {
 	m_rts = other.m_rts;
-	av_frame_free(&m_frame);
+	if (m_frame) av_frame_free(&m_frame);
 	m_frame = copyFrame(other.m_frame);
 	return *this;
+}
+
+Frame::Frame(Frame&& other) noexcept
+{
+	m_rts = other.m_rts;
+	if (m_frame) av_frame_free(&m_frame);
+	m_frame = other.m_frame;
+	other.m_frame = nullptr;
 }
 
 Frame& Frame::operator=(Frame&& other) noexcept
 {
 	m_rts = other.m_rts;
+	if (m_frame) av_frame_free(&m_frame);
 	m_frame = other.m_frame;
 	other.m_frame = nullptr;
 
@@ -105,12 +106,12 @@ Frame::Frame(int width, int height, AVPixelFormat pix_fmt)
 
 Frame::~Frame()
 {
-	av_frame_free(&m_frame);
+	if (m_frame) av_frame_free(&m_frame);
 }
 
 void Frame::invalidate()
 {
-	av_frame_free(&m_frame);
+	if (m_frame) av_frame_free(&m_frame);
 	m_frame = nullptr;
 	m_rts = 0;
 }

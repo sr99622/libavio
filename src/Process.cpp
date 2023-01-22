@@ -53,8 +53,8 @@ void Process::clear_queues()
     FRAME_Q_MAP::iterator frame_q;
     for (frame_q = frame_queues.begin(); frame_q != frame_queues.end(); ++frame_q) {
         while (frame_q->second->size() > 0) {
-            Frame f;
-            frame_q->second->pop(f);
+            //Frame f;
+            frame_q->second->pop();
         }
     }
 
