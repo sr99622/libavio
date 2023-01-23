@@ -52,10 +52,10 @@ public:
 	T peek();
 	int size();
 	void close();
+	void clear();
 	bool full() { return m_size == m_max_size; }
 	bool empty() { return m_front == -1; }
 	bool closed() { return m_closed; }
-	void clear();
 	void set_max_size(int arg);
 
 private:
@@ -63,7 +63,7 @@ private:
 	int m_max_size;
 	int m_front = -1;
 	int m_rear = -1;
-	std::mutex n_mutex;
+	std::mutex m_mutex;
 	std::condition_variable m_cond_push, m_cond_pop;
 	bool m_closed = false;
 	int m_size = 0;
@@ -79,7 +79,7 @@ Queue<T>::Queue(size_t max_size) :	m_max_size(max_size)
 template <typename T>
 void Queue<T>::clear()
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (!empty()) {
 		T arg = std::move(m_data[m_front]);
@@ -102,7 +102,7 @@ void Queue<T>::set_max_size(int arg)
 template <typename T>
 void Queue<T>::push(T const& element)
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (full()) {
 		if (m_closed) break;
@@ -125,7 +125,7 @@ void Queue<T>::push(T const& element)
 template <typename T>
 void Queue<T>::push_move(T element)
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (full()) {
 		if (m_closed) break;
@@ -154,7 +154,7 @@ void Queue<T>::push_move(T element)
 template <typename T>
 T Queue<T>::pop()
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (empty()) {
 		if (m_closed) break;
@@ -176,7 +176,7 @@ T Queue<T>::pop()
 template <typename T>
 void Queue<T>::pop(T& arg)
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (empty()) {
 		if (m_closed) break;
@@ -197,7 +197,7 @@ void Queue<T>::pop(T& arg)
 template <typename T>
 void Queue<T>::pop_move(T& arg)
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (empty()) {
 		if (m_closed) break;
@@ -218,7 +218,7 @@ void Queue<T>::pop_move(T& arg)
 template <typename T>
 T Queue<T>::peek()
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	while (empty()) {
 		if (m_closed) break;
@@ -234,14 +234,14 @@ T Queue<T>::peek()
 template <typename T>
 int Queue<T>::size()
 {
-	std::lock_guard<std::mutex> lock(n_mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_size;
 }
 
 template <typename T>
 void Queue<T>::close()
 {
-	std::unique_lock<std::mutex> lock(n_mutex);
+	std::unique_lock<std::mutex> lock(m_mutex);
 	m_closed = true;
 	m_cond_push.notify_all();
 	m_cond_pop.notify_all();

@@ -51,7 +51,6 @@ void Process::clear_queues()
     for (frame_q = frame_queues.begin(); frame_q != frame_queues.end(); ++frame_q) {
         frame_q->second->clear();
     }
-
 }
 
 void Process::clear_decoders()

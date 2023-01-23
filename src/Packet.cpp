@@ -60,6 +60,7 @@ Packet& Packet::operator=(Packet&& other) noexcept
 std::string Packet::description() const
 {
     std::stringstream str;
+    
     if (isValid()) {
     str << " index: " << m_pkt->stream_index
         << " flags: " << m_pkt->flags
@@ -67,7 +68,6 @@ std::string Packet::description() const
         << " dts: " << m_pkt->dts
         << " size: " << m_pkt->size
         << " duration: " << m_pkt->duration;
-
     }
     else {
         str << "INVALID PKT" << std::endl;

@@ -210,11 +210,7 @@ bool Display::display()
             bool flag_out = true;
             
             while (reader->seeking() || state == PlayState::QUIT) {
-                if (afq_in) {
-                    while (afq_in->size() > 0)
-                        afq_in->pop();
-                }
-                
+                if (afq_in) afq_in->clear();
                 if (vfq_in->size() > 0) vfq_in->pop_move(f);
                 if (f.isValid()) {
                     if (f.m_frame->pts == reader->seek_found_pts) {
@@ -229,17 +225,15 @@ bool Display::display()
                 }
             }
 
-            if (renderCallback) {
-                //renderCallback(renderCaller, f);
-            }
-            else {
+            if (flag_out)
+                break;
+
+            if (!renderCallback) {
                 videoPresentation();
             }
 
             SDL_Delay(SDL_EVENT_LOOP_WAIT);
 
-            if (flag_out)
-                break;
         }
 
         try 
