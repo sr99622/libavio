@@ -45,15 +45,11 @@ void Process::clear_queues()
 {
     PKT_Q_MAP::iterator pkt_q;
     for (pkt_q = pkt_queues.begin(); pkt_q != pkt_queues.end(); ++pkt_q) {
-        while (pkt_q->second->size() > 0) {
-            pkt_q->second->pop();
-        }
+        pkt_q->second->clear();
     }
     FRAME_Q_MAP::iterator frame_q;
     for (frame_q = frame_queues.begin(); frame_q != frame_queues.end(); ++frame_q) {
-        while (frame_q->second->size() > 0) {
-            frame_q->second->pop();
-        }
+        frame_q->second->clear();
     }
 
 }
