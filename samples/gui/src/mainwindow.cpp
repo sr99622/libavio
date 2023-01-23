@@ -13,6 +13,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     btnStop = new QPushButton("Stop");
     connect(btnStop, SIGNAL(clicked()), this, SLOT(onBtnStopClicked()));
 
+    btnRecord = new QPushButton("Record");
+    connect(btnRecord, SIGNAL(clicked()), this, SLOT(onBtnRecordClicked()));
+    btnRecord->setEnabled(false);
+
     progress = new Progress(this);
 
     glWidget = new GLWidget();
@@ -25,6 +29,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     QGridLayout* lytMain = new QGridLayout(pnlMain);
     lytMain->addWidget(btnPlay,     0, 1, 1, 1, Qt::AlignCenter);
     lytMain->addWidget(btnStop,     1, 1, 1, 1, Qt::AlignCenter);
+    lytMain->addWidget(btnRecord,   2, 1, 1, 1, Qt::AlignCenter);
     lytMain->addWidget(glWidget,    0, 0, 4, 1);
     lytMain->addWidget(progress,    4, 0, 1, 1);
     lytMain->setColumnStretch(0, 10);
@@ -51,6 +56,23 @@ void MainWindow::setPlayButton()
     }
 }
 
+void MainWindow::setRecordButton()
+{
+    if (glWidget->process) {
+        if (glWidget->process->isPiping()) {
+            btnRecord->setText("=-=-=");
+        }
+        else {
+            btnRecord->setText("Record");
+        }
+        btnRecord->setEnabled(true);
+    }
+    else {
+        btnRecord->setText("Record");
+        btnRecord->setEnabled(false);
+    }
+}
+
 void MainWindow::onBtnPlayClicked()
 {
     std::cout << "play" << std::endl;
@@ -68,6 +90,15 @@ void MainWindow::onBtnStopClicked()
     std::cout << "stop" << std::endl;
     glWidget->stop();
     setPlayButton();
+    setRecordButton();
+}
+
+void MainWindow::onBtnRecordClicked()
+{
+    std::cout << "record" << std::endl;
+    if (glWidget->process)
+        glWidget->process->toggle_pipe_out("test.webm");
+    setRecordButton();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)
@@ -83,6 +114,7 @@ void MainWindow::mediaPlayingStarted(qint64 duration)
     std::cout << "MainWindow::mediaPlayingStarted" << std::endl;
     progress->setDuration(duration);
     setPlayButton();
+    setRecordButton();
 }
 
 void MainWindow::mediaPlayingStopped()
@@ -90,6 +122,7 @@ void MainWindow::mediaPlayingStopped()
     std::cout << "MainWindow::mediaPlayingStopped" << std::endl;
     progress->setProgress(0);
     setPlayButton();
+    setRecordButton();
 }
 
 void MainWindow::mediaProgress(float arg)

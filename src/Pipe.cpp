@@ -121,9 +121,11 @@ bool Pipe::open(const std::string& filename)
 void Pipe::adjust_pts(AVPacket* pkt)
 {
     if (pkt->stream_index == reader->video_stream_index) {
+        std::cout << "orig pkt pts: " << pkt->pts << std::endl;
         pkt->stream_index = video_stream->index;
         pkt->dts = pkt->pts = video_next_pts;
         video_next_pts += pkt->duration;
+        std::cout << "modified pkt pts: " << pkt->pts << std::endl;
     }
     else if (pkt->stream_index == reader->audio_stream_index) {
         pkt->stream_index = audio_stream->index;

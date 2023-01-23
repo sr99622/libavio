@@ -66,6 +66,7 @@ public:
     ~Process() { }
 
     bool isPaused();
+    bool isPiping();
     void setMute(bool arg);
     void setVolume(int arg);
     void togglePaused();

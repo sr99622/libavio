@@ -18,9 +18,11 @@ public:
     ~MainWindow();
 
     void setPlayButton();
+    void setRecordButton();
 
     QPushButton* btnPlay;
     QPushButton* btnStop;
+    QPushButton* btnRecord;
     Progress* progress;
     GLWidget* glWidget;
 
@@ -30,6 +32,7 @@ protected:
 public slots:
     void onBtnPlayClicked();
     void onBtnStopClicked();
+    void onBtnRecordClicked();
     void mediaPlayingStarted(qint64);
     void mediaPlayingStopped();
     void mediaProgress(float);

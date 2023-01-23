@@ -13,6 +13,13 @@ bool Process::isPaused()
     return result;
 }
 
+bool Process::isPiping()
+{
+    bool result = false;
+    if (reader) result = reader->request_pipe_write;
+    return result;
+}
+
 void Process::setMute(bool arg)
 {
     if (display) display->mute = arg;

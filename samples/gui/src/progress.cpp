@@ -29,7 +29,7 @@ Progress::Progress(QWidget* parent) : QWidget(parent)
 
 void Progress::setLabelWidth(QLabel* lbl) 
 {
-    QFont font("Ariel");
+    QFont font("Arial");
     //font.setStyleHint(QFont::Monospace);
     lbl->setFont(font);
     QFontMetrics metrics = lbl->fontMetrics();
@@ -40,7 +40,7 @@ void Progress::setLabelWidth(QLabel* lbl)
 
 void Progress::setLabelHeight(QLabel* lbl) 
 {
-    QFont font("Ariel");
+    QFont font("Arial");
     lbl->setFont(font);
     QFontMetrics metrics = lbl->fontMetrics();
     QRect rect = metrics.boundingRect("00:00:00");
