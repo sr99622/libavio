@@ -84,9 +84,10 @@ void GLWidget::start(void* widget)
     avio::Process process;
     glWidget->process = &process;
 
-    avio::Reader reader("/home/stephen/Videos/news.mp4");
+    avio::Reader reader("/home/stephen/Videos/five.webm");
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
+    reader.show_video_pkts = true;
 
     avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_VAAPI);
     //avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_NONE);

@@ -111,6 +111,8 @@ static void read(Process* process)
                         while (pkts.size() > 0) {
                             AVPacket* tmp = pkts.front();
                             pkts.pop_front();
+                            if (tmp->stream_index == reader->video_stream_index)
+                                std::cout << "pkt from queue: " << tmp->pts << std::endl;
                             pipe->write(tmp);
                             av_packet_free(&tmp);
                         }
@@ -135,7 +137,7 @@ static void read(Process* process)
                 }
                 if (pkt->stream_index == reader->video_stream_index) {
                     if (pkt->flags) {
-                        // key frame packet found in stream
+                        std::cout << "key frame packet found in stream" << std::endl;
                         if (++keyframe_count >= reader->keyframe_cache_size()) {
                             while (pkts.size() > keyframe_marker) {
                                 AVPacket* tmp = pkts.front();
