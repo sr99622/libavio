@@ -27,6 +27,7 @@
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
+#include "Packet.h"
 #include <iomanip>
 #include <functional>
 #include <map>
@@ -35,7 +36,7 @@ namespace avio
 {
 
 
-typedef std::map<std::string, Queue<AVPacket*>*> PKT_Q_MAP;
+typedef std::map<std::string, Queue<Packet>*> PKT_Q_MAP;
 typedef std::map<std::string, Queue<Frame>*> FRAME_Q_MAP;
 
 class Process
@@ -54,12 +55,6 @@ public:
     std::vector<std::string> pkt_q_names;
     std::vector<std::string> frame_q_names;
     
-    int interleaved_q_size = 0;
-    std::string interleaved_q_name;
-    bool muxing = false;
-    std::string mux_video_q_name;
-    std::string mux_audio_q_name;
-
     std::vector<std::thread*> ops;
 
     std::function<void(Process*)> cameraTimeoutCallback = nullptr;

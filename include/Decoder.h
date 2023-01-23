@@ -21,6 +21,7 @@
 #define DECODER_H
 
 #include "Exception.h"
+#include "Packet.h"
 #include "Queue.h"
 #include "Frame.h"
 #include "Reader.h"
@@ -70,7 +71,7 @@ public:
 	bool show_frames = false;
 
 	Queue<Frame>* frame_q = nullptr;
-	Queue<AVPacket*>* pkt_q = nullptr;
+	Queue<Packet>* pkt_q = nullptr;
 
 	std::string frame_q_name;
 	std::string pkt_q_name;
