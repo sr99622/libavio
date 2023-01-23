@@ -68,7 +68,9 @@ public:
 	AVSampleFormat sample_format() { return (AVSampleFormat)av_buffersink_get_format(sink_ctx); }
 	int frame_size() { return decoder->frame_size(); }
 
+	Queue<Frame>* frame_in_q = nullptr;
 	Queue<Frame>* frame_out_q = nullptr;
+
 	std::string q_in_name;
 	std::string q_out_name;
 

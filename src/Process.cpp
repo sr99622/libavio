@@ -46,15 +46,12 @@ void Process::clear_queues()
     PKT_Q_MAP::iterator pkt_q;
     for (pkt_q = pkt_queues.begin(); pkt_q != pkt_queues.end(); ++pkt_q) {
         while (pkt_q->second->size() > 0) {
-            //AVPacket* tmp = pkt_q->second->pop();
-            //av_packet_free(&tmp);
             pkt_q->second->pop();
         }
     }
     FRAME_Q_MAP::iterator frame_q;
     for (frame_q = frame_queues.begin(); frame_q != frame_queues.end(); ++frame_q) {
         while (frame_q->second->size() > 0) {
-            //Frame f;
             frame_q->second->pop();
         }
     }
@@ -166,8 +163,7 @@ void Process::run()
     }
 
     if (videoFilter) {
-        ops.push_back(new std::thread(filter, videoFilter,
-            frame_queues[videoFilter->q_in_name], frame_queues[videoFilter->q_out_name]));
+        ops.push_back(new std::thread(filter, this, AVMEDIA_TYPE_VIDEO));
     }
 
     if (audioDecoder) {
@@ -175,8 +171,7 @@ void Process::run()
     }
 
     if (audioFilter) {
-        ops.push_back(new std::thread(filter, audioFilter,
-            frame_queues[audioFilter->q_in_name], frame_queues[audioFilter->q_out_name]));
+        ops.push_back(new std::thread(filter, this, AVMEDIA_TYPE_AUDIO));
     }
 
     if (display) {
