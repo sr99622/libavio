@@ -14,24 +14,19 @@ Packet::~Packet()
 
 Packet::Packet(AVPacket* src)
 {
-//std::cout << "test 01" << std::endl;
     if (m_pkt) av_packet_free(&m_pkt);
     //m_pkt = av_packet_clone(src);
     m_pkt = src;
-//std::cout << "test 02" << std::endl;
 }
 
 Packet::Packet(const Packet& other)
 {
-//std::cout << "test 11" << std::endl;
     if (m_pkt) av_packet_free(&m_pkt);
     m_pkt = av_packet_clone(other.m_pkt);
-//std::cout << "test 12" << std::endl;
 }
 
 Packet::Packet(Packet&& other) noexcept
 {
-//std::cout << "test 21" << std::endl;
     if (other.isValid()) {
         if (!m_pkt) m_pkt = av_packet_alloc();
         av_packet_move_ref(m_pkt, other.m_pkt);
@@ -40,21 +35,17 @@ Packet::Packet(Packet&& other) noexcept
         if (m_pkt) av_packet_free(&m_pkt);
         m_pkt = nullptr;
     }
-//std::cout << "test 22" << std::endl;
 }
 
 Packet& Packet::operator=(const Packet& other)
 {
-//std::cout << "test 31" << std::endl;
     if (m_pkt) av_packet_free(&m_pkt);
     m_pkt = av_packet_clone(other.m_pkt);
-//std::cout << "test 32" << std::endl;
     return *this;
 }
 
 Packet& Packet::operator=(Packet&& other) noexcept
 {
-//std::cout << "test 41" << std::endl;
     if (other.isValid()) {
         if (!m_pkt) m_pkt = av_packet_alloc();
         av_packet_move_ref(m_pkt, other.m_pkt);
@@ -63,7 +54,6 @@ Packet& Packet::operator=(Packet&& other) noexcept
         if (m_pkt) av_packet_free(&m_pkt);
         m_pkt = nullptr;
     }
-//std::cout << "test 42" << std::endl;
     return *this;
 }
 

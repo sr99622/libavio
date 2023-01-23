@@ -55,7 +55,7 @@ public:
 	bool full() { return m_size == m_max_size; }
 	bool empty() { return m_front == -1; }
 	bool closed() { return m_closed; }
-	void clear() { m_front = m_rear = -1; }
+	void clear();
 	void set_max_size(int arg);
 
 private:
@@ -74,6 +74,22 @@ template <typename T>
 Queue<T>::Queue(size_t max_size) :	m_max_size(max_size) 
 {
 	m_data.reserve(max_size);
+}
+
+template <typename T>
+void Queue<T>::clear()
+{
+	std::unique_lock<std::mutex> lock(n_mutex);
+
+	while (!empty()) {
+		T arg = std::move(m_data[m_front]);
+		if (m_front == m_rear) m_front = m_rear = -1;
+		else if (m_front == m_max_size - 1) m_front = 0;
+		else m_front++;
+		m_size--;
+	}
+
+	m_cond_push.notify_one();
 }
 
 template <typename T>
