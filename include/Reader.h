@@ -27,6 +27,7 @@ extern "C" {
 
 #include "Exception.h"
 #include "Queue.h"
+#include "Packet.h"
 
 namespace avio
 {
@@ -96,8 +97,8 @@ public:
 	bool show_video_pkts = false;
 	bool show_audio_pkts = false;
 
-	Queue<AVPacket*>* vpq = nullptr;
-	Queue<AVPacket*>* apq = nullptr;
+	Queue<Packet>* vpq = nullptr;
+	Queue<Packet>* apq = nullptr;
 
 	std::string vpq_name;
 	std::string apq_name;

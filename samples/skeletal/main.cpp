@@ -12,6 +12,8 @@ avio::Queue<AVPacket*> video_pkt_q(1);
 avio::Queue<AVPacket*> audio_pkt_q(1);
 avio::Queue<avio::Frame> video_frame_q(1);
 avio::Queue<avio::Frame> audio_frame_q(1);
+avio::Queue<avio::Packet> video_packet_queue(1);
+avio::Queue<avio::Packet> audio_packet_queue(1);
 
 static void read_pkts()
 {
@@ -21,17 +23,37 @@ static void read_pkts()
         if (!pkt)
             break;
 
-        if (pkt->stream_index == reader.video_stream_index)
-            video_pkt_q.push(pkt);
-        if (pkt->stream_index == reader.audio_stream_index)
-            audio_pkt_q.push(pkt);
+        std::cout << "reader push " << pkt->pts << std::endl;
+        if (pkt->stream_index == reader.video_stream_index) {
+            video_packet_queue.push_move(avio::Packet(pkt));
+        }
+        if (pkt->stream_index == reader.audio_stream_index) {
+            audio_packet_queue.push_move(avio::Packet(pkt));
+        }
 
     }
     std::cout << "done reading packets" << std::endl;
-    video_pkt_q.push(nullptr);
-    audio_pkt_q.push(nullptr);
+    video_packet_queue.push_move(avio::Packet(nullptr));
+    audio_packet_queue.push_move(avio::Packet(nullptr));
     std::cout << "pushed null pkts" << std::endl;
 }
+
+static void drain_pkts(avio::Queue<avio::Packet>* pkt_q)
+{
+    while (true) {
+        avio::Packet p;
+        pkt_q->pop_move(p);
+        if (!p.isValid())
+            break;
+
+        std::cout << "pkt_q pop: " << p.m_pkt->pts << std::endl;
+    }
+    std::cout << "drain pkts done" << std::endl;
+}
+
+
+
+
 
 static void video_decode()
 {
@@ -74,18 +96,6 @@ static void audio_decode()
     std::cout << "audio decode null frame push" << std::endl;
 }
 
-static void drain_pkts(avio::Queue<AVPacket*>* pkt_q)
-{
-    while (true) {
-        AVPacket* pkt = pkt_q->pop();
-        if (!pkt)
-            break;
-
-        std::cout << "pkt_q pop: " << pkt->pts << std::endl;
-        av_packet_free(&pkt);
-    }
-}
-
 static void drain_frames(avio::Queue<avio::Frame>* frame_q)
 {
     avio::Frame f;
@@ -109,21 +119,21 @@ int main(int argc, char** argv)
     //display.initAudio(audioDecoder.sample_rate(), audioDecoder.sample_format(), audioDecoder.channels(), audioDecoder.channel_layout(), audioDecoder.frame_size());
 
     std::thread reader_thread(read_pkts);
-    //std::thread video_pkt_thread(drain_pkts, &video_pkt_q);
-    //std::thread audio_pkt_thread(drain_pkts, &audio_pkt_q);
-    std::thread video_decode_thread(video_decode);
-    std::thread audio_decode_thread(audio_decode);
-    std::thread video_frame_thread(drain_frames, &video_frame_q);
-    std::thread audio_frame_thread(drain_frames, &audio_frame_q);
+    std::thread video_pkt_thread(drain_pkts, &video_packet_queue);
+    std::thread audio_pkt_thread(drain_pkts, &audio_packet_queue);
+    //std::thread video_decode_thread(video_decode);
+    //std::thread audio_decode_thread(audio_decode);
+    //std::thread video_frame_thread(drain_frames, &video_frame_q);
+    //std::thread audio_frame_thread(drain_frames, &audio_frame_q);
 
     //while (display.display()) {}
 
     reader_thread.join();
-    //video_pkt_thread.join();
-    //audio_pkt_thread.join();
-    video_decode_thread.join();
-    audio_decode_thread.join();
-    video_frame_thread.join();
-    audio_frame_thread.join();
+    video_pkt_thread.join();
+    audio_pkt_thread.join();
+    //video_decode_thread.join();
+    //audio_decode_thread.join();
+    //video_frame_thread.join();
+    //audio_frame_thread.join();
 
 }

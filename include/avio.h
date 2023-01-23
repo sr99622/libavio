@@ -28,6 +28,7 @@
 #include "Filter.h"
 #include "Display.h"
 #include "Process.h"
+#include "Packet.h"
 #include <iomanip>
 #include <functional>
 #include <map>
@@ -39,6 +40,7 @@
 namespace avio
 {
 
+/*
 static void show_pkt(AVPacket* pkt)
 {
     std::stringstream str;
@@ -52,6 +54,7 @@ static void show_pkt(AVPacket* pkt)
 
     std::cout << str.str() << std::endl;
 }
+*/
 
 static void read(Process* process) 
 {
@@ -170,24 +173,29 @@ static void read(Process* process)
                 }
             }
 
+            Packet p(pkt);
             if (pkt->stream_index == reader->video_stream_index) {
-                if (reader->show_video_pkts) show_pkt(pkt);
+                //if (reader->show_video_pkts) show_pkt(pkt);
+                if (reader->show_video_pkts)
+                    std::cout << p.description() << std::endl;
                 if (reader->vpq)
-                    reader->vpq->push(pkt);
-                else
-                    av_packet_free(&pkt);
+                    reader->vpq->push_move(p);
+                //else
+                //    av_packet_free(&pkt);
             }
 
             else if (pkt->stream_index == reader->audio_stream_index) {
-                if (reader->show_audio_pkts) show_pkt(pkt);
+                //if (reader->show_audio_pkts) show_pkt(pkt);
+                if (reader->show_audio_pkts)
+                    std::cout << p.description() << std::endl;
                 if (reader->apq)
-                    reader->apq->push(pkt);
-                else
-                    av_packet_free(&pkt);
+                    reader->apq->push_move(p);
+                //else
+                //    av_packet_free(&pkt);
             }
         }
-        if (reader->vpq) reader->vpq->push(nullptr);
-        if (reader->apq) reader->apq->push(nullptr);
+        if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
+        if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
     catch (const Exception& e) { 
         std::cout << " reader failed: " << e.what() << std::endl; 
@@ -217,12 +225,12 @@ static void decode(Process* process, AVMediaType mediaType)
     try {
         while (true)
         {
-            AVPacket* pkt = decoder->pkt_q->pop();
-            if (!pkt)
+            Packet p;
+            decoder->pkt_q->pop_move(p);
+            if (!p.isValid())
                 break;
 
-            decoder->decode(pkt);
-            av_packet_free(&pkt);
+            decoder->decode(p.m_pkt);
         }
         decoder->decode(nullptr);
         decoder->flush();
@@ -235,6 +243,7 @@ static void decode(Process* process, AVMediaType mediaType)
         decoder->decode(nullptr);
         decoder->frame_q->push(Frame(nullptr));
     }
+
 }
 
 static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)

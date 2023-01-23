@@ -46,8 +46,9 @@ void Process::clear_queues()
     PKT_Q_MAP::iterator pkt_q;
     for (pkt_q = pkt_queues.begin(); pkt_q != pkt_queues.end(); ++pkt_q) {
         while (pkt_q->second->size() > 0) {
-            AVPacket* tmp = pkt_q->second->pop();
-            av_packet_free(&tmp);
+            //AVPacket* tmp = pkt_q->second->pop();
+            //av_packet_free(&tmp);
+            pkt_q->second->pop();
         }
     }
     FRAME_Q_MAP::iterator frame_q;
@@ -145,7 +146,7 @@ void Process::run()
     for (const std::string& name : pkt_q_names) {
         if (!name.empty()) {
             if (pkt_queues.find(name) == pkt_queues.end())
-                pkt_queues.insert({ name, new Queue<AVPacket*>() });
+                pkt_queues.insert({ name, new Queue<Packet>() });
         }
     }
 
