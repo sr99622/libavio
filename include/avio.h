@@ -40,22 +40,6 @@
 namespace avio
 {
 
-/*
-static void show_pkt(AVPacket* pkt)
-{
-    std::stringstream str;
-    str 
-        << " index: " << pkt->stream_index
-        << " flags: " << pkt->flags
-        << " pts: " << pkt->pts
-        << " dts: " << pkt->dts
-        << " size: " << pkt->size
-        << " duration: " << pkt->duration;
-
-    std::cout << str.str() << std::endl;
-}
-*/
-
 static void read(Process* process) 
 {
     Reader* reader = process->reader;
@@ -111,6 +95,7 @@ static void read(Process* process)
                     av_packet_free(&pkt);
                     pkt = tmp;
                     process->clear_queues();
+                    //process->clear_decoders();
                 }
                 else {
                     break;
@@ -175,23 +160,17 @@ static void read(Process* process)
 
             Packet p(pkt);
             if (pkt->stream_index == reader->video_stream_index) {
-                //if (reader->show_video_pkts) show_pkt(pkt);
                 if (reader->show_video_pkts)
                     std::cout << p.description() << std::endl;
                 if (reader->vpq)
                     reader->vpq->push_move(p);
-                //else
-                //    av_packet_free(&pkt);
             }
 
             else if (pkt->stream_index == reader->audio_stream_index) {
-                //if (reader->show_audio_pkts) show_pkt(pkt);
                 if (reader->show_audio_pkts)
                     std::cout << p.description() << std::endl;
                 if (reader->apq)
                     reader->apq->push_move(p);
-                //else
-                //    av_packet_free(&pkt);
             }
         }
         if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
@@ -246,14 +225,30 @@ static void decode(Process* process, AVMediaType mediaType)
 
 }
 
-static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
+static void filter(Process* process, AVMediaType mediaType)
 {
+    Filter* filter = nullptr;
+    switch (mediaType) {
+        case AVMEDIA_TYPE_VIDEO:
+            filter = process->videoFilter;
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            filter = process->audioFilter;
+            break;
+    }
+
+    if (!filter) {
+        std::cout << "no filter in filter loop" << std::endl; 
+    }
+
+    filter->frame_in_q = process->frame_queues[filter->q_in_name];
+    filter->frame_out_q = process->frame_queues[filter->q_out_name];
+
     try {
-        filter->frame_out_q = q_out;
         while (true)
         {
             Frame f;
-            q_in->pop_move(f);
+            filter->frame_in_q->pop_move(f);
             filter->filter(f);
             if (!f.isValid())
                 break;
