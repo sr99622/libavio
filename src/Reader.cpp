@@ -22,9 +22,6 @@ extern "C"
 #include <libavutil/channel_layout.h>
 }
 
-#include <filesystem>
-#include <time.h>
-
 #include "Reader.h"
 #include "avio.h"
 
@@ -143,6 +140,65 @@ void Reader::request_seek(float pct)
 bool Reader::seeking() 
 {
     return seek_target_pts != AV_NOPTS_VALUE || seek_found_pts != AV_NOPTS_VALUE;
+}
+
+void Reader::clear_pkts_cache(int mark)
+{
+    while (pkts_cache.size() > mark) {
+        AVPacket* jnk = pkts_cache.front();
+        pkts_cache.pop_front();
+        av_packet_free(&jnk);
+    }
+}
+
+void Reader::close_pipe()
+{
+    if (pipe) pipe->close();
+    pipe = nullptr;
+}
+
+void Reader::pipe_write(AVPacket* pkt)
+{
+    if (!pipe) {
+        pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
+        pipe->process = process;
+        if (pipe->open(pipe_out_filename)) {
+            while (pkts_cache.size() > 0) {
+                AVPacket* tmp = pkts_cache.front();
+                pkts_cache.pop_front();
+                if (tmp->stream_index == video_stream_index)
+                    std::cout << "pkt from queue: " << tmp->pts << std::endl;
+                pipe->write(tmp);
+                av_packet_free(&tmp);
+            }
+        }
+        else {
+            delete pipe;
+            pipe = nullptr;
+        }
+    }
+
+    if (pipe) {
+        AVPacket* tmp = av_packet_clone(pkt);
+        pipe->write(tmp);
+        av_packet_free(&tmp);
+    }
+}
+
+void Reader::fill_pkts_cache(AVPacket* pkt)
+{
+    if (pkt->stream_index == video_stream_index) {
+        if (pkt->flags) {
+            std::cout << "key frame packet found in stream" << std::endl;
+            if (++keyframe_count >= keyframe_cache_size()) {
+                clear_pkts_cache(keyframe_marker);
+                keyframe_count--;
+            }
+            keyframe_marker = pkts_cache.size();
+        }
+    }
+    AVPacket* tmp = av_packet_clone(pkt);
+    pkts_cache.push_back(tmp);
 }
 
 void Reader::start_from(int milliseconds)

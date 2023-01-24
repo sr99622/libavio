@@ -26,14 +26,8 @@
 #include "Decoder.h"
 #include "Pipe.h"
 #include "Filter.h"
-#include "Display.h"
 #include "Process.h"
 #include "Packet.h"
-#include <iomanip>
-#include <functional>
-#include <map>
-
-
 
 #define P ((Process*)process)
 
@@ -54,10 +48,6 @@ static void read(Process* process)
             reader->apq->set_max_size(reader->apq_max_size);
     }
 
-    Pipe* pipe = nullptr;
-    std::deque<AVPacket*> pkts;
-    int keyframe_count = 0;
-    int keyframe_marker = 0;
 
     try {
         while (true)
@@ -68,29 +58,15 @@ static void read(Process* process)
 
             if (!process->running) {
                 process->clear_queues();
-                while (pkts.size() > 0) {
-                    AVPacket* jnk = pkts.front();
-                    pkts.pop_front();
-                    av_packet_free(&jnk);
-                }
+                reader->clear_pkts_cache(0);
+                if (reader->pipe) reader->close_pipe();
                 av_packet_free(&pkt);
-                if (pipe) {
-                    pipe->close();
-                    delete pipe;
-                }
                 break;
             }
 
             if (reader->seek_target_pts != AV_NOPTS_VALUE) {
-
                 AVPacket* tmp = reader->seek();
-
-                while (pkts.size() > 0) {
-                    AVPacket* jnk = pkts.front();
-                    pkts.pop_front();
-                    av_packet_free(&jnk);
-                }
-
+                reader->clear_pkts_cache(0);
                 if (tmp) {
                     av_packet_free(&pkt);
                     pkt = tmp;
@@ -103,54 +79,11 @@ static void read(Process* process)
             }
 
             if (reader->request_pipe_write) {
-                // pkts queue caches recent packets based off key frame packet
-                if (!pipe) {
-                    pipe = new Pipe(*reader);
-                    pipe->process = reader->process;
-                    if (pipe->open(reader->pipe_out_filename)) {
-                        while (pkts.size() > 0) {
-                            AVPacket* tmp = pkts.front();
-                            pkts.pop_front();
-                            if (tmp->stream_index == reader->video_stream_index)
-                                std::cout << "pkt from queue: " << tmp->pts << std::endl;
-                            pipe->write(tmp);
-                            av_packet_free(&tmp);
-                        }
-                    }
-                    else {
-                        delete pipe;
-                        pipe = nullptr;
-                    }
-                }
-                // verify pipe was opened successfully before continuing
-                if (pipe) {
-                    AVPacket* tmp = av_packet_clone(pkt);
-                    pipe->write(tmp);
-                    av_packet_free(&tmp);
-                }
+                reader->pipe_write(pkt);
             }
             else {
-                if (pipe) {
-                    pipe->close();
-                    delete pipe;
-                    pipe = nullptr;
-                }
-                if (pkt->stream_index == reader->video_stream_index) {
-                    if (pkt->flags) {
-                        std::cout << "key frame packet found in stream" << std::endl;
-                        if (++keyframe_count >= reader->keyframe_cache_size()) {
-                            while (pkts.size() > keyframe_marker) {
-                                AVPacket* tmp = pkts.front();
-                                pkts.pop_front();
-                                av_packet_free(&tmp);
-                            }
-                            keyframe_count--;
-                        }
-                        keyframe_marker = pkts.size();
-                    }
-                }
-                AVPacket* tmp = av_packet_clone(pkt);
-                pkts.push_back(tmp);
+                if (reader->pipe) reader->close_pipe();
+                reader->fill_pkts_cache(pkt);
             }
 
             if (reader->stop_play_at_pts != AV_NOPTS_VALUE && pkt->stream_index == reader->seek_stream_index()) {
@@ -224,7 +157,6 @@ static void decode(Process* process, AVMediaType mediaType)
         decoder->decode(nullptr);
         decoder->frame_q->push(Frame(nullptr));
     }
-
 }
 
 static void filter(Process* process, AVMediaType mediaType)
