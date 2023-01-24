@@ -76,7 +76,7 @@ void Process::key_event(int keyCode)
 
 void Process::add_reader(Reader& reader_in)
 {
-    reader_in.process = (void*)this;
+    //reader_in.process = (void*)this;
     reader = &reader_in;
     
     if (!reader_in.vpq_name.empty()) pkt_q_names.push_back(reader_in.vpq_name);

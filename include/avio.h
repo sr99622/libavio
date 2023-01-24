@@ -29,8 +29,6 @@
 #include "Process.h"
 #include "Packet.h"
 
-#define P ((Process*)process)
-
 namespace avio
 {
 
@@ -53,13 +51,16 @@ static void read(Process* process)
         while (true)
         {
             AVPacket* pkt = reader->read();
-            if (!pkt)
+            if (!pkt) {
+                std::string msg = "reader recieved null packet eof";
+                if (process->infoCallback) process->infoCallback(process->infoCaller, msg);
                 break;
+            }
 
             if (!process->running) {
-                process->clear_queues();
-                reader->clear_pkts_cache(0);
                 if (reader->pipe) reader->close_pipe();
+                reader->clear_pkts_cache(0);
+                process->clear_queues();
                 av_packet_free(&pkt);
                 break;
             }
@@ -108,12 +109,14 @@ static void read(Process* process)
                     reader->apq->push_move(p);
             }
         }
-        if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
-        if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
     catch (const Exception& e) { 
-        std::cout << " reader failed: " << e.what() << std::endl; 
+        std::cout << " reader failed: " << e.what() << std::endl;
+        if (process->errorCallback)
+            process->errorCallback(process->errorCaller, e.what());
     }
+    if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
+    if (reader->apq) reader->apq->push_move(Packet(nullptr));
 }
 
 static void decode(Process* process, AVMediaType mediaType) 
@@ -131,6 +134,7 @@ static void decode(Process* process, AVMediaType mediaType)
 
     if (!decoder) {
         std::cout << "no decoder in decode loop" << std::endl; 
+        return;
     }
 
     decoder->frame_q = process->frame_queues[decoder->frame_q_name];
@@ -173,6 +177,7 @@ static void filter(Process* process, AVMediaType mediaType)
 
     if (!filter) {
         std::cout << "no filter in filter loop" << std::endl; 
+        return;
     }
 
     filter->frame_in_q = process->frame_queues[filter->q_in_name];

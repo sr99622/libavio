@@ -1,5 +1,6 @@
 #include <iostream>
 #include <QGridLayout>
+#include <QMessageBox>
 #include <QThread>
 #include "mainwindow.h"
 
@@ -23,6 +24,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     connect(glWidget, SIGNAL(mediaPlayingStarted(qint64)), this, SLOT(mediaPlayingStarted(qint64)));
     connect(glWidget, SIGNAL(mediaPlayingStopped()), this, SLOT(mediaPlayingStopped()));
     connect(glWidget, SIGNAL(mediaProgress(float)), this, SLOT(mediaProgress(float)));
+    connect(glWidget, SIGNAL(criticalError(const QString&)), this, SLOT(criticalError(const QString&)));
+    connect(glWidget, SIGNAL(infoMessage(const QString&)), this, SLOT(infoMessage(const QString&)));
     connect(progress, SIGNAL(seek(float)), glWidget, SLOT(seek(float)));
 
     QWidget* pnlMain = new QWidget();
@@ -129,4 +132,19 @@ void MainWindow::mediaProgress(float arg)
 {
     //sldProgress->setValue(std::round(sldProgress->maximum() * arg));
     progress->setProgress(arg);
+}
+
+void MainWindow::criticalError(const QString& msg)
+{
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Critical Error");
+    msgBox.setText(msg);
+    msgBox.setIcon(QMessageBox::Critical);
+    msgBox.exec();
+}
+
+void MainWindow::infoMessage(const QString& msg)
+{
+    std::cout << "message from mainwindow" << std::endl;
+    std::cout << msg.toLatin1().data() << std::endl;
 }
