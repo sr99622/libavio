@@ -35,7 +35,7 @@ static void read_pkts()
     std::cout << "done reading packets" << std::endl;
     video_packet_queue.push_move(avio::Packet(nullptr));
     audio_packet_queue.push_move(avio::Packet(nullptr));
-    std::cout << "pushed null pkts" << std::endl;
+    std::cout << "pushed null pkts_cache" << std::endl;
 }
 
 static void drain_pkts(avio::Queue<avio::Packet>* pkt_q)
@@ -48,7 +48,7 @@ static void drain_pkts(avio::Queue<avio::Packet>* pkt_q)
 
         std::cout << "pkt_q pop: " << p.m_pkt->pts << std::endl;
     }
-    std::cout << "drain pkts done" << std::endl;
+    std::cout << "drain pkts_cache done" << std::endl;
 }
 
 

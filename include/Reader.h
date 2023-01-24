@@ -25,9 +25,11 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
+#include <deque>
 #include "Exception.h"
 #include "Queue.h"
 #include "Packet.h"
+#include "Pipe.h"
 
 namespace avio
 {
@@ -81,12 +83,17 @@ public:
 	int64_t audio_bit_rate();
 	AVRational audio_time_base();
 
+	Pipe* pipe = nullptr;
 	int keyframe_cache_size();
+	void clear_pkts_cache(int mark);
+	void fill_pkts_cache(AVPacket* pkt);
+	void pipe_write(AVPacket* pkt);
+	void close_pipe();
 	bool request_pipe_write = false;
-	bool pipe_out = false;
-	bool pipe_out_enabled = false;
-	std::string pipe_out_dir;
 	std::string pipe_out_filename;
+    std::deque<AVPacket*> pkts_cache;
+    int keyframe_count = 0;
+    int keyframe_marker = 0;
 
 	AVFormatContext* fmt_ctx = NULL;
 	int video_stream_index = -1;

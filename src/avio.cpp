@@ -59,9 +59,9 @@ PYBIND11_MODULE(avio, m)
         .def("request_seek", &Reader::request_seek)
         .def("start_from", &Reader::start_from)
         .def("end_at", &Reader::end_at)
-        .def_readwrite("pipe_out", &Reader::pipe_out)
+        //.def_readwrite("pipe_out", &Reader::pipe_out)
         .def_readwrite("pipe_out_filename", &Reader::pipe_out_filename)
-        .def_readwrite("pipe_out_dir", &Reader::pipe_out_dir)
+        //.def_readwrite("pipe_out_dir", &Reader::pipe_out_dir)
         .def_readwrite("vpq_max_size", &Reader::vpq_max_size)
         .def_readwrite("apq_max_size", &Reader::apq_max_size)
         .def_readwrite("show_video_pkts", &Reader::show_video_pkts)
@@ -148,9 +148,9 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("height", &Display::height)
         .def_readwrite("pix_fmt", &Display::pix_fmt)
         .def_readwrite("fullscreen", &Display::fullscreen);
+/*
     py::class_<Pipe>(m, "Pipe")
         .def(py::init<Reader&>());
-/*
     py::class_<Writer>(m, "Writer")
         .def(py::init<const std::string&>())
         .def_readwrite("enabled", &Writer::enabled)
