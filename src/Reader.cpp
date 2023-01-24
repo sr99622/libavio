@@ -68,6 +68,7 @@ Reader::Reader(const char* filename)
     if (audio_stream_index < 0) 
         ex.msg("did not find audio stream", MsgPriority::INFO);
 
+
     //if (video_codec() == AV_CODEC_ID_HEVC) throw Exception("HEVC compression is not supported by default configuration");
 
 }
@@ -90,17 +91,15 @@ AVPacket* Reader::read()
     }
     catch (const Exception& e) {
         if (ret != AVERROR_EOF) {
-            ex.msg(e.what(), MsgPriority::CRITICAL, "Reader::read exception: ");
-            if (ret == AVERROR_EXIT || ret == AVERROR(ETIMEDOUT)) {
-                std::cout << "Camera connection timed out"  << std::endl;
-
-                if (P->cameraTimeoutCallback)
-                    P->cameraTimeoutCallback(P);
-
-            }
+            throw Exception(e.what());
+            //ex.msg(e.what(), MsgPriority::CRITICAL, "Reader::read exception: ");
+            //if (ret == AVERROR_EXIT || ret == AVERROR(ETIMEDOUT)) {
+            //    std::cout << "Camera connection timed out"  << std::endl;
+            //    throw Exception(e.what());
+            //}
         }
-
         av_packet_free(&pkt);
+        pkt = nullptr;
     }
 
     return pkt;

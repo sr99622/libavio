@@ -36,6 +36,8 @@ public slots:
     void mediaPlayingStarted(qint64);
     void mediaPlayingStopped();
     void mediaProgress(float);
+    void criticalError(const QString&);
+    void infoMessage(const QString&);
 
 };
 

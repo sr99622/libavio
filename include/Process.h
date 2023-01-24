@@ -32,9 +32,10 @@
 #include <functional>
 #include <map>
 
+#define P ((Process*)process)
+
 namespace avio
 {
-
 
 typedef std::map<std::string, Queue<Packet>*> PKT_Q_MAP;
 typedef std::map<std::string, Queue<Frame>*> FRAME_Q_MAP;
@@ -57,8 +58,12 @@ public:
     
     std::vector<std::thread*> ops;
 
-    std::function<void(Process*)> cameraTimeoutCallback = nullptr;
-    std::function<void(Process*, const std::string&)> openWriterFailedCallback = nullptr;
+    //std::function<void(Process*)> cameraTimeoutCallback = nullptr;
+    //std::function<void(Process*, const std::string&)> openWriterFailedCallback = nullptr;
+    void* infoCaller;
+    std::function<void(void* caller, const std::string&)> infoCallback = nullptr;
+    void* errorCaller;
+    std::function<void(void* caller, const std::string&)> errorCallback = nullptr;
 
     bool running = false;
 
