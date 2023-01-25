@@ -423,4 +423,32 @@ int Reader::keyframe_cache_size()
     return result;
 }
 
+void Reader::showStreamParameters()
+{
+    std::stringstream str;
+    str << "\n" << fmt_ctx->url;
+    if (has_video()) {
+        str << "\nVideo Stream Parameters"
+            << "\n  Video Codec:  " << str_video_codec()
+            << "\n  Pixel Format: " << str_pix_fmt()
+            << "\n  Resolution:   " << width() << " x " << height()
+            << "\n  Frame Rate:   " << av_q2d(frame_rate());
+    }
+    else {
+        str << "\nNo Video Stream Found";
+    }
+    if (has_audio()) {
+        str << "\nAudio Stream Parameters"
+            << "\n  Audio Codec:   " << str_audio_codec()
+            << "\n  Sample Format: " << str_sample_format()
+            << "\n  Channels:      " << str_channel_layout();
+    }
+    else {
+        str << "\nNo Audio Stream Found";
+    }
+    
+    if (P) P->send_info(str.str());
+}
+
+
 }

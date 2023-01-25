@@ -213,6 +213,8 @@ void Process::run()
 
         while (display->display()) {}
 
+        running = false;
+
         std::cout << "display done" << std::endl;
 
     }

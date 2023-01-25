@@ -106,15 +106,15 @@ void GLWidget::start(void* widget)
 
         avio::Reader reader("/home/stephen/Videos/five.webm");
         reader.process = &process;
-        glWidget->showStreamParameters(&reader);
+        reader.showStreamParameters();
 
         avio::Display display(reader);
         display.renderCaller = widget;
         display.renderCallback = std::function(GLWidget::renderCallback);
         display.progressCaller = widget;
         display.progressCallback = std::function(GLWidget::progressCallback);
-        //display.volume = glWidget->volume;
-        //display.mute = glWidget->mute;
+        display.volume = (float)glWidget->volume / 100.0f;
+        display.mute = glWidget->mute;
 
         avio::Decoder* videoDecoder = nullptr;
         avio::Filter* videoFilter = nullptr;
@@ -127,6 +127,7 @@ void GLWidget::start(void* widget)
             videoDecoder->set_video_out("vfq_decoder");
             process.add_decoder(*videoDecoder);
             videoFilter = new avio::Filter(*videoDecoder, "format=rgb24");
+            videoFilter->process = &process;
             videoFilter->set_video_in(videoDecoder->video_out());
             videoFilter->set_video_out("vfq_filter");
             process.add_filter(*videoFilter);
@@ -162,32 +163,6 @@ void GLWidget::start(void* widget)
         glWidget->process = nullptr;
         glWidget->emit criticalError(e.what());
     }
-}
-
-void GLWidget::showStreamParameters(avio::Reader* reader)
-{
-    std::stringstream str;
-    str << "\n" << reader->fmt_ctx->url;
-    if (reader->has_video()) {
-        str << "\nVideo Stream Parameters"
-            << "\n  Video Codec:  " << reader->str_video_codec()
-            << "\n  Pixel Format: " << reader->str_pix_fmt()
-            << "\n  Resolution:   " << reader->width() << " x " << reader->height()
-            << "\n  Frame Rate:   " << av_q2d(reader->frame_rate());
-    }
-    else {
-        str << "\nNo Video Stream Found";
-    }
-    if (reader->has_audio()) {
-        str << "\nAudio Stream Parameters"
-            << "\n  Audio Codec:   " << reader->str_audio_codec()
-            << "\n  Sample Format: " << reader->str_sample_format()
-            << "\n  Channels:      " << reader->str_channel_layout();
-    }
-    else {
-        str << "\nNo Audio Stream Found";
-    }
-    emit infoMessage(str.str().c_str());
 }
 
 QSize GLWidget::sizeHint() const

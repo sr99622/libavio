@@ -17,8 +17,9 @@
 *
 *********************************************************************/
 
-#include "../include/Filter.h"
 #include <SDL.h>
+#include "Filter.h"
+#include "Process.h"
 
 namespace avio
 {
@@ -77,15 +78,11 @@ void Filter::initVideo()
     catch (const Exception& e) {
         avfilter_inout_free(&inputs);
         avfilter_inout_free(&outputs);
-        if (sink_ctx) avfilter_free(sink_ctx);
-        if (src_ctx) avfilter_free(src_ctx);
-        if (graph) avfilter_graph_free(&graph);
-        if (frame) av_frame_free(&frame);
-        //ex.msg(e.what(), MsgPriority::CRITICAL, "Video Filter constructor exception: ");
-        throw Exception(e.what());
+        close();
+        std::stringstream str;
+        str << "Video filter constructor exception: " << e.what();
+        throw Exception(str.str());
     }
-
-
 }
 
 void Filter::initAudio()
@@ -139,21 +136,32 @@ void Filter::initAudio()
         }
 
         ex.ck(avfilter_graph_config(graph, nullptr), AGC);
+
+        avfilter_inout_free(&outputs);
+        avfilter_inout_free(&inputs);
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "Audio Filter constructor exception: ");
+        avfilter_inout_free(&outputs);
+        avfilter_inout_free(&inputs);
+        close();
+        std::stringstream str;
+        str << "Audio filter constructor exception: " << e.what();
+        throw Exception(str.str());
     }
 
-    avfilter_inout_free(&outputs);
-    avfilter_inout_free(&inputs);
 }
 
 Filter::~Filter()
 {
-    avfilter_free(sink_ctx);
-    avfilter_free(src_ctx);
-	avfilter_graph_free(&graph);
-	av_frame_free(&frame);
+    close();
+}
+
+void Filter::close()
+{
+    if (sink_ctx) avfilter_free(sink_ctx);
+    if (src_ctx) avfilter_free(src_ctx);
+    if (graph) avfilter_graph_free(&graph);
+    if (frame) av_frame_free(&frame);
 }
 
 void Filter::filter(Frame& f)
@@ -177,7 +185,9 @@ void Filter::filter(Frame& f)
         }
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "VideoFilter::filter exception: ");
+        std::stringstream str;
+        str << "Filter exception: " << e.what();
+        if (P) P->send_info(str.str());
     }
 }
 

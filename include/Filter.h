@@ -44,8 +44,11 @@ public:
 	void initVideo();
 	void initAudio();
 	~Filter();
+	void close();
 	void filter(Frame& f);
 	AVMediaType mediaType() { return decoder->mediaType; }
+
+	void* process = nullptr;
 
 	Decoder* decoder = nullptr;
 	AVFilterContext* sink_ctx = nullptr;

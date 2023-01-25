@@ -16,7 +16,7 @@ public:
     ~GLWidget();
     void play();
     void stop();
-    void showStreamParameters(avio::Reader* reader);
+    
     QSize sizeHint() const override;
 
     static void start(void* widget);
