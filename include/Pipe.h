@@ -39,7 +39,7 @@ public:
     void* process;
 
     AVCodecContext* getContext(AVMediaType mediaType);
-    bool open(const std::string& filename);
+    void open(const std::string& filename);
     void close();
     void adjust_pts(AVPacket* pkt);
     void write(AVPacket* pkt);

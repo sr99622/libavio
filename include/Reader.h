@@ -119,6 +119,8 @@ public:
 	void set_audio_out(const std::string& name) { apq_name = std::string(name); }
 
 	ExceptionHandler ex;
+	void send_message(const std::string& str);
+	void send_error(const std::string& str);
 };
 
 }

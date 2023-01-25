@@ -23,7 +23,7 @@ extern "C"
 }
 
 #include "Reader.h"
-#include "avio.h"
+#include "Process.h"
 
 #define MAX_TIMEOUT 5
 
@@ -158,10 +158,11 @@ void Reader::close_pipe()
 
 void Reader::pipe_write(AVPacket* pkt)
 {
-    if (!pipe) {
-        pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
-        pipe->process = process;
-        if (pipe->open(pipe_out_filename)) {
+    try {
+        if (!pipe) {
+            pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
+            pipe->process = process;
+            pipe->open(pipe_out_filename);
             while (pkts_cache.size() > 0) {
                 AVPacket* tmp = pkts_cache.front();
                 pkts_cache.pop_front();
@@ -171,16 +172,26 @@ void Reader::pipe_write(AVPacket* pkt)
                 av_packet_free(&tmp);
             }
         }
-        else {
-            delete pipe;
-            pipe = nullptr;
+
+        if (pipe) {
+            AVPacket* tmp = av_packet_clone(pkt);
+            pipe->write(tmp);
+            av_packet_free(&tmp);
         }
     }
+    catch (const Exception& e) {
+        std::cout << "Reader pipe write error" << std::endl;
+        std::stringstream str;
+        str << "Record function failure: " << e.what();
 
-    if (pipe) {
-        AVPacket* tmp = av_packet_clone(pkt);
-        pipe->write(tmp);
-        av_packet_free(&tmp);
+        if (pipe->opened)
+            close_pipe();
+        else {
+            if (pipe->fmt_ctx) avformat_free_context(pipe->fmt_ctx);
+        }
+        pipe = nullptr;
+        request_pipe_write = false;
+        send_error(str.str());
     }
 }
 
@@ -418,6 +429,34 @@ int Reader::keyframe_cache_size()
     //if (P->glWidget) 
     //    result = P->glWidget->keyframe_cache_size;
     return result;
+}
+
+void Reader::send_message(const std::string& str)
+{
+    bool sent = false;
+    if (P) {
+        if (P->infoCallback) {
+            P->infoCallback(P->infoCaller, str);
+            sent = true;
+        }
+    }
+    if (!sent) {
+        std::cout << "Reader Info Message: " << str << std::endl;
+    }
+}
+
+void Reader::send_error(const std::string& str)
+{
+    bool sent = false;
+    if (P) {
+        if (P->errorCallback) {
+            P->errorCallback(P->errorCaller, str);
+            sent = true;
+        }
+    }
+    if (!sent) {
+        std::cout << "Reader Error Message: " << str << std::endl;
+    }
 }
 
 
