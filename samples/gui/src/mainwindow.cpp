@@ -141,6 +141,8 @@ void MainWindow::criticalError(const QString& msg)
     msgBox.setText(msg);
     msgBox.setIcon(QMessageBox::Critical);
     msgBox.exec();
+    setPlayButton();
+    setRecordButton();
 }
 
 void MainWindow::infoMessage(const QString& msg)

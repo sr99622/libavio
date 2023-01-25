@@ -104,7 +104,8 @@ void GLWidget::start(void* widget)
         process.errorCallback = std::function(GLWidget::errorCallback);
         glWidget->process = &process;
 
-        avio::Reader reader("/home/stephen/Videos/cam1.mp4");
+        avio::Reader reader("/home/stephen/Videos/five.webm");
+        reader.process = &process;
         glWidget->showStreamParameters(&reader);
 
         avio::Display display(reader);
@@ -112,8 +113,8 @@ void GLWidget::start(void* widget)
         display.renderCallback = std::function(GLWidget::renderCallback);
         display.progressCaller = widget;
         display.progressCallback = std::function(GLWidget::progressCallback);
-        display.volume = glWidget->volume;
-        display.mute = glWidget->mute;
+        //display.volume = glWidget->volume;
+        //display.mute = glWidget->mute;
 
         avio::Decoder* videoDecoder = nullptr;
         avio::Filter* videoFilter = nullptr;
