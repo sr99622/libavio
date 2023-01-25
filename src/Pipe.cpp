@@ -18,7 +18,7 @@
 *********************************************************************/
 
 #include "Pipe.h"
-#include "avio.h"
+#include "Process.h"
 
 namespace avio
 {
@@ -87,23 +87,20 @@ void Pipe::open(const std::string& filename)
     opened = true;
     ex.ck(avformat_write_header(fmt_ctx, NULL), AWH);
 
-    //////////////////////////////////
-    throw Exception("test exception");
-
     video_next_pts = 0;
     audio_next_pts = 0;
 
-    std::cout << "pipe opened write file " << filename.c_str() << std::endl;
+    std::stringstream str;
+    str << "Pipe opened write file: " << filename.c_str();
+    if (P) P->send_info(str.str());
 }
 
 void Pipe::adjust_pts(AVPacket* pkt)
 {
     if (pkt->stream_index == video_stream_index) {
-        std::cout << "orig pkt pts: " << pkt->pts << std::endl;
         pkt->stream_index = video_stream->index;
         pkt->dts = pkt->pts = video_next_pts;
         video_next_pts += pkt->duration;
-        std::cout << "modified pkt pts: " << pkt->pts << std::endl;
     }
     else if (pkt->stream_index == audio_stream_index) {
         pkt->stream_index = audio_stream->index;
@@ -120,19 +117,17 @@ void Pipe::write(AVPacket* pkt)
         ex.ck(av_interleaved_write_frame(fmt_ctx, pkt), AIWF);
     }
     catch (const Exception& e) {
-        std::cout << "Pipe::write exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "Pipe write packet exception: " << e.what();
+        if (P) P->send_info(str.str());
     }
 }
 
 void Pipe::close()
 {
     try {
-        if (fmt_ctx) {
-            ex.ck(av_write_trailer(fmt_ctx), AWT);
-            ex.ck(avio_closep(&fmt_ctx->pb), ACP);
-            avformat_free_context(fmt_ctx);
-            fmt_ctx = nullptr;
-        }
+
+        std::string url(fmt_ctx->url);
 
         if (video_ctx) {
             avcodec_free_context(&video_ctx);
@@ -143,12 +138,24 @@ void Pipe::close()
             avcodec_free_context(&audio_ctx);
             audio_ctx = nullptr;
         }
+
+        if (fmt_ctx) {
+            ex.ck(av_write_trailer(fmt_ctx), AWT);
+            ex.ck(avio_closep(&fmt_ctx->pb), ACP);
+            avformat_free_context(fmt_ctx);
+            fmt_ctx = nullptr;
+        }
+
+        std::stringstream str;
+        str << "Pipe closed file: " << url;
+        if (P) P->send_info(str.str());
+
     }
     catch (const Exception& e) {
-        std::cout << "Pipe::close exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "Record to file close error: " << e.what();
+        if (P) P->send_error(str.str());
     }
-
-    std::cout << "pipe closed file " << std::endl;
 }
 
 void Pipe::show_ctx()
@@ -172,5 +179,6 @@ void Pipe::show_ctx()
         std::cout << "stream time base: " << stream->time_base.num << " / " << stream->time_base.den << std::endl;
     }
 }
+
 
 }
