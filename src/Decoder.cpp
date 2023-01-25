@@ -206,8 +206,6 @@ int Decoder::decode(AVPacket* pkt)
                 f = Frame(frame);
             }
 
-            throw Exception("test exception");
-
             f.set_rts(stream);
             if (show_frames) std::cout << strMediaType << " decoder " << f.description() << std::endl;
             frame_q->push_move(f);

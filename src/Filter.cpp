@@ -55,28 +55,37 @@ void Filter::initVideo()
     try {
         ex.ck(frame = av_frame_alloc(), AFA);
         ex.ck(graph = avfilter_graph_alloc(), AGA);
-        ex.ck(avfilter_graph_create_filter(&src_ctx, buffersrc, "in", args, NULL, graph), AGCF);
-        ex.ck(avfilter_graph_create_filter(&sink_ctx, buffersink, "out", NULL, NULL, graph), AGCF);
+        ex.ck(avfilter_graph_create_filter(&src_ctx, buffersrc, "in", args, nullptr, graph), AGCF);
+        ex.ck(avfilter_graph_create_filter(&sink_ctx, buffersink, "out", nullptr, nullptr, graph), AGCF);
 
         outputs->name = av_strdup("in");
         outputs->filter_ctx = src_ctx;
         outputs->pad_idx = 0;
-        outputs->next = NULL;
+        outputs->next = nullptr;
 
         inputs->name = av_strdup("out");
         inputs->filter_ctx = sink_ctx;
         inputs->pad_idx = 0;
-        inputs->next = NULL;
+        inputs->next = nullptr;
 
-        ex.ck(avfilter_graph_parse_ptr(graph, desc.c_str(), &inputs, &outputs, NULL), AGPP);
-        ex.ck(avfilter_graph_config(graph, NULL), AGC);
+        ex.ck(avfilter_graph_parse_ptr(graph, desc.c_str(), &inputs, &outputs, nullptr), AGPP);
+        ex.ck(avfilter_graph_config(graph, nullptr), AGC);
+
+        avfilter_inout_free(&inputs);
+        avfilter_inout_free(&outputs);
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "Video Filter constructor exception: ");
+        avfilter_inout_free(&inputs);
+        avfilter_inout_free(&outputs);
+        if (sink_ctx) avfilter_free(sink_ctx);
+        if (src_ctx) avfilter_free(src_ctx);
+        if (graph) avfilter_graph_free(&graph);
+        if (frame) av_frame_free(&frame);
+        //ex.msg(e.what(), MsgPriority::CRITICAL, "Video Filter constructor exception: ");
+        throw Exception(e.what());
     }
 
-    avfilter_inout_free(&inputs);
-    avfilter_inout_free(&outputs);
+
 }
 
 void Filter::initAudio()
@@ -105,8 +114,8 @@ void Filter::initAudio()
 
         ex.ck(frame = av_frame_alloc(), AFA);
         ex.ck(graph = avfilter_graph_alloc(), AGA);
-        ex.ck(avfilter_graph_create_filter(&src_ctx, buf_src, "buf_src", str.str().c_str(), NULL, graph), AGCF);
-        ex.ck(avfilter_graph_create_filter(&sink_ctx, buf_sink, "buf_sink", NULL, NULL, graph), AGCF);
+        ex.ck(avfilter_graph_create_filter(&src_ctx, buf_src, "buf_src", str.str().c_str(), nullptr, graph), AGCF);
+        ex.ck(avfilter_graph_create_filter(&sink_ctx, buf_sink, "buf_sink", nullptr, nullptr, graph), AGCF);
         ex.ck(av_opt_set_int_list(sink_ctx, "sample_fmts", sample_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN), AOSIL);
         ex.ck(av_opt_set_int(sink_ctx, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN), AOSI);
 
@@ -116,20 +125,20 @@ void Filter::initAudio()
             outputs->name = av_strdup("in");
             outputs->filter_ctx = src_ctx;
             outputs->pad_idx = 0;
-            outputs->next = NULL;
+            outputs->next = nullptr;
 
             inputs->name = av_strdup("out");
             inputs->filter_ctx = sink_ctx;
             inputs->pad_idx = 0;
-            inputs->next = NULL;
+            inputs->next = nullptr;
 
-            ex.ck(avfilter_graph_parse_ptr(graph, desc.c_str(), &inputs, &outputs, NULL), AGPP);
+            ex.ck(avfilter_graph_parse_ptr(graph, desc.c_str(), &inputs, &outputs, nullptr), AGPP);
         }
         else {
             ex.ck(avfilter_link(src_ctx, 0, sink_ctx, 0), AL);
         }
 
-        ex.ck(avfilter_graph_config(graph, NULL), AGC);
+        ex.ck(avfilter_graph_config(graph, nullptr), AGC);
     }
     catch (const Exception& e) {
         ex.msg(e.what(), MsgPriority::CRITICAL, "Audio Filter constructor exception: ");

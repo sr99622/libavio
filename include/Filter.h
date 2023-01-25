@@ -47,11 +47,11 @@ public:
 	void filter(Frame& f);
 	AVMediaType mediaType() { return decoder->mediaType; }
 
-	Decoder* decoder = NULL;
-	AVFilterContext* sink_ctx = NULL;
-	AVFilterContext* src_ctx = NULL;
-	AVFilterGraph* graph = NULL;
-	AVFrame* frame = NULL;
+	Decoder* decoder = nullptr;
+	AVFilterContext* sink_ctx = nullptr;
+	AVFilterContext* src_ctx = nullptr;
+	AVFilterGraph* graph = nullptr;
+	AVFrame* frame = nullptr;
 	Frame tmp;
 	std::string desc;
 
