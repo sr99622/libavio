@@ -42,7 +42,7 @@ public:
 	~Reader();
 	AVPacket* read();
 
-	void* process;
+	void* process = nullptr;
 
 	void request_seek(float pct);
 	int64_t seek_target_pts = AV_NOPTS_VALUE;
@@ -95,7 +95,7 @@ public:
     int keyframe_count = 0;
     int keyframe_marker = 0;
 
-	AVFormatContext* fmt_ctx = NULL;
+	AVFormatContext* fmt_ctx = nullptr;
 	int video_stream_index = -1;
 	int audio_stream_index = -1;
 	int64_t last_video_pts = 0;
@@ -119,8 +119,6 @@ public:
 	void set_audio_out(const std::string& name) { apq_name = std::string(name); }
 
 	ExceptionHandler ex;
-	void send_message(const std::string& str);
-	void send_error(const std::string& str);
 };
 
 }

@@ -58,8 +58,6 @@ public:
     
     std::vector<std::thread*> ops;
 
-    //std::function<void(Process*)> cameraTimeoutCallback = nullptr;
-    //std::function<void(Process*, const std::string&)> openWriterFailedCallback = nullptr;
     void* infoCaller;
     std::function<void(void* caller, const std::string&)> infoCallback = nullptr;
     void* errorCaller;
@@ -82,6 +80,8 @@ public:
     void add_decoder(Decoder& decoder_in);
     void add_filter(Filter& filter_in);
     void add_display(Display& display_in);
+	void send_info(const std::string& str);
+	void send_error(const std::string& str);
     void clear_queues();
     void clear_decoders();
     void cleanup();

@@ -18,6 +18,7 @@
 *********************************************************************/
 
 #include "Decoder.h"
+#include "Process.h"
 
 AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
 const char * good = "good";
@@ -140,7 +141,6 @@ void Decoder::flush()
 
 int Decoder::decode(AVPacket* pkt)
 {
-
     if (!dec_ctx) throw Exception("dec_ctx null");
 
     if (dec_ctx->opaque && pkt) {
@@ -206,13 +206,17 @@ int Decoder::decode(AVPacket* pkt)
                 f = Frame(frame);
             }
 
+            throw Exception("test exception");
+
             f.set_rts(stream);
             if (show_frames) std::cout << strMediaType << " decoder " << f.description() << std::endl;
             frame_q->push_move(f);
         }
     }
     catch (const Exception& e) {
-        std::cout << strMediaType << " Decoder::decode exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << strMediaType << " Decoder::decode exception: " << e.what();
+        if (P) P->send_info(str.str());
         ret = -1;
     }
 

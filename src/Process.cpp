@@ -66,6 +66,26 @@ void Process::clear_decoders()
     if (audioDecoder) audioDecoder->flush();
 }
 
+void Process::send_info(const std::string& str)
+{
+    if (infoCallback && infoCaller) {
+        infoCallback(infoCaller, str);
+    }
+    else {
+        std::cout << "Info Message: " << str << std::endl;
+    }
+}
+
+void Process::send_error(const std::string& str)
+{
+    if (errorCallback && errorCaller) {
+        errorCallback(errorCaller, str);
+    }
+    else {
+        std::cout << "Error Message: " << str << std::endl;
+    }
+}
+
 void Process::key_event(int keyCode)
 {
     SDL_Event event;
@@ -118,6 +138,11 @@ void Process::add_display(Display& display_in)
 
 void Process::cleanup()
 {
+    if (reader) {
+        if (reader->vpq) reader->vpq->close();
+        if (reader->apq) reader->apq->close();
+    }
+
     std::cout << "cleanup 2" << std::endl;
     for (int i = 0; i < ops.size(); i++) {
         ops[i]->join();

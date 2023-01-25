@@ -120,8 +120,9 @@ void GLWidget::start(void* widget)
         avio::Filter* videoFilter = nullptr;
         if (reader.has_video() && !glWidget->disable_video) {
             reader.set_video_out("vpq_reader");
-            reader.show_video_pkts = true;
+            //reader.show_video_pkts = true;
             videoDecoder = new avio::Decoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_NONE);
+            videoDecoder->process = &process;
             videoDecoder->set_video_in(reader.video_out());
             videoDecoder->set_video_out("vfq_decoder");
             process.add_decoder(*videoDecoder);
@@ -136,6 +137,7 @@ void GLWidget::start(void* widget)
         if (reader.has_audio() && !glWidget->disable_audio) {
             reader.set_audio_out("apq_reader");
             audioDecoder = new avio::Decoder(reader, AVMEDIA_TYPE_AUDIO);
+            audioDecoder->process = &process;
             audioDecoder->set_audio_in(reader.audio_out());
             audioDecoder->set_audio_out("afq_decoder");
             display.set_audio_in(audioDecoder->audio_out());

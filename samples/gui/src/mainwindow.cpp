@@ -80,9 +80,11 @@ void MainWindow::onBtnPlayClicked()
 {
     std::cout << "play" << std::endl;
     if (glWidget->process) {
+        std::cout << "toggle process" << std::endl;
         glWidget->process->togglePaused();
     }
     else {
+        std::cout << "play" << std::endl;
         glWidget->play();
     }
     setPlayButton();

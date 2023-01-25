@@ -27,12 +27,12 @@ extern "C"
 
 #define MAX_TIMEOUT 5
 
-time_t timeout_start = time(NULL);
+time_t timeout_start = time(nullptr);
 
 static int interrupt_callback(void *ctx)
 {
     avio::Reader* reader = (avio::Reader*)ctx;
-    time_t diff = time(NULL) - timeout_start;
+    time_t diff = time(nullptr) - timeout_start;
 
     if (diff > MAX_TIMEOUT) {
         return 1;
@@ -44,27 +44,27 @@ namespace avio {
 
 Reader::Reader(const char* filename)
 {
-    AVDictionary* opts = NULL;
+    AVDictionary* opts = nullptr;
 
     if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(59, 0, 0)) 
         av_dict_set(&opts, "timeout", "5000000", 0);
     else 
         av_dict_set(&opts, "stimeout", "5000000", 0);
 
-    ex.ck(avformat_open_input(&fmt_ctx, filename, NULL, &opts), CmdTag::AOI);
+    ex.ck(avformat_open_input(&fmt_ctx, filename, nullptr, &opts), CmdTag::AOI);
  
     av_dict_free(&opts);
-    timeout_start = time(NULL);
+    timeout_start = time(nullptr);
     AVIOInterruptCB cb = { interrupt_callback, this };
     fmt_ctx->interrupt_callback = cb;
 
-    ex.ck(avformat_find_stream_info(fmt_ctx, NULL), CmdTag::AFSI);
+    ex.ck(avformat_find_stream_info(fmt_ctx, nullptr), CmdTag::AFSI);
 
-    video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+    video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     if (video_stream_index < 0) 
         ex.msg("did not find video stream", MsgPriority::INFO);
 
-    audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
+    audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (audio_stream_index < 0) 
         ex.msg("did not find audio stream", MsgPriority::INFO);
 
@@ -85,21 +85,15 @@ AVPacket* Reader::read()
 
     try {
         if (!fmt_ctx) throw Exception("fmt_ctx null");
-        timeout_start = time(NULL);
+        timeout_start = time(nullptr);
         ex.ck(ret = av_read_frame(fmt_ctx, pkt), CmdTag::ARF);
-        timeout_start = time(NULL);
+        timeout_start = time(nullptr);
     }
     catch (const Exception& e) {
-        if (ret != AVERROR_EOF) {
-            throw Exception(e.what());
-            //ex.msg(e.what(), MsgPriority::CRITICAL, "Reader::read exception: ");
-            //if (ret == AVERROR_EXIT || ret == AVERROR(ETIMEDOUT)) {
-            //    std::cout << "Camera connection timed out"  << std::endl;
-            //    throw Exception(e.what());
-            //}
-        }
         av_packet_free(&pkt);
         pkt = nullptr;
+        if (ret != AVERROR_EOF)
+            throw Exception(e.what());
     }
 
     return pkt;
@@ -115,11 +109,13 @@ AVPacket* Reader::seek()
         ex.ck(av_seek_frame(fmt_ctx, seek_stream_index(), seek_target_pts, flags), CmdTag::ASF);
     }
     catch (const Exception& e) {
-        std::cout << "Reader seek exception: " << e.what() << std::endl;
-        return NULL;
+        std::stringstream str;
+        str << "Reader seek exception: " << e.what();
+        if (P) P->send_info(str.str());
+        return nullptr;
     }
 
-    AVPacket* pkt = NULL;
+    AVPacket* pkt = nullptr;
     while (pkt = read()) {
         if (pkt->stream_index == seek_stream_index()) {
             seek_found_pts = pkt->pts;
@@ -166,8 +162,6 @@ void Reader::pipe_write(AVPacket* pkt)
             while (pkts_cache.size() > 0) {
                 AVPacket* tmp = pkts_cache.front();
                 pkts_cache.pop_front();
-                if (tmp->stream_index == video_stream_index)
-                    std::cout << "pkt from queue: " << tmp->pts << std::endl;
                 pipe->write(tmp);
                 av_packet_free(&tmp);
             }
@@ -180,7 +174,6 @@ void Reader::pipe_write(AVPacket* pkt)
         }
     }
     catch (const Exception& e) {
-        std::cout << "Reader pipe write error" << std::endl;
         std::stringstream str;
         str << "Record function failure: " << e.what();
 
@@ -191,7 +184,7 @@ void Reader::pipe_write(AVPacket* pkt)
         }
         pipe = nullptr;
         request_pipe_write = false;
-        send_error(str.str());
+        if (P) P->send_error(str.str());
     }
 }
 
@@ -199,7 +192,6 @@ void Reader::fill_pkts_cache(AVPacket* pkt)
 {
     if (pkt->stream_index == video_stream_index) {
         if (pkt->flags) {
-            std::cout << "key frame packet found in stream" << std::endl;
             if (++keyframe_count >= keyframe_cache_size()) {
                 clear_pkts_cache(keyframe_marker);
                 keyframe_count--;
@@ -431,35 +423,4 @@ int Reader::keyframe_cache_size()
     return result;
 }
 
-void Reader::send_message(const std::string& str)
-{
-    bool sent = false;
-    if (P) {
-        if (P->infoCallback) {
-            P->infoCallback(P->infoCaller, str);
-            sent = true;
-        }
-    }
-    if (!sent) {
-        std::cout << "Reader Info Message: " << str << std::endl;
-    }
 }
-
-void Reader::send_error(const std::string& str)
-{
-    bool sent = false;
-    if (P) {
-        if (P->errorCallback) {
-            P->errorCallback(P->errorCaller, str);
-            sent = true;
-        }
-    }
-    if (!sent) {
-        std::cout << "Reader Error Message: " << str << std::endl;
-    }
-}
-
-
-}
-
-
