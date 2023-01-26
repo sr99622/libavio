@@ -254,7 +254,7 @@ PYBIND11_MODULE(avio, m)
     #ifdef VERSION_INFO
         m.attr("__version__") = VERSION_INFO;
     #else
-        m.attr("__version__") = "dev";
+        m.attr("__version__") = "dev-1a";
     #endif
 
 }
