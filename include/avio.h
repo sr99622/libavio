@@ -72,7 +72,6 @@ static void read(Process* process)
                     av_packet_free(&pkt);
                     pkt = tmp;
                     process->clear_queues();
-                    //process->clear_decoders();
                 }
                 else {
                     break;
@@ -162,6 +161,7 @@ static void decode(Process* process, AVMediaType mediaType)
         decoder->flush();
         //decoder->frame_q->push_move(Frame(nullptr));
     }
+    catch (const QueueClosedException& e) {}
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
