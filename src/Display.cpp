@@ -26,19 +26,15 @@ namespace avio
 
 void Display::init()
 {
-    try {
-        if (P->audioFilter)
-            initAudio(P->audioFilter->sample_rate(), P->audioFilter->sample_format(), P->audioFilter->channels(), P->audioFilter->channel_layout(), P->audioFilter->frame_size());
-        else if (P->audioDecoder)
-            initAudio(P->audioDecoder->sample_rate(), P->audioDecoder->sample_format(), P->audioDecoder->channels(), P->audioDecoder->channel_layout(), P->audioDecoder->frame_size());
-    }
-    catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "Display constructor exception: ");
-    }
+    if (P->audioFilter)
+        initAudio(P->audioFilter->sample_rate(), P->audioFilter->sample_format(), P->audioFilter->channels(), P->audioFilter->channel_layout(), P->audioFilter->frame_size());
+    else if (P->audioDecoder)
+        initAudio(P->audioDecoder->sample_rate(), P->audioDecoder->sample_format(), P->audioDecoder->channels(), P->audioDecoder->channel_layout(), P->audioDecoder->frame_size());
 }
 
 Display::~Display()
 {
+    std::cout << "~Display" << std::endl;
     if (SDL_WasInit(SDL_INIT_AUDIO)) {
         SDL_LockAudioDevice(audioDeviceID);
         SDL_CloseAudioDevice(audioDeviceID);
@@ -131,7 +127,9 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
         }
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "Display::initVideo exception: ");
+        std::stringstream str;
+        str << "Display init video exception: " << e.what();
+        if (P) P->send_error(str.str());
         ret = -1;
     }
     
@@ -194,50 +192,50 @@ bool Display::display()
 
     while (true)
     {
-        std::vector<SDL_Event> events;
-        PlayState state = getEvents(&events);
+        try {
 
-        if (state == PlayState::QUIT) {
-            P->running = false;
-        }
-        else if (state == PlayState::PAUSE) {
-            togglePause();
-        }
+            std::vector<SDL_Event> events;
+            PlayState state = getEvents(&events);
 
-        if (paused) 
-        {
-            f = paused_frame;
-            bool flag_out = true;
-            
-            while (reader->seeking() || state == PlayState::QUIT) {
-                if (afq_in) afq_in->clear();
-                if (vfq_in->size() > 0) vfq_in->pop_move(f);
-                if (f.isValid()) {
-                    if (f.m_frame->pts == reader->seek_found_pts) {
-                        reader->seek_found_pts = AV_NOPTS_VALUE;
-                        flag_out = false;
+            if (state == PlayState::QUIT) {
+                P->running = false;
+            }
+            else if (state == PlayState::PAUSE) {
+                togglePause();
+            }
+
+            if (paused) 
+            {
+                f = paused_frame;
+                bool flag_out = true;
+                
+                while (reader->seeking() || state == PlayState::QUIT) {
+                    if (afq_in) afq_in->clear();
+                    if (vfq_in->size() > 0) vfq_in->pop_move(f);
+                    if (f.isValid()) {
+                        if (f.m_frame->pts == reader->seek_found_pts) {
+                            reader->seek_found_pts = AV_NOPTS_VALUE;
+                            flag_out = false;
+                        }
+                    }
+                    else {
+                        std::cout << "Display received eof" << std::endl;
+                        playing = false;
+                        break;
                     }
                 }
-                else {
-                    std::cout << "Display received eof" << std::endl;
-                    playing = false;
+
+                if (flag_out)
                     break;
+
+                if (!renderCallback) {
+                    videoPresentation();
                 }
+
+                SDL_Delay(SDL_EVENT_LOOP_WAIT);
+
             }
 
-            if (flag_out)
-                break;
-
-            if (!renderCallback) {
-                videoPresentation();
-            }
-
-            SDL_Delay(SDL_EVENT_LOOP_WAIT);
-
-        }
-
-        try 
-        {
             if (vfq_in) {
                 vfq_in->pop_move(f);
                 if (!f.isValid()) {
@@ -277,13 +275,11 @@ bool Display::display()
             else {
                 f.invalidate();
             }
-
         }
         catch (const Exception& e) {
-            ex.msg(e.what(), MsgPriority::CRITICAL, "Display::display exception: ");
-            ex.msg(std::string("last frame description: ") + f.description());
-            playing = false;
-            break;
+            std::stringstream str;
+            str << "Display exception: " << e.what();
+            if (P) P->send_info(str.str());
         }
     }
 
@@ -350,10 +346,11 @@ int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_form
         }
 
         SDL_PauseAudioDevice(audioDeviceID, 0);
-
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "Display::initAudio exception: ");
+        std::stringstream str;
+        str << "Display init audio exception: " << e.what();
+        if (P) P->send_error(str.str());
     }
 
     return ret;
@@ -418,11 +415,12 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                 d->afq_out->push_move(f);
             else
                 f.invalidate();
-
         }
     }
     catch (const Exception& e) { 
-        std::cout << "audio callback exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "Audio callback exception: " << e.what();
+        if (d->process) ((Process*)(d->process))->send_info(str.str());
     }
 
     free(temp);

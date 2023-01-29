@@ -20,6 +20,7 @@
 #ifndef AVIO_H
 #define AVIO_H
 
+#include <iostream>
 #include "Exception.h"
 #include "Queue.h"
 #include "Reader.h"
@@ -52,7 +53,7 @@ static void read(Process* process)
         {
             AVPacket* pkt = reader->read();
             if (!pkt) {
-                process->send_info("reader recieved null packet eof");
+                //process->send_info("reader recieved null packet eof");
                 break;
             }
 
@@ -61,7 +62,6 @@ static void read(Process* process)
                 reader->clear_pkts_cache(0);
                 process->clear_queues();
                 av_packet_free(&pkt);
-                std::cout << "process shut down" << std::endl;
                 break;
             }
 
@@ -74,6 +74,11 @@ static void read(Process* process)
                     process->clear_queues();
                 }
                 else {
+                    process->running = false;
+                    if (reader->pipe) reader->close_pipe();
+                    reader->clear_pkts_cache(0);
+                    process->clear_queues();
+                    av_packet_free(&pkt);
                     break;
                 }
             }
@@ -116,14 +121,11 @@ static void read(Process* process)
         process->send_error(str.str());
     }
 
-    if (reader->vpq) {
-        if (!reader->vpq->closed())
-            reader->vpq->push_move(Packet(nullptr));
+    try {
+        if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
+        if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
-    if (reader->apq) {
-        if (!reader->apq->closed())
-            reader->apq->push_move(Packet(nullptr));
-    }
+    catch (const QueueClosedException& e) {}
 }
 
 static void decode(Process* process, AVMediaType mediaType) 
@@ -159,7 +161,6 @@ static void decode(Process* process, AVMediaType mediaType)
         }
         decoder->decode(nullptr);
         decoder->flush();
-        //decoder->frame_q->push_move(Frame(nullptr));
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { 
@@ -169,7 +170,7 @@ static void decode(Process* process, AVMediaType mediaType)
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
-    std::cout << decoder->strMediaType << " decoder finish: " << std::endl;
+    //std::cout << decoder->strMediaType << " decoder finish: " << std::endl;
 }
 
 static void filter(Process* process, AVMediaType mediaType)
@@ -197,16 +198,19 @@ static void filter(Process* process, AVMediaType mediaType)
         {
             Frame f;
             filter->frame_in_q->pop_move(f);
-            filter->filter(f);
             if (!f.isValid())
                 break;
+
+            filter->filter(f);
         }
         filter->frame_out_q->push_move(Frame(nullptr));
     }
     catch (const Exception& e) {
-        std::cout << "filter loop exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "filter loop exception: " << e.what();
+        process->send_error(str.str());
     }
-    std::cout << "filter finished" << std::endl;
+    //std::cout << "filter finished" << std::endl;
 }
 
 

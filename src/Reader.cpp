@@ -44,38 +44,51 @@ namespace avio {
 
 Reader::Reader(const char* filename)
 {
-    AVDictionary* opts = nullptr;
+    try {
+        AVDictionary* opts = nullptr;
 
-    if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(59, 0, 0)) 
-        av_dict_set(&opts, "timeout", "5000000", 0);
-    else 
-        av_dict_set(&opts, "stimeout", "5000000", 0);
+        if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(59, 0, 0)) 
+            av_dict_set(&opts, "timeout", "5000000", 0);
+        else 
+            av_dict_set(&opts, "stimeout", "5000000", 0);
 
-    ex.ck(avformat_open_input(&fmt_ctx, filename, nullptr, &opts), CmdTag::AOI);
- 
-    av_dict_free(&opts);
-    timeout_start = time(nullptr);
-    AVIOInterruptCB cb = { interrupt_callback, this };
-    fmt_ctx->interrupt_callback = cb;
+        ex.ck(avformat_open_input(&fmt_ctx, filename, nullptr, &opts), CmdTag::AOI);
+    
+        av_dict_free(&opts);
+        timeout_start = time(nullptr);
+        AVIOInterruptCB cb = { interrupt_callback, this };
+        fmt_ctx->interrupt_callback = cb;
 
-    ex.ck(avformat_find_stream_info(fmt_ctx, nullptr), CmdTag::AFSI);
+        ex.ck(avformat_find_stream_info(fmt_ctx, nullptr), CmdTag::AFSI);
 
-    video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-    if (video_stream_index < 0) 
-        ex.msg("did not find video stream", MsgPriority::INFO);
+        video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+        if (video_stream_index < 0) 
+            ex.msg("did not find video stream", MsgPriority::INFO);
 
-    audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-    if (audio_stream_index < 0) 
-        ex.msg("did not find audio stream", MsgPriority::INFO);
+        audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+        if (audio_stream_index < 0) 
+            ex.msg("did not find audio stream", MsgPriority::INFO);
 
 
-    //if (video_codec() == AV_CODEC_ID_HEVC) throw Exception("HEVC compression is not supported by default configuration");
-
+        //if (video_codec() == AV_CODEC_ID_HEVC) throw Exception("HEVC compression is not supported by default configuration");
+    }
+    catch (const Exception& e) {
+        close();
+        std::stringstream str;
+        str << "Reader constructor exception: " << e.what();
+        throw Exception(str.str());
+    }
 }
 
 Reader::~Reader()
 {
-    avformat_close_input(&fmt_ctx);
+    std::cout << "~Reader" << std::endl;
+    close();
+}
+
+void Reader::close()
+{
+    if (fmt_ctx) avformat_close_input(&fmt_ctx);
 }
 
 AVPacket* Reader::read()
