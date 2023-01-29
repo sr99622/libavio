@@ -53,7 +53,8 @@ public:
 	bool seeking();
 	void start_from(int milliseconds);
 	void end_at(int milliseconds);
-	void showStreamParameters();	
+	void showStreamParameters();
+	void close();
 
 	int64_t start_time();
 	int64_t duration();

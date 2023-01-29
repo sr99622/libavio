@@ -52,7 +52,7 @@ public:
     Display(Reader& reader) : reader(&reader) { }
     ~Display();
 
-    void* process;
+    void* process = nullptr;
     Reader* reader;
 
     void init();

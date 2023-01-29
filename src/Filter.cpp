@@ -153,6 +153,7 @@ void Filter::initAudio()
 
 Filter::~Filter()
 {
+    std::cout << "~Filter" << std::endl;
     close();
 }
 
