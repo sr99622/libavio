@@ -85,7 +85,7 @@ void MainWindow::onBtnPlayClicked()
     }
     else {
         std::cout << "play" << std::endl;
-        glWidget->play();
+        glWidget->play("/home/stephen/Videos/five.webm");
     }
     setPlayButton();
 }
@@ -109,9 +109,6 @@ void MainWindow::onBtnRecordClicked()
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     glWidget->stop();
-    while (glWidget->process) {
-        QThread::msleep(1);
-    }
 }
 
 void MainWindow::mediaPlayingStarted(qint64 duration)

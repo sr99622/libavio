@@ -18,7 +18,6 @@
 *********************************************************************/
 
 #include "Decoder.h"
-#include "Process.h"
 
 AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
 const char * good = "good";
@@ -223,7 +222,7 @@ int Decoder::decode(AVPacket* pkt)
     catch (const Exception& e) {
         std::stringstream str;
         str << strMediaType << " Decoder::decode exception: " << e.what();
-        if (P) P->send_info(str.str());
+        if (infoCallback) infoCallback(str.str());
         ret = -1;
     }
 

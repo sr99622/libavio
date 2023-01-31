@@ -14,16 +14,21 @@ class GLWidget : public QOpenGLWidget
 public:
     GLWidget();
     ~GLWidget();
-    void play();
+    void play(const QString& arg);
     void stop();
+    void setMute(bool arg);
+    void setVolume(int arg);
+    void toggle_pipe_out(const QString& filename);
+    qint64 media_duration();
+    bool isPaused();
+    void togglePaused();
+    bool checkForStreamHeader(const char* name);
     
     QSize sizeHint() const override;
 
     static void start(void* widget);
-    static void renderCallback(void* caller, const avio::Frame& f);
-    static void progressCallback(void* caller, float pct);
-    static void infoCallback(void* caller, const std::string& msg);
-    static void errorCallback(void* caller, const std::string& msg);
+
+    char uri[1024];
 
     QImage img;
     avio::Frame f;
@@ -35,6 +40,12 @@ public:
 
     int volume = 100;
     bool mute = false;
+
+    int vpq_size = 0;
+    int apq_size = 0;
+
+    int keyframe_cache_size;
+    AVHWDeviceType hardwareDecoder = AV_HWDEVICE_TYPE_NONE;
 
 signals:
     void mediaPlayingStarted(qint64);

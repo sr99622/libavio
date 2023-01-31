@@ -188,7 +188,8 @@ void Filter::filter(Frame& f)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Filter exception: " << e.what();
-        if (P) P->send_info(str.str());
+        //if (P) P->send_info(str.str());
+        if (infoCallback) infoCallback(str.str());
     }
 }
 

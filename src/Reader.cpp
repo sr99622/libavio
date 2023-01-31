@@ -20,10 +20,10 @@
 extern "C"
 {
 #include <libavutil/channel_layout.h>
+#include <libavutil/pixdesc.h>
 }
 
 #include "Reader.h"
-#include "Process.h"
 
 #define MAX_TIMEOUT 5
 
@@ -124,7 +124,8 @@ AVPacket* Reader::seek()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Reader seek exception: " << e.what();
-        if (P) P->send_info(str.str());
+        //if (P) P->send_info(str.str());
+        if (errorCallback) errorCallback(str.str());
         return nullptr;
     }
 
@@ -170,7 +171,9 @@ void Reader::pipe_write(AVPacket* pkt)
     try {
         if (!pipe) {
             pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
-            pipe->process = process;
+            //pipe->process = process;
+            pipe->infoCallback = infoCallback;
+            pipe->errorCallback = errorCallback;
             pipe->open(pipe_out_filename);
             while (pkts_cache.size() > 0) {
                 AVPacket* tmp = pkts_cache.front();
@@ -187,9 +190,6 @@ void Reader::pipe_write(AVPacket* pkt)
         }
     }
     catch (const Exception& e) {
-        std::stringstream str;
-        str << "Record function failure: " << e.what();
-
         if (pipe->opened)
             close_pipe();
         else {
@@ -197,7 +197,11 @@ void Reader::pipe_write(AVPacket* pkt)
         }
         pipe = nullptr;
         request_pipe_write = false;
-        if (P) P->send_error(str.str());
+
+        //if (P) P->send_error(str.str());
+        std::stringstream str;
+        str << "Record function failure: " << e.what();
+        if (errorCallback) errorCallback(str.str());
     }
 }
 
@@ -460,7 +464,7 @@ void Reader::showStreamParameters()
         str << "\nNo Audio Stream Found";
     }
     
-    if (P) P->send_info(str.str());
+    if (infoCallback) infoCallback(str.str());
 }
 
 
