@@ -7,8 +7,6 @@ namespace avio
 bool Process::isPaused()
 {
     bool result = false;
-    if (!running)
-        return false;
     if (display) result = display->paused;
     return result;
 }
@@ -66,26 +64,6 @@ void Process::clear_decoders()
     if (audioDecoder) audioDecoder->flush();
 }
 
-void Process::send_info(const std::string& str)
-{
-    if (infoCallback && infoCaller) {
-        infoCallback(infoCaller, str);
-    }
-    else {
-        std::cout << "Info Message: " << str << std::endl;
-    }
-}
-
-void Process::send_error(const std::string& str)
-{
-    if (errorCallback && errorCaller) {
-        errorCallback(errorCaller, str);
-    }
-    else {
-        std::cout << "Error Message: " << str << std::endl;
-    }
-}
-
 void Process::key_event(int keyCode)
 {
     SDL_Event event;
@@ -96,7 +74,6 @@ void Process::key_event(int keyCode)
 
 void Process::add_reader(Reader& reader_in)
 {
-    //reader_in.process = (void*)this;
     reader = &reader_in;
     
     if (!reader_in.vpq_name.empty()) pkt_q_names.push_back(reader_in.vpq_name);
@@ -147,18 +124,6 @@ void Process::cleanup()
         ops[i]->join();
         delete ops[i];
     }
-
-    /*
-    for (PKT_Q_MAP::iterator q = pkt_queues.begin(); q != pkt_queues.end(); ++q) {
-        if (q->second)
-            delete q->second;
-    }
-
-    for (FRAME_Q_MAP::iterator q = frame_queues.begin(); q != frame_queues.end(); ++q) {
-        if (q->second)
-            delete q->second;
-    }
-    */
 }
 
 void Process::run()

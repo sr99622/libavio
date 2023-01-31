@@ -53,6 +53,11 @@ public:
     ~Display();
 
     void* process = nullptr;
+  	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
+    std::function<void(float)> progressCallback = nullptr;
+    std::function<void(const Frame&)> renderCallback;
+
     Reader* reader;
 
     void init();
@@ -73,11 +78,6 @@ public:
     void toggleRecord();
 
     Frame f;
-
-    void* renderCaller;
-    std::function<void(void*, const Frame&)> renderCallback;
-    void* progressCaller;
-    std::function<void(void*, float)> progressCallback;
 
     std::string audioDeviceStatus() const;
     const char* sdlAudioFormatName(SDL_AudioFormat format) const;

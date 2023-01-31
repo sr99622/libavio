@@ -118,7 +118,7 @@ static void read(Process* process)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Reader thread loop error: " << e.what();
-        process->send_error(str.str());
+        if (reader->errorCallback) reader->errorCallback(str.str());
     }
 
     try {
@@ -141,11 +141,6 @@ static void decode(Process* process, AVMediaType mediaType)
             break;
     }
 
-    if (!decoder) {
-        process->send_error("no decoder in decode thread loop"); 
-        return;
-    }
-
     decoder->frame_q = process->frame_queues[decoder->frame_q_name];
     decoder->pkt_q = process->pkt_queues[decoder->pkt_q_name];
 
@@ -166,7 +161,7 @@ static void decode(Process* process, AVMediaType mediaType)
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
-        process->send_error(str.str());
+        if (decoder->errorCallback) decoder->errorCallback(str.str());
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
@@ -183,11 +178,6 @@ static void filter(Process* process, AVMediaType mediaType)
         case AVMEDIA_TYPE_AUDIO:
             filter = process->audioFilter;
             break;
-    }
-
-    if (!filter) {
-        std::cout << "no filter in filter loop" << std::endl; 
-        return;
     }
 
     filter->frame_in_q = process->frame_queues[filter->q_in_name];
@@ -208,7 +198,8 @@ static void filter(Process* process, AVMediaType mediaType)
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
-        process->send_error(str.str());
+        //process->send_error(str.str());
+        if (filter->errorCallback) filter->errorCallback(str.str());
     }
     //std::cout << "filter finished" << std::endl;
 }

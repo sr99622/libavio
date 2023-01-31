@@ -129,7 +129,7 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init video exception: " << e.what();
-        if (P) P->send_error(str.str());
+        if (errorCallback) errorCallback(str.str());
         ret = -1;
     }
     
@@ -254,7 +254,7 @@ bool Display::display()
             SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
 
             if (renderCallback) {
-                renderCallback(renderCaller, f);
+                renderCallback(f);
             }
             else {
                 ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
@@ -265,7 +265,7 @@ bool Display::display()
             if (progressCallback) {
                 if (reader->duration()) {
                     float pct = (float)f.m_rts / (float)reader->duration();
-                    progressCallback(progressCaller, pct);
+                    progressCallback(pct);
                 }
             }
 
@@ -279,7 +279,7 @@ bool Display::display()
         catch (const Exception& e) {
             std::stringstream str;
             str << "Display exception: " << e.what();
-            if (P) P->send_info(str.str());
+            if (infoCallback) infoCallback(str.str());
         }
     }
 
@@ -350,7 +350,7 @@ int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_form
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init audio exception: " << e.what();
-        if (P) P->send_error(str.str());
+        if (errorCallback) errorCallback(str.str());
     }
 
     return ret;
@@ -420,7 +420,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Audio callback exception: " << e.what();
-        if (d->process) ((Process*)(d->process))->send_info(str.str());
+        if (d->infoCallback) d->infoCallback(str.str());
     }
 
     free(temp);

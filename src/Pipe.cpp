@@ -92,7 +92,8 @@ void Pipe::open(const std::string& filename)
 
     std::stringstream str;
     str << "Pipe opened write file: " << filename.c_str();
-    if (P) P->send_info(str.str());
+    //if (P) P->send_info(str.str());
+    if (infoCallback) infoCallback(str.str());
 }
 
 void Pipe::adjust_pts(AVPacket* pkt)
@@ -119,7 +120,8 @@ void Pipe::write(AVPacket* pkt)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Pipe write packet exception: " << e.what();
-        if (P) P->send_info(str.str());
+        //if (P) P->send_info(str.str());
+        if (infoCallback) infoCallback(str.str());
     }
 }
 
@@ -148,13 +150,15 @@ void Pipe::close()
 
         std::stringstream str;
         str << "Pipe closed file: " << url;
-        if (P) P->send_info(str.str());
+        //if (P) P->send_info(str.str());
+        if (infoCallback) infoCallback(str.str());
 
     }
     catch (const Exception& e) {
         std::stringstream str;
         str << "Record to file close error: " << e.what();
-        if (P) P->send_error(str.str());
+        //if (P) P->send_error(str.str());
+        if (errorCallback) errorCallback(str.str());
     }
 }
 

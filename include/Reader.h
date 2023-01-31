@@ -42,7 +42,9 @@ public:
 	~Reader();
 	AVPacket* read();
 
-	void* process = nullptr;
+	//void* process = nullptr;
+	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
 	void request_seek(float pct);
 	int64_t seek_target_pts = AV_NOPTS_VALUE;

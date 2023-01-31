@@ -48,7 +48,9 @@ public:
 	void filter(Frame& f);
 	AVMediaType mediaType() { return decoder->mediaType; }
 
-	void* process = nullptr;
+	//void* process = nullptr;
+	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
 	Decoder* decoder = nullptr;
 	AVFilterContext* sink_ctx = nullptr;

@@ -58,11 +58,6 @@ public:
     
     std::vector<std::thread*> ops;
 
-    void* infoCaller;
-    std::function<void(void* caller, const std::string&)> infoCallback = nullptr;
-    void* errorCaller;
-    std::function<void(void* caller, const std::string&)> errorCallback = nullptr;
-
     bool running = false;
 
     Process() { av_log_set_level(AV_LOG_PANIC); }
@@ -80,8 +75,6 @@ public:
     void add_decoder(Decoder& decoder_in);
     void add_filter(Filter& filter_in);
     void add_display(Display& display_in);
-	void send_info(const std::string& str);
-	void send_error(const std::string& str);
     void clear_queues();
     void clear_decoders();
     void cleanup();
