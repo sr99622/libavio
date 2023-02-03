@@ -79,6 +79,8 @@ public:
     void clear_decoders();
     void cleanup();
     void run();
+    void start();
+    static void twink(void* caller);
 
 };
 
