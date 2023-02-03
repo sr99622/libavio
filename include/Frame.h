@@ -51,6 +51,10 @@ public:
 	void set_rts(AVStream* stream);  // called from Decoder::decode
 	void set_pts(AVStream* stream);  // called from Encoder::encode
 	std::string description() const;
+	uint8_t* data();
+	int width();
+	int height();
+	int stride();
 
 	AVFrame* m_frame = nullptr;
 	uint64_t m_rts;

@@ -1,6 +1,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 #include "avio.h"
+#include "Display.h"
+#include "Frame.h"
+
+#define PYBIND11_DETAILED_ERROR_MESSAGES
 
 namespace py = pybind11;
 
@@ -16,7 +21,8 @@ PYBIND11_MODULE(avio, m)
         .def("add_decoder", &Process::add_decoder)
         .def("add_filter", &Process::add_filter)
         .def("add_display", &Process::add_display)
-        .def("run", &Process::run);
+        .def("run", &Process::run)
+        .def("start", &Process::start);
 //        .def("add_encoder", &Process::add_encoder)
 //        .def("set_python", &Process::set_python)
 //        .def("set_python_init_arg", &Process::set_python_init_arg)
@@ -68,6 +74,25 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("show_audio_pkts", &Reader::show_audio_pkts)
         .def_readwrite("vpq_name", &Reader::vpq_name)
         .def_readwrite("apq_name", &Reader::apq_name);
+    py::class_<Frame>(m, "Frame", py::buffer_protocol())
+        .def(py::init<>())
+        .def(py::init<const Frame&>())
+        .def("isValid", &Frame::isValid)
+        .def("invalidate", &Frame::invalidate)
+        .def("width", &Frame::width)
+        .def("height", &Frame::height)
+        .def("stride", &Frame::stride)
+        .def_readwrite("m_rts", &Frame::m_rts)
+        .def_buffer([](Frame &m) -> py::buffer_info {
+            return py::buffer_info(
+                m.data(),
+                sizeof(uint8_t),
+                py::format_descriptor<uint8_t>::format(),
+                3,
+                { m.height(), m.width(), 3},
+                { sizeof(uint8_t) * m.stride() , sizeof(uint8_t) * 3, sizeof(uint8_t) }
+            );
+        });
     py::class_<Decoder>(m, "Decoder")
         .def(py::init<Reader&, AVMediaType>())
         .def(py::init<Reader&, AVMediaType, AVHWDeviceType>())
@@ -147,7 +172,9 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("width", &Display::width)
         .def_readwrite("height", &Display::height)
         .def_readwrite("pix_fmt", &Display::pix_fmt)
-        .def_readwrite("fullscreen", &Display::fullscreen);
+        .def_readwrite("fullscreen", &Display::fullscreen)
+        .def_readwrite("renderCallback", &Display::renderCallback)
+        .def_readwrite("progressCallback", &Display::progressCallback);
 /*
     py::class_<Pipe>(m, "Pipe")
         .def(py::init<Reader&>());

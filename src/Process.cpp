@@ -126,6 +126,18 @@ void Process::cleanup()
     }
 }
 
+void Process::twink(void* caller)
+{
+    Process* process = (Process*)caller;
+    process->run();
+}
+
+void Process::start()
+{
+    std::thread process_thread(twink, this);
+    process_thread.detach();
+}
+
 void Process::run()
 {
     running = true;

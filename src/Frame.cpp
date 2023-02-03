@@ -203,4 +203,32 @@ void Frame::set_pts(AVStream* stream)
 	}
 }
 
+uint8_t* Frame::data()
+{
+	uint8_t* result = nullptr;
+	if (m_frame) result = m_frame->data[0];
+	return result;
+}
+
+int Frame::width()
+{
+	int result = 0;
+	if (m_frame) result = m_frame->width;
+	return result;
+}
+
+int Frame::height()
+{
+	int result = 0;
+	if (m_frame) result = m_frame->height;
+	return result;
+}
+
+int Frame::stride()
+{
+	int result = 0;
+	if (m_frame) result = m_frame->linesize[0];
+	return result;
+}
+
 }
