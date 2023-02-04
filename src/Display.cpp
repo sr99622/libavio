@@ -206,6 +206,11 @@ bool Display::display()
 
             if (paused) 
             {
+                if (!P->running) {
+                    playing = false;
+                    break;
+                }
+
                 f = paused_frame;
                 bool flag_out = true;
                 
@@ -225,14 +230,15 @@ bool Display::display()
                     }
                 }
 
-                if (flag_out)
-                    break;
-
                 if (!renderCallback) {
                     videoPresentation();
                 }
 
-                SDL_Delay(SDL_EVENT_LOOP_WAIT);
+                //SDL_Delay(SDL_EVENT_LOOP_WAIT);
+                std::this_thread::sleep_for(std::chrono::milliseconds(30));
+
+                if (flag_out)
+                    break;
 
             }
 

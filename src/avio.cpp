@@ -20,15 +20,9 @@ PYBIND11_MODULE(avio, m)
         .def("add_filter", &Player::add_filter)
         .def("add_display", &Player::add_display)
         .def("run", &Player::run)
-        .def("start", &Player::start);
-//        .def("add_encoder", &Player::add_encoder)
-//        .def("set_python", &Player::set_python)
-//        .def("set_python_init_arg", &Player::set_python_init_arg)
-//        .def("merge", &Player::merge)
-//        .def("trim", &Player::trim)
-//        .def("add_frame_drain", &Player::add_frame_drain)
-//        .def("add_packet_drain", &Player::add_packet_drain)
-//        .def_readwrite("merge_filenames", &Player::merge_filenames);
+        .def("start", &Player::start)
+        .def("togglePaused", &Player::togglePaused)
+        .def_readwrite("running", &Player::running);
     py::class_<Reader>(m, "Reader")
         .def(py::init<const char*>())
         .def("start_time", &Reader::start_time)

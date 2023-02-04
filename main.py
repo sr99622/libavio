@@ -26,8 +26,7 @@ class AVWidget(QOpenGLWidget):
         self.progress.update()
         self.update()
 
-    def paintEvent(self, e):
-    #def paintGL(self):
+    def paintGL(self):
         if (not self.image.isNull()):
             painter = QPainter(self)
             tmp = self.image.scaled(self.width(), self.height(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -42,17 +41,25 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("avio")
         self.count = 0
 
-        self.btnView = QPushButton("view")
-        self.btnView.clicked.connect(self.btnViewClicked)
+        self.btnPlay = QPushButton("play")
+        self.btnPlay.clicked.connect(self.btnPlayClicked)
+
+        self.btnPause = QPushButton("pause")
+        self.btnPause.clicked.connect(self.btnPauseClicked)
+
+        self.btnStop = QPushButton("stop")
+        self.btnStop.clicked.connect(self.btnStopClicked)
 
         self.avWidget = AVWidget()
         #self.progress = QSlider(Qt.Orientation.Horizontal)
 
         pnlMain = QWidget()
         lytMain = QGridLayout(pnlMain)
-        lytMain.addWidget(self.avWidget,           0, 0, 3, 1)
-        lytMain.addWidget(self.avWidget.progress,  3, 0, 1, 1)
-        lytMain.addWidget(self.btnView,            0, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        lytMain.addWidget(self.avWidget,           0, 0, 6, 1)
+        lytMain.addWidget(self.avWidget.progress,  6, 0, 1, 1)
+        lytMain.addWidget(self.btnPlay,            0, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        lytMain.addWidget(self.btnPause,           1, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        lytMain.addWidget(self.btnStop,            2, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
 
         self.setCentralWidget(pnlMain)
 
@@ -61,8 +68,16 @@ class MainWindow(QMainWindow):
     #    self.progress.update()
     #    QApplication.playerEvents()
 
-    def btnViewClicked(self):
-        print("btnView clicked")
+    def btnPauseClicked(self):
+        print("btnPauseClicked")
+        self.player.togglePaused()
+
+    def btnStopClicked(self):
+        print("btnStopClicked")
+        self.player.running = False
+
+    def btnPlayClicked(self):
+        print("btnPlay clicked")
 
         self.player = avio.Player()
 
