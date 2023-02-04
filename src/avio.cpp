@@ -5,8 +5,6 @@
 #include "Display.h"
 #include "Frame.h"
 
-#define PYBIND11_DETAILED_ERROR_MESSAGES
-
 namespace py = pybind11;
 
 namespace avio
@@ -15,22 +13,22 @@ namespace avio
 PYBIND11_MODULE(avio, m)
 {
     m.doc() = "pybind11 av plugin";
-    py::class_<Process>(m, "Process")
+    py::class_<Player>(m, "Player")
         .def(py::init<>())
-        .def("add_reader", &Process::add_reader)
-        .def("add_decoder", &Process::add_decoder)
-        .def("add_filter", &Process::add_filter)
-        .def("add_display", &Process::add_display)
-        .def("run", &Process::run)
-        .def("start", &Process::start);
-//        .def("add_encoder", &Process::add_encoder)
-//        .def("set_python", &Process::set_python)
-//        .def("set_python_init_arg", &Process::set_python_init_arg)
-//        .def("merge", &Process::merge)
-//        .def("trim", &Process::trim)
-//        .def("add_frame_drain", &Process::add_frame_drain)
-//        .def("add_packet_drain", &Process::add_packet_drain)
-//        .def_readwrite("merge_filenames", &Process::merge_filenames);
+        .def("add_reader", &Player::add_reader)
+        .def("add_decoder", &Player::add_decoder)
+        .def("add_filter", &Player::add_filter)
+        .def("add_display", &Player::add_display)
+        .def("run", &Player::run)
+        .def("start", &Player::start);
+//        .def("add_encoder", &Player::add_encoder)
+//        .def("set_python", &Player::set_python)
+//        .def("set_python_init_arg", &Player::set_python_init_arg)
+//        .def("merge", &Player::merge)
+//        .def("trim", &Player::trim)
+//        .def("add_frame_drain", &Player::add_frame_drain)
+//        .def("add_packet_drain", &Player::add_packet_drain)
+//        .def_readwrite("merge_filenames", &Player::merge_filenames);
     py::class_<Reader>(m, "Reader")
         .def(py::init<const char*>())
         .def("start_time", &Reader::start_time)

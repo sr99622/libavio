@@ -52,7 +52,7 @@ public:
     Display(Reader& reader) : reader(&reader) { }
     ~Display();
 
-    void* process = nullptr;
+    void* player = nullptr;
   	std::function<void(const std::string&)> infoCallback = nullptr;
 	std::function<void(const std::string&)> errorCallback = nullptr;
     std::function<void(float)> progressCallback = nullptr;

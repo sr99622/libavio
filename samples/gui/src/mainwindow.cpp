@@ -46,8 +46,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::setPlayButton()
 {
-    if (glWidget->process) {
-        if (glWidget->process->isPaused()) {
+    if (glWidget->player) {
+        if (glWidget->player->isPaused()) {
             btnPlay->setText("Play");
         }
         else {
@@ -61,8 +61,8 @@ void MainWindow::setPlayButton()
 
 void MainWindow::setRecordButton()
 {
-    if (glWidget->process) {
-        if (glWidget->process->isPiping()) {
+    if (glWidget->player) {
+        if (glWidget->player->isPiping()) {
             btnRecord->setText("=-=-=");
         }
         else {
@@ -79,13 +79,13 @@ void MainWindow::setRecordButton()
 void MainWindow::onBtnPlayClicked()
 {
     std::cout << "play" << std::endl;
-    if (glWidget->process) {
-        std::cout << "toggle process" << std::endl;
-        glWidget->process->togglePaused();
+    if (glWidget->player) {
+        std::cout << "toggle player" << std::endl;
+        glWidget->player->togglePaused();
     }
     else {
         std::cout << "play" << std::endl;
-        glWidget->play("/home/stephen/Videos/five.webm");
+        glWidget->play("C:/Users/sr996/Videos/news.mp4");
     }
     setPlayButton();
 }
@@ -101,8 +101,8 @@ void MainWindow::onBtnStopClicked()
 void MainWindow::onBtnRecordClicked()
 {
     std::cout << "record" << std::endl;
-    if (glWidget->process)
-        glWidget->process->toggle_pipe_out("test.webm");
+    if (glWidget->player)
+        glWidget->player->toggle_pipe_out("test.webm");
     setRecordButton();
 }
 

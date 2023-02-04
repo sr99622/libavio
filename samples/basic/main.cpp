@@ -9,13 +9,13 @@ int main(int argc, char** argv)
 
     std::cout << "playing file: " << argv[1] << std::endl;
 
-    avio::Process process;
+    avio::Player player;
 
     avio::Reader reader(argv[1]);
     reader.set_video_out("vpq_reader");
     reader.set_audio_out("apq_reader");
 
-    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_VAAPI);
+    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_CUDA);
     videoDecoder.set_video_in(reader.video_out());
     videoDecoder.set_video_out("vfq_decoder");
 
@@ -34,13 +34,13 @@ int main(int argc, char** argv)
     //display.set_video_in(videoDecoder.video_out());
     display.set_audio_in(audioDecoder.audio_out());
 
-    process.add_reader(reader);
-    process.add_decoder(videoDecoder);
-    process.add_filter(videoFilter);
-    process.add_decoder(audioDecoder);
-    process.add_display(display);
+    player.add_reader(reader);
+    player.add_decoder(videoDecoder);
+    player.add_filter(videoFilter);
+    player.add_decoder(audioDecoder);
+    player.add_display(display);
 
-    process.run();
+    player.run();
 
     return 0;
 }

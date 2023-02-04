@@ -27,22 +27,22 @@
 #include "Decoder.h"
 #include "Pipe.h"
 #include "Filter.h"
-#include "Process.h"
+#include "Player.h"
 #include "Packet.h"
 
 namespace avio
 {
 
-static void read(Process* process) 
+static void read(Player* player) 
 {
-    Reader* reader = process->reader;
+    Reader* reader = player->reader;
     if (reader->has_video() && !reader->vpq_name.empty()) {
-        reader->vpq = process->pkt_queues[reader->vpq_name];
+        reader->vpq = player->pkt_queues[reader->vpq_name];
         if (reader->vpq_max_size > 0)
             reader->vpq->set_max_size(reader->vpq_max_size);
     }
     if (reader->has_audio() && !reader->apq_name.empty()) {
-        reader->apq = process->pkt_queues[reader->apq_name];
+        reader->apq = player->pkt_queues[reader->apq_name];
         if (reader->apq_max_size > 0)
             reader->apq->set_max_size(reader->apq_max_size);
     }
@@ -53,14 +53,14 @@ static void read(Process* process)
         {
             AVPacket* pkt = reader->read();
             if (!pkt) {
-                //process->send_info("reader recieved null packet eof");
+                //player->send_info("reader recieved null packet eof");
                 break;
             }
 
-            if (!process->running) {
+            if (!player->running) {
                 if (reader->pipe) reader->close_pipe();
                 reader->clear_pkts_cache(0);
-                process->clear_queues();
+                player->clear_queues();
                 av_packet_free(&pkt);
                 break;
             }
@@ -71,13 +71,13 @@ static void read(Process* process)
                 if (tmp) {
                     av_packet_free(&pkt);
                     pkt = tmp;
-                    process->clear_queues();
+                    player->clear_queues();
                 }
                 else {
-                    process->running = false;
+                    player->running = false;
                     if (reader->pipe) reader->close_pipe();
                     reader->clear_pkts_cache(0);
-                    process->clear_queues();
+                    player->clear_queues();
                     av_packet_free(&pkt);
                     break;
                 }
@@ -128,21 +128,21 @@ static void read(Process* process)
     catch (const QueueClosedException& e) {}
 }
 
-static void decode(Process* process, AVMediaType mediaType) 
+static void decode(Player* player, AVMediaType mediaType) 
 {
 
     Decoder* decoder = nullptr;
     switch (mediaType) {
         case AVMEDIA_TYPE_VIDEO:
-            decoder = process->videoDecoder;
+            decoder = player->videoDecoder;
             break;
         case AVMEDIA_TYPE_AUDIO:
-            decoder = process->audioDecoder;
+            decoder = player->audioDecoder;
             break;
     }
 
-    decoder->frame_q = process->frame_queues[decoder->frame_q_name];
-    decoder->pkt_q = process->pkt_queues[decoder->pkt_q_name];
+    decoder->frame_q = player->frame_queues[decoder->frame_q_name];
+    decoder->pkt_q = player->pkt_queues[decoder->pkt_q_name];
 
     try {
         while (true)
@@ -168,20 +168,20 @@ static void decode(Process* process, AVMediaType mediaType)
     //std::cout << decoder->strMediaType << " decoder finish: " << std::endl;
 }
 
-static void filter(Process* process, AVMediaType mediaType)
+static void filter(Player* player, AVMediaType mediaType)
 {
     Filter* filter = nullptr;
     switch (mediaType) {
         case AVMEDIA_TYPE_VIDEO:
-            filter = process->videoFilter;
+            filter = player->videoFilter;
             break;
         case AVMEDIA_TYPE_AUDIO:
-            filter = process->audioFilter;
+            filter = player->audioFilter;
             break;
     }
 
-    filter->frame_in_q = process->frame_queues[filter->q_in_name];
-    filter->frame_out_q = process->frame_queues[filter->q_out_name];
+    filter->frame_in_q = player->frame_queues[filter->q_in_name];
+    filter->frame_out_q = player->frame_queues[filter->q_out_name];
 
     try {
         while (true)
@@ -198,7 +198,7 @@ static void filter(Process* process, AVMediaType mediaType)
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
-        //process->send_error(str.str());
+        //player->send_error(str.str());
         if (filter->errorCallback) filter->errorCallback(str.str());
     }
     //std::cout << "filter finished" << std::endl;

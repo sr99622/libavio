@@ -17,8 +17,8 @@
 *
 *********************************************************************/
 
-#ifndef PROCESS_H
-#define PROCESS_H
+#ifndef PLAYER_H
+#define PLAYER_H
 
 #include "Exception.h"
 #include "Queue.h"
@@ -32,7 +32,7 @@
 #include <functional>
 #include <map>
 
-#define P ((Process*)process)
+#define P ((Player*)player)
 
 namespace avio
 {
@@ -40,7 +40,7 @@ namespace avio
 typedef std::map<std::string, Queue<Packet>*> PKT_Q_MAP;
 typedef std::map<std::string, Queue<Frame>*> FRAME_Q_MAP;
 
-class Process
+class Player
 {
 
 public:
@@ -60,8 +60,8 @@ public:
 
     bool running = false;
 
-    Process() { av_log_set_level(AV_LOG_PANIC); }
-    ~Process() { }
+    Player() { av_log_set_level(AV_LOG_PANIC); }
+    ~Player() { }
 
     bool isPaused();
     bool isPiping();
@@ -87,4 +87,4 @@ public:
 
 }
 
-#endif // PROCESS_H
+#endif // PLAYER_H

@@ -46,7 +46,7 @@ add_library(libavio SHARED
     src/Frame.cpp
     src/Packet.cpp
     src/Pipe.cpp
-    src/Process.cpp
+    src/Player.cpp
     src/Reader.cpp
 )
 
@@ -61,12 +61,11 @@ else()
         SDL2::SDL2
         pthread
     )
-endif()
-
-set_target_properties(libavio PROPERTIES
+    set_target_properties(libavio PROPERTIES
     OUTPUT_NAME avio
     SOVERSION 1
-)
+    )
+endif()
 
 target_include_directories(libavio PUBLIC
     include
@@ -86,7 +85,7 @@ pybind11_add_module(avio
     src/Frame.cpp
     src/Packet.cpp
     src/Pipe.cpp
-    src/Process.cpp
+    src/Player.cpp
     src/Reader.cpp
 )
                 
