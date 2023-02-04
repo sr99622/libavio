@@ -19,7 +19,7 @@
 
 #include <SDL.h>
 #include "Filter.h"
-#include "Process.h"
+#include "Player.h"
 
 namespace avio
 {

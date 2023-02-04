@@ -33,7 +33,7 @@ public:
     QImage img;
     avio::Frame f;
     QMutex mutex;
-    avio::Process* process = nullptr;
+    avio::Player* player = nullptr;
 
     bool disable_audio = false;
     bool disable_video = false;

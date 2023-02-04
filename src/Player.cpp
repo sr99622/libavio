@@ -1,44 +1,44 @@
-#include "Process.h"
+#include "Player.h"
 #include "avio.h"
 
 namespace avio
 {
 
-bool Process::isPaused()
+bool Player::isPaused()
 {
     bool result = false;
     if (display) result = display->paused;
     return result;
 }
 
-bool Process::isPiping()
+bool Player::isPiping()
 {
     bool result = false;
     if (reader) result = reader->request_pipe_write;
     return result;
 }
 
-void Process::setMute(bool arg)
+void Player::setMute(bool arg)
 {
     if (display) display->mute = arg;
 }
 
-void Process::setVolume(int arg)
+void Player::setVolume(int arg)
 {
     if (display) display->volume = (float)arg / 100.0f;
 }
 
-void Process::togglePaused()
+void Player::togglePaused()
 {
     if (display) display->togglePause();
 }
 
-void Process::seek(float arg)
+void Player::seek(float arg)
 {
     if (reader) reader->request_seek(arg);
 }
 
-void Process::toggle_pipe_out(const std::string& filename)
+void Player::toggle_pipe_out(const std::string& filename)
 {
     if (reader) {
         reader->pipe_out_filename = filename;
@@ -46,7 +46,7 @@ void Process::toggle_pipe_out(const std::string& filename)
     }
 }
 
-void Process::clear_queues()
+void Player::clear_queues()
 {
     PKT_Q_MAP::iterator pkt_q;
     for (pkt_q = pkt_queues.begin(); pkt_q != pkt_queues.end(); ++pkt_q) {
@@ -58,13 +58,13 @@ void Process::clear_queues()
     }
 }
 
-void Process::clear_decoders()
+void Player::clear_decoders()
 {
     if (videoDecoder) videoDecoder->flush();
     if (audioDecoder) audioDecoder->flush();
 }
 
-void Process::key_event(int keyCode)
+void Player::key_event(int keyCode)
 {
     SDL_Event event;
     event.type = SDL_KEYDOWN;
@@ -72,7 +72,7 @@ void Process::key_event(int keyCode)
     SDL_PushEvent(&event);
 }
 
-void Process::add_reader(Reader& reader_in)
+void Player::add_reader(Reader& reader_in)
 {
     reader = &reader_in;
     
@@ -80,7 +80,7 @@ void Process::add_reader(Reader& reader_in)
     if (!reader_in.apq_name.empty()) pkt_q_names.push_back(reader_in.apq_name);
 }
 
-void Process::add_decoder(Decoder& decoder_in)
+void Player::add_decoder(Decoder& decoder_in)
 {
     if (decoder_in.mediaType == AVMEDIA_TYPE_VIDEO)
         videoDecoder = &decoder_in;
@@ -91,7 +91,7 @@ void Process::add_decoder(Decoder& decoder_in)
     frame_q_names.push_back(decoder_in.frame_q_name);
 }
 
-void Process::add_filter(Filter& filter_in)
+void Player::add_filter(Filter& filter_in)
 {
     if (filter_in.mediaType() == AVMEDIA_TYPE_VIDEO)
         videoFilter = &filter_in;
@@ -102,9 +102,9 @@ void Process::add_filter(Filter& filter_in)
     frame_q_names.push_back(filter_in.q_out_name);
 }
 
-void Process::add_display(Display& display_in)
+void Player::add_display(Display& display_in)
 {
-    display_in.process = (void*)this;
+    display_in.player = (void*)this;
     display = &display_in;
 
     if (!display->vfq_out_name.empty())
@@ -113,7 +113,7 @@ void Process::add_display(Display& display_in)
         frame_q_names.push_back(display->afq_out_name);
 }
 
-void Process::cleanup()
+void Player::cleanup()
 {
     if (reader) {
         if (reader->vpq) reader->vpq->close();
@@ -126,19 +126,19 @@ void Process::cleanup()
     }
 }
 
-void Process::twink(void* caller)
+void Player::twink(void* caller)
 {
-    Process* process = (Process*)caller;
-    process->run();
+    Player* player = (Player*)caller;
+    player->run();
 }
 
-void Process::start()
+void Player::start()
 {
     std::thread process_thread(twink, this);
     process_thread.detach();
 }
 
-void Process::run()
+void Player::run()
 {
     running = true;
     

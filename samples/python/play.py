@@ -1,6 +1,6 @@
 import avio
 
-process = avio.Process()
+player = avio.Player()
 
 reader = avio.Reader("/home/stephen/Videos/short.mp4")
 reader.set_video_out("vpq_reader")
@@ -23,10 +23,10 @@ display = avio.Display(reader)
 display.set_video_in(videoFilter.video_out())
 display.set_audio_in(audioDecoder.audio_out())
 
-process.add_reader(reader)
-process.add_decoder(videoDecoder)
-process.add_filter(videoFilter)
-process.add_decoder(audioDecoder)
-process.add_display(display)
+player.add_reader(reader)
+player.add_decoder(videoDecoder)
+player.add_filter(videoFilter)
+player.add_decoder(audioDecoder)
+player.add_display(display)
 
-process.run()
+player.run()
