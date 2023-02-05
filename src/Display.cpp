@@ -91,7 +91,10 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
             ex.msg(str.str());
 
-            window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, 0);
+            if (hWnd)
+                window = SDL_CreateWindowFrom((void*)hWnd);
+            else
+                window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, 0);
             if (!window) throw Exception(std::string("SDL_CreateWindow") + SDL_GetError());
 
             if (fullscreen) SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
@@ -393,6 +396,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
                     swr_convert(d->swr_ctx, &d->swr_buffer, nb_samples, data, nb_samples);
                     int mark = std::min(len, d->swr_buffer_size);
+                    //int mark = min(len, d->swr_buffer_size);
                     memcpy(temp + ptr, d->swr_buffer, mark);
                     ptr += mark;
                     len -= mark;

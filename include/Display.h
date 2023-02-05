@@ -33,6 +33,7 @@
 #include "Decoder.h"
 #include "Filter.h"
 #include "Reader.h"
+//#include "windows.h"
 
 #define SDL_EVENT_LOOP_WAIT 10
 
@@ -53,6 +54,7 @@ public:
     ~Display();
 
     void* player = nullptr;
+    uint64_t hWnd = 0;
   	std::function<void(const std::string&)> infoCallback = nullptr;
 	std::function<void(const std::string&)> errorCallback = nullptr;
     std::function<void(float)> progressCallback = nullptr;
