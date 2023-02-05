@@ -182,6 +182,7 @@ void GLWidget::start(void* widget)
 
         avio::Display display(reader);
         display.renderCallback = renderCallback;
+        //display.hWnd = (void*)glWidget->winId();
         display.progressCallback = progressCallback;
         display.infoCallback = infoCallback;
         display.errorCallback = errorCallback;

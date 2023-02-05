@@ -2,16 +2,16 @@ import sys
 import build.avio as avio
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, \
-QGridLayout, QWidget, QSlider, QLabel
+QGridLayout, QWidget, QSlider, QLabel, QGraphicsScene, QGraphicsView
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QPainter, QImage
+from PyQt6.QtGui import QPainter, QImage, QGuiApplication
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
-class AVWidget(QOpenGLWidget):
+class AVWidget(QLabel):
     def __init__(self):
         super().__init__()
         self.frame = avio.Frame()
-        self.progress =  QSlider(Qt.Orientation.Horizontal)
+        #self.progress =  QSlider(Qt.Orientation.Horizontal)
         self.image = QImage()
         self.duration = 0
 
@@ -19,16 +19,16 @@ class AVWidget(QOpenGLWidget):
         return QSize(640, 480)
 
     def renderCallback(self, f):
-        ary = np.array(f, copy = True)
+        ary = np.array(f, copy = False)
         h, w, d = ary.shape
         self.image = QImage(ary.data, w, h, d * w, QImage.Format.Format_RGB888)
-        self.progress.setValue(int(100 * f.m_rts / self.duration))
-        self.progress.update()
         self.update()
 
-    def paintGL(self):
+    #def paintGL(self):
+    def paintEvent(self, e):
         if (not self.image.isNull()):
             painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             tmp = self.image.scaled(self.width(), self.height(), Qt.AspectRatioMode.KeepAspectRatio)
             dx = self.width() - tmp.width()
             dy = self.height() - tmp.height()
@@ -40,6 +40,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("avio")
         self.count = 0
+        self.player = avio.Player()
 
         self.btnPlay = QPushButton("play")
         self.btnPlay.clicked.connect(self.btnPlayClicked)
@@ -51,22 +52,28 @@ class MainWindow(QMainWindow):
         self.btnStop.clicked.connect(self.btnStopClicked)
 
         self.avWidget = AVWidget()
-        #self.progress = QSlider(Qt.Orientation.Horizontal)
+        self.progress = QSlider(Qt.Orientation.Horizontal)
 
         pnlMain = QWidget()
         lytMain = QGridLayout(pnlMain)
         lytMain.addWidget(self.avWidget,           0, 0, 6, 1)
-        lytMain.addWidget(self.avWidget.progress,  6, 0, 1, 1)
+        lytMain.addWidget(self.progress,           6, 0, 1, 1)
         lytMain.addWidget(self.btnPlay,            0, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
         lytMain.addWidget(self.btnPause,           1, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
         lytMain.addWidget(self.btnStop,            2, 1, 1, 1, Qt.AlignmentFlag.AlignCenter)
 
         self.setCentralWidget(pnlMain)
 
-    #def updateProgress(self, n):
-    #    self.progress.setValue(int(n * 100))
-    #    self.progress.update()
-    #    QApplication.playerEvents()
+    def closeEvent(self, e):
+        print(e)
+        self.player.running = False
+        from time import sleep
+        sleep(0.5)
+
+
+    def updateProgress(self, n):
+        self.progress.setValue(int(n * 100))
+        self.progress.update()
 
     def btnPauseClicked(self):
         print("btnPauseClicked")
@@ -78,15 +85,17 @@ class MainWindow(QMainWindow):
 
     def btnPlayClicked(self):
         print("btnPlay clicked")
+        if self.player.running:
+            return
 
         self.player = avio.Player()
 
-        self.reader = avio.Reader("C:/Users/sr996/Videos/news.mp4")
+        self.reader = avio.Reader("C:/Users/sr996/Videos/walker.mp4")
         self.reader.set_video_out("vpq_reader")
         self.reader.set_audio_out("apq_reader")
         self.avWidget.duration = self.reader.duration()
 
-        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO)
+        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_CUDA)
         self.videoDecoder.set_video_in(self.reader.video_out())
         self.videoDecoder.set_video_out("vfq_decoder")
 
@@ -103,13 +112,12 @@ class MainWindow(QMainWindow):
         self.display.set_video_in(self.videoFilter.video_out())
         self.display.set_audio_in(self.audioDecoder.audio_out())
 
-        #def gen_p():
-        #    return lambda n: self.updateProgress(n)
-        #self.display.progressCallback = gen_p()
-
-        def gen_f():
-            return lambda f: self.avWidget.renderCallback(f)
-        self.display.renderCallback = gen_f()
+        self.display.progressCallback = lambda n: self.updateProgress(n)
+        print(QGuiApplication.platformName())
+        if QGuiApplication.platformName() == "windows":
+            self.display.hWnd = self.avWidget.winId()
+        else:
+            self.display.renderCallback = lambda f: self.avWidget.renderCallback(f)
 
         self.player.add_reader(self.reader)
         self.player.add_decoder(self.videoDecoder)
