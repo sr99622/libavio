@@ -8,15 +8,25 @@ from PyQt6.QtGui import QPainter, QImage, QGuiApplication
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
 class AVWidget(QLabel):
-    def __init__(self):
+    def __init__(self, p):
         super().__init__()
         self.frame = avio.Frame()
         #self.progress =  QSlider(Qt.Orientation.Horizontal)
         self.image = QImage()
         self.duration = 0
+        self.player = p
 
     def sizeHint(self):
         return QSize(640, 480)
+
+    def resizeEvent(self, e):
+        width = e.size().width()
+        height = e.size().height()
+        print("spontaneous: ", e.spontaneous())
+        print("resizeEvent w: ", width, " h: ", height)
+        if not e.spontaneous():
+            self.player.width = e.size().width()
+            self.player.height = e.size().height()
 
     def renderCallback(self, f):
         ary = np.array(f, copy = False)
@@ -51,7 +61,7 @@ class MainWindow(QMainWindow):
         self.btnStop = QPushButton("stop")
         self.btnStop.clicked.connect(self.btnStopClicked)
 
-        self.avWidget = AVWidget()
+        self.avWidget = AVWidget(self.player)
         self.progress = QSlider(Qt.Orientation.Horizontal)
 
         pnlMain = QWidget()
@@ -89,18 +99,20 @@ class MainWindow(QMainWindow):
             return
 
         self.player = avio.Player()
+        self.avWidget.player = self.player
 
-        self.reader = avio.Reader("C:/Users/sr996/Videos/walker.mp4")
+        self.reader = avio.Reader("/home/stephen/Videos/news.mp4")
         self.reader.set_video_out("vpq_reader")
         self.reader.set_audio_out("apq_reader")
         self.avWidget.duration = self.reader.duration()
 
-        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_CUDA)
+        #self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_NONE)
+        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_VDPAU)
         self.videoDecoder.set_video_in(self.reader.video_out())
         self.videoDecoder.set_video_out("vfq_decoder")
 
         #videoFilter = avio.Filter(videoDecoder, "scale=1280x720,format=rgb24")
-        self.videoFilter = avio.Filter(self.videoDecoder, "format=rgb24")
+        self.videoFilter = avio.Filter(self.videoDecoder, "null")
         self.videoFilter.set_video_in(self.videoDecoder.video_out())
         self.videoFilter.set_video_out("vfq_filter")
 
@@ -114,10 +126,15 @@ class MainWindow(QMainWindow):
 
         self.display.progressCallback = lambda n: self.updateProgress(n)
         print(QGuiApplication.platformName())
-        if QGuiApplication.platformName() == "windows":
-            self.display.hWnd = self.avWidget.winId()
-        else:
-            self.display.renderCallback = lambda f: self.avWidget.renderCallback(f)
+        self.display.hWnd = self.avWidget.winId()
+        print("widget width: ", self.avWidget.width(), " height: ", self.avWidget.height())
+        self.player.width = self.avWidget.width()
+        self.player.height = self.avWidget.height()
+
+        #if QGuiApplication.platformName() == "windows":
+        #    self.display.hWnd = self.avWidget.winId()
+        #else:
+        #    self.display.renderCallback = lambda f: self.avWidget.renderCallback(f)
 
         self.player.add_reader(self.reader)
         self.player.add_decoder(self.videoDecoder)

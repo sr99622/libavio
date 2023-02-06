@@ -33,7 +33,6 @@
 #include "Decoder.h"
 #include "Filter.h"
 #include "Reader.h"
-//#include "windows.h"
 
 #define SDL_EVENT_LOOP_WAIT 10
 
@@ -64,7 +63,7 @@ public:
 
     void init();
     int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);
-    int initVideo(int width, int height, AVPixelFormat pix_fmt);
+    int initVideo(/*int width, int height, AVPixelFormat pix_fmt*/);
     static void AudioCallback(void* userdata, uint8_t* stream, int len);
     void videoPresentation();
     PlayState getEvents(std::vector<SDL_Event>* events);
@@ -125,8 +124,10 @@ public:
     float volume = 1.0f;
     bool mute = false;
 
-    int width = 0;
-    int height = 0;
+    int win_width = 0;
+    int win_height = 0;
+    int pix_width = 0;
+    int pix_height = 0;
     AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 
     uint64_t start_time;

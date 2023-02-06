@@ -60,6 +60,9 @@ public:
 
     bool running = false;
 
+    int width = 0;
+    int height = 0;
+
     Player() { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }
 

@@ -48,14 +48,14 @@ Display::~Display()
     SDL_Quit();
 }
 
-int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
+int Display::initVideo(/*int width, int height, AVPixelFormat pix_fmt*/)
 {
     int ret = 0;
 
     try {
         Uint32 sdl_format = 0;
-        int w = width;
-        int h = height;
+        //int w = pix_width;
+        //int h = pix_height;
 
         switch (pix_fmt) {
         case AV_PIX_FMT_YUV420P:
@@ -87,14 +87,17 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
         if (!window) {
             const char* pix_fmt_name = av_get_pix_fmt_name(pix_fmt);
             std::stringstream str;
-            str << "initializing video display | width: " << width << " height: " << height
+            str << "initializing video display | width: " << pix_width << " height: " << pix_height
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
             ex.msg(str.str());
 
-            if (hWnd)
+            if (hWnd) {
                 window = SDL_CreateWindowFrom((void*)hWnd);
-            else
-                window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, 0);
+                SDL_SetWindowSize(window, P->width, P->height);
+            }
+            else {
+                window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pix_width, pix_height, 0);
+            }
             if (!window) throw Exception(std::string("SDL_CreateWindow") + SDL_GetError());
 
             if (fullscreen) SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
@@ -102,9 +105,9 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
             renderer = SDL_CreateRenderer(window, -1, 0);
             if (!renderer) throw Exception(std::string("SDL_CreateRenderer") + SDL_GetError());
 
-            SDL_RenderSetLogicalSize(renderer, w, h);
+            SDL_RenderSetLogicalSize(renderer, pix_width, pix_height);
 
-            texture = SDL_CreateTexture(renderer, sdl_format, SDL_TEXTUREACCESS_STREAMING, w, h);
+            texture = SDL_CreateTexture(renderer, sdl_format, SDL_TEXTUREACCESS_STREAMING, pix_width, pix_height);
             if (!texture) throw Exception(std::string("SDL_CreateTexture") + SDL_GetError());
 
         }
@@ -113,18 +116,8 @@ int Display::initVideo(int width, int height, AVPixelFormat pix_fmt)
                 int window_width;
                 int window_height;
                 SDL_GetWindowSize(window, &window_width, &window_height);
-                if (!(window_width == w && window_height == h)) {
-                    SDL_SetWindowSize(window, w, h);
-                    SDL_DisplayMode DM;
-                    SDL_GetCurrentDisplayMode(0, &DM);
-                    auto Width = DM.w;
-                    auto Height = DM.h;
-                    int x = (Width - w) / 2;
-                    int y = (Height - h) / 2;
-                    SDL_SetWindowPosition(window, x, y);
-                    if (texture)
-                        SDL_DestroyTexture(texture);
-                    texture = SDL_CreateTexture(renderer, sdl_format, SDL_TEXTUREACCESS_STREAMING, w, h);
+                if (!(window_width == P->width && window_height == P->height)) {
+                    SDL_SetWindowSize(window, P->width, P->height);
                 }
             }
         }
@@ -266,7 +259,12 @@ bool Display::display()
                 renderCallback(f);
             }
             else {
-                ex.ck(initVideo(f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format), "initVideo");
+                pix_width = f.m_frame->width;
+                pix_height = f.m_frame->height;
+                pix_fmt = (AVPixelFormat)f.m_frame->format;
+                //std::cout << "test 1: " << P->width << ", " << P->height << std::endl;
+                ex.ck(initVideo(/*f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format*/), "initVideo");
+                //std::cout << "test 2" << std::endl;
                 videoPresentation();
             }
             reader->last_video_pts = f.m_frame->pts;
