@@ -251,9 +251,22 @@ bool Display::display()
                 f.m_rts = rtClock.stream_time();
             }
 
+
             paused_frame = f;
 
-            SDL_Delay(rtClock.update(f.m_rts - reader->start_time()));
+            if (pythonCallback) f = pythonCallback(f);
+            //if (pythonCallback) pythonCallback(f);
+
+            int delay = rtClock.update(f.m_rts - reader->start_time());
+            //SDL_Delay(delay);
+
+            auto start = std::chrono::high_resolution_clock::now();
+            std::chrono::milliseconds ms(delay);
+            auto end = start + ms;
+            do {
+                std::this_thread::yield();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            } while (std::chrono::high_resolution_clock::now() < end);
 
             if (renderCallback) {
                 renderCallback(f);
@@ -262,9 +275,7 @@ bool Display::display()
                 pix_width = f.m_frame->width;
                 pix_height = f.m_frame->height;
                 pix_fmt = (AVPixelFormat)f.m_frame->format;
-                //std::cout << "test 1: " << P->width << ", " << P->height << std::endl;
-                ex.ck(initVideo(/*f.m_frame->width, f.m_frame->height, (AVPixelFormat)f.m_frame->format*/), "initVideo");
-                //std::cout << "test 2" << std::endl;
+                ex.ck(initVideo(), "initVideo");
                 videoPresentation();
             }
             reader->last_video_pts = f.m_frame->pts;

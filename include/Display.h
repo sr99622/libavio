@@ -57,13 +57,15 @@ public:
   	std::function<void(const std::string&)> infoCallback = nullptr;
 	std::function<void(const std::string&)> errorCallback = nullptr;
     std::function<void(float)> progressCallback = nullptr;
-    std::function<void(const Frame&)> renderCallback;
+    std::function<void(const Frame&)> renderCallback = nullptr;
+    std::function<Frame(Frame&)> pythonCallback  = nullptr;
+    //std::function<void(Frame&)> pythonCallback = nullptr;
 
     Reader* reader;
 
     void init();
     int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);
-    int initVideo(/*int width, int height, AVPixelFormat pix_fmt*/);
+    int initVideo();
     static void AudioCallback(void* userdata, uint8_t* stream, int len);
     void videoPresentation();
     PlayState getEvents(std::vector<SDL_Event>* events);
