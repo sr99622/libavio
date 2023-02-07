@@ -84,7 +84,7 @@ PYBIND11_MODULE(avio, m)
                 py::format_descriptor<uint8_t>::format(),
                 3,
                 { m.height(), m.width(), 3},
-                { sizeof(uint8_t) * m.stride() , sizeof(uint8_t) * 3, sizeof(uint8_t) }
+                { sizeof(uint8_t) * m.stride(), sizeof(uint8_t) * 3, sizeof(uint8_t) }
             );
         });
     py::class_<Decoder>(m, "Decoder")
@@ -169,7 +169,8 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("pix_fmt", &Display::pix_fmt)
         .def_readwrite("fullscreen", &Display::fullscreen)
         .def_readwrite("renderCallback", &Display::renderCallback)
-        .def_readwrite("progressCallback", &Display::progressCallback);
+        .def_readwrite("progressCallback", &Display::progressCallback)
+        .def_readwrite("pythonCallback", &Display::pythonCallback);
 /*
     py::class_<Pipe>(m, "Pipe")
         .def(py::init<Reader&>());

@@ -1,11 +1,20 @@
 import sys
 import build.avio as avio
 import numpy as np
+import cv2
+import torch
+import torchvision
+import torchvision.transforms as transforms
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, \
-QGridLayout, QWidget, QSlider, QLabel, QGraphicsScene, QGraphicsView
+QGridLayout, QWidget, QSlider, QLabel
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QPainter, QImage, QGuiApplication
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+])
+
 
 class AVWidget(QLabel):
     def __init__(self, p):
@@ -74,12 +83,39 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(pnlMain)
 
+        self.min_size = 800
+        self.threshold = 0.35
+        self.model = torchvision.models.detection.retinanet_resnet50_fpn(pretrained=True,  min_size=self.min_size)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.eval().to(self.device)
+
     def closeEvent(self, e):
         print(e)
         self.player.running = False
         from time import sleep
         sleep(0.5)
 
+    def pythonCallback(self, f):
+        print("rts:", f.m_rts)
+        img = np.array(f, copy = False)
+
+        tensor = transform(img).to(self.device)
+        tensor = tensor.unsqueeze(0)
+
+        with torch.no_grad():
+            outputs = self.model(tensor)
+
+        scores = outputs[0]['scores'].detach().cpu().numpy()
+        labels = outputs[0]['labels'].detach().cpu().numpy()
+        boxes = outputs[0]['boxes'].detach().cpu().numpy()
+        labels = labels[np.array(scores) >= self.threshold]
+        boxes = boxes[np.array(scores) >= self.threshold].astype(np.int32)
+        boxes = boxes[np.array(labels) == 1]
+
+        for box in boxes:
+            cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 255, 255), 1)
+
+        return f
 
     def updateProgress(self, n):
         self.progress.setValue(int(n * 100))
@@ -93,6 +129,7 @@ class MainWindow(QMainWindow):
         print("btnStopClicked")
         self.player.running = False
 
+
     def btnPlayClicked(self):
         print("btnPlay clicked")
         if self.player.running:
@@ -101,18 +138,18 @@ class MainWindow(QMainWindow):
         self.player = avio.Player()
         self.avWidget.player = self.player
 
-        self.reader = avio.Reader("/home/stephen/Videos/news.mp4")
+        self.reader = avio.Reader("C:/Users/sr996/Videos/odessa.mp4")
         self.reader.set_video_out("vpq_reader")
         self.reader.set_audio_out("apq_reader")
         self.avWidget.duration = self.reader.duration()
 
-        #self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_NONE)
-        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_VDPAU)
+        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_CUDA)
+        #self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_VDPAU)
         self.videoDecoder.set_video_in(self.reader.video_out())
         self.videoDecoder.set_video_out("vfq_decoder")
 
         #videoFilter = avio.Filter(videoDecoder, "scale=1280x720,format=rgb24")
-        self.videoFilter = avio.Filter(self.videoDecoder, "null")
+        self.videoFilter = avio.Filter(self.videoDecoder, "format=bgr24, fps=5")
         self.videoFilter.set_video_in(self.videoDecoder.video_out())
         self.videoFilter.set_video_out("vfq_filter")
 
@@ -135,6 +172,8 @@ class MainWindow(QMainWindow):
         #    self.display.hWnd = self.avWidget.winId()
         #else:
         #    self.display.renderCallback = lambda f: self.avWidget.renderCallback(f)
+
+        self.display.pythonCallback = lambda f: self.pythonCallback(f)
 
         self.player.add_reader(self.reader)
         self.player.add_decoder(self.videoDecoder)
