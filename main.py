@@ -33,9 +33,9 @@ class AVWidget(QLabel):
         height = e.size().height()
         print("spontaneous: ", e.spontaneous())
         print("resizeEvent w: ", width, " h: ", height)
-        if not e.spontaneous():
-            self.player.width = e.size().width()
-            self.player.height = e.size().height()
+        #if not e.spontaneous():
+        #    self.player.width = e.size().width()
+        #    self.player.height = e.size().height()
 
     def renderCallback(self, f):
         ary = np.array(f, copy = False)
@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
             return
 
         self.player = avio.Player()
-        self.avWidget.player = self.player
+        #self.avWidget.player = self.player
 
         self.reader = avio.Reader("C:/Users/sr996/Videos/odessa.mp4")
         self.reader.set_video_out("vpq_reader")
@@ -165,8 +165,11 @@ class MainWindow(QMainWindow):
         print(QGuiApplication.platformName())
         self.display.hWnd = self.avWidget.winId()
         print("widget width: ", self.avWidget.width(), " height: ", self.avWidget.height())
-        self.player.width = self.avWidget.width()
-        self.player.height = self.avWidget.height()
+
+        #self.player.width = self.avWidget.width()
+        #self.player.height = self.avWidget.height()
+        self.player.width = lambda : self.avWidget.width()
+        self.player.height = lambda : self.avWidget.height()
 
         #if QGuiApplication.platformName() == "windows":
         #    self.display.hWnd = self.avWidget.winId()
