@@ -93,7 +93,7 @@ int Display::initVideo(/*int width, int height, AVPixelFormat pix_fmt*/)
 
             if (hWnd) {
                 window = SDL_CreateWindowFrom((void*)hWnd);
-                SDL_SetWindowSize(window, P->width, P->height);
+                SDL_SetWindowSize(window, P->width(), P->height());
             }
             else {
                 window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pix_width, pix_height, 0);
@@ -116,8 +116,8 @@ int Display::initVideo(/*int width, int height, AVPixelFormat pix_fmt*/)
                 int window_width;
                 int window_height;
                 SDL_GetWindowSize(window, &window_width, &window_height);
-                if (!(window_width == P->width && window_height == P->height)) {
-                    SDL_SetWindowSize(window, P->width, P->height);
+                if (!(window_width == P->width() && window_height == P->height())) {
+                    SDL_SetWindowSize(window, P->width(), P->height());
                 }
             }
         }

@@ -58,10 +58,13 @@ public:
     
     std::vector<std::thread*> ops;
 
+    std::function<int(void)> width = nullptr;
+    std::function<int(void)> height = nullptr;
+
     bool running = false;
 
-    int width = 0;
-    int height = 0;
+    //int width = 0;
+    //int height = 0;
 
     Player() { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }

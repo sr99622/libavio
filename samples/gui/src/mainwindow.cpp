@@ -1,7 +1,7 @@
 #include <iostream>
 #include <QGridLayout>
 #include <QMessageBox>
-#include <QThread>
+//#include <QThread>
 #include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
