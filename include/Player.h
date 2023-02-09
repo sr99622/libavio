@@ -60,11 +60,16 @@ public:
 
     std::function<int(void)> width = nullptr;
     std::function<int(void)> height = nullptr;
+    std::function<void(float)> progressCallback = nullptr;
+    std::function<void(const Frame&)> renderCallback = nullptr;
+    std::function<Frame(Frame&)> pythonCallback  = nullptr;
+    uint64_t hWnd = 0;
+    std::string uri;
+    std::string video_filter;
+    std::string audio_filter;
+    AVHWDeviceType hw_device_type;
 
     bool running = false;
-
-    //int width = 0;
-    //int height = 0;
 
     Player() { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }
@@ -77,10 +82,10 @@ public:
     void seek(float arg);
     void toggle_pipe_out(const std::string& filename);
     void key_event(int keyCode);
-    void add_reader(Reader& reader_in);
-    void add_decoder(Decoder& decoder_in);
-    void add_filter(Filter& filter_in);
-    void add_display(Display& display_in);
+    //void add_reader(Reader& reader_in);
+    //void add_decoder(Decoder& decoder_in);
+    //void add_filter(Filter& filter_in);
+    //void add_display(Display& display_in);
     void clear_queues();
     void clear_decoders();
     void cleanup();

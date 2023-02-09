@@ -33,16 +33,16 @@
 namespace avio
 {
 
-static void read(Player* player) 
+static void read(Reader* reader, Player* player) 
 {
-    Reader* reader = player->reader;
-    if (reader->has_video() && !reader->vpq_name.empty()) {
-        reader->vpq = player->pkt_queues[reader->vpq_name];
+    //Reader* reader = player->reader;
+    if (reader->has_video()) {
+        //reader->vpq = player->pkt_queues[reader->vpq_name];
         if (reader->vpq_max_size > 0)
             reader->vpq->set_max_size(reader->vpq_max_size);
     }
-    if (reader->has_audio() && !reader->apq_name.empty()) {
-        reader->apq = player->pkt_queues[reader->apq_name];
+    if (reader->has_audio()) {
+        //reader->apq = player->pkt_queues[reader->apq_name];
         if (reader->apq_max_size > 0)
             reader->apq->set_max_size(reader->apq_max_size);
     }
@@ -128,9 +128,10 @@ static void read(Player* player)
     catch (const QueueClosedException& e) {}
 }
 
-static void decode(Player* player, AVMediaType mediaType) 
+static void decode(Decoder* decoder, Queue<Frame>* frame_q) 
 {
 
+    /*
     Decoder* decoder = nullptr;
     switch (mediaType) {
         case AVMEDIA_TYPE_VIDEO:
@@ -143,6 +144,9 @@ static void decode(Player* player, AVMediaType mediaType)
 
     decoder->frame_q = player->frame_queues[decoder->frame_q_name];
     decoder->pkt_q = player->pkt_queues[decoder->pkt_q_name];
+    */
+    //decoder->pkt_q = pkt_q;
+    decoder->frame_q = frame_q;
 
     try {
         while (true)
@@ -168,8 +172,9 @@ static void decode(Player* player, AVMediaType mediaType)
     //std::cout << decoder->strMediaType << " decoder finish: " << std::endl;
 }
 
-static void filter(Player* player, AVMediaType mediaType)
+static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
 {
+    /*
     Filter* filter = nullptr;
     switch (mediaType) {
         case AVMEDIA_TYPE_VIDEO:
@@ -179,9 +184,12 @@ static void filter(Player* player, AVMediaType mediaType)
             filter = player->audioFilter;
             break;
     }
+    /**/
 
-    filter->frame_in_q = player->frame_queues[filter->q_in_name];
-    filter->frame_out_q = player->frame_queues[filter->q_out_name];
+    //filter->frame_in_q = player->frame_queues[filter->q_in_name];
+    //filter->frame_out_q = player->frame_queues[filter->q_out_name];
+    filter->frame_in_q = q_in;
+    filter->frame_out_q = q_out;
 
     try {
         while (true)

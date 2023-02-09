@@ -20,22 +20,10 @@ class AVWidget(QLabel):
     def __init__(self, p):
         super().__init__()
         self.frame = avio.Frame()
-        #self.progress =  QSlider(Qt.Orientation.Horizontal)
         self.image = QImage()
-        self.duration = 0
-        self.player = p
 
     def sizeHint(self):
         return QSize(640, 480)
-
-    def resizeEvent(self, e):
-        width = e.size().width()
-        height = e.size().height()
-        print("spontaneous: ", e.spontaneous())
-        print("resizeEvent w: ", width, " h: ", height)
-        #if not e.spontaneous():
-        #    self.player.width = e.size().width()
-        #    self.player.height = e.size().height()
 
     def renderCallback(self, f):
         ary = np.array(f, copy = False)
@@ -136,53 +124,15 @@ class MainWindow(QMainWindow):
             return
 
         self.player = avio.Player()
-        #self.avWidget.player = self.player
-
-        self.reader = avio.Reader("C:/Users/sr996/Videos/odessa.mp4")
-        self.reader.set_video_out("vpq_reader")
-        self.reader.set_audio_out("apq_reader")
-        self.avWidget.duration = self.reader.duration()
-
-        self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_CUDA)
-        #self.videoDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_VIDEO, avio.AV_HWDEVICE_TYPE_VDPAU)
-        self.videoDecoder.set_video_in(self.reader.video_out())
-        self.videoDecoder.set_video_out("vfq_decoder")
-
-        #videoFilter = avio.Filter(videoDecoder, "scale=1280x720,format=rgb24")
-        self.videoFilter = avio.Filter(self.videoDecoder, "format=bgr24, fps=5")
-        self.videoFilter.set_video_in(self.videoDecoder.video_out())
-        self.videoFilter.set_video_out("vfq_filter")
-
-        self.audioDecoder = avio.Decoder(self.reader, avio.AVMEDIA_TYPE_AUDIO)
-        self.audioDecoder.set_audio_in(self.reader.audio_out())
-        self.audioDecoder.set_audio_out("afq_decoder")
-
-        self.display = avio.Display(self.reader)
-        self.display.set_video_in(self.videoFilter.video_out())
-        self.display.set_audio_in(self.audioDecoder.audio_out())
-
-        self.display.progressCallback = lambda n: self.updateProgress(n)
-        print(QGuiApplication.platformName())
-        self.display.hWnd = self.avWidget.winId()
-        print("widget width: ", self.avWidget.width(), " height: ", self.avWidget.height())
-
-        #self.player.width = self.avWidget.width()
-        #self.player.height = self.avWidget.height()
+        self.player.uri = "C:/Users/sr996/Videos/odessa.mp4"
+        self.player.hw_device_type = avio.AV_HWDEVICE_TYPE_CUDA
+        self.player.video_filter = "format=bgr24,fps=5"
+        self.player.audio_filter = "anull"
+        self.player.pythonCallback = lambda f: self.pythonCallback(f)
+        self.player.progressCallback = lambda n: self.updateProgress(n)
+        self.player.hWnd = self.avWidget.winId()
         self.player.width = lambda : self.avWidget.width()
         self.player.height = lambda : self.avWidget.height()
-
-        #if QGuiApplication.platformName() == "windows":
-        #    self.display.hWnd = self.avWidget.winId()
-        #else:
-        #    self.display.renderCallback = lambda f: self.avWidget.renderCallback(f)
-
-        self.display.pythonCallback = lambda f: self.pythonCallback(f)
-
-        self.player.add_reader(self.reader)
-        self.player.add_decoder(self.videoDecoder)
-        self.player.add_filter(self.videoFilter)
-        self.player.add_decoder(self.audioDecoder)
-        self.player.add_display(self.display)
 
         self.player.start()
 
