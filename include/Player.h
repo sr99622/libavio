@@ -27,18 +27,12 @@
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
-#include "Packet.h"
-#include <iomanip>
 #include <functional>
-#include <map>
 
 #define P ((Player*)player)
 
 namespace avio
 {
-
-typedef std::map<std::string, Queue<Packet>*> PKT_Q_MAP;
-typedef std::map<std::string, Queue<Frame>*> FRAME_Q_MAP;
 
 class Player
 {
@@ -58,6 +52,7 @@ public:
     std::function<void(float)> progressCallback = nullptr;
     std::function<void(const Frame&)> renderCallback = nullptr;
     std::function<Frame(Frame&)> pythonCallback  = nullptr;
+
     uint64_t hWnd = 0;
     std::string uri;
     std::string video_filter;
@@ -79,10 +74,9 @@ public:
     void key_event(int keyCode);
     void clear_queues();
     void clear_decoders();
-    void cleanup();
     void run();
     void start();
-    static void twink(void* caller);
+    static void hook(void* caller);
 
 };
 
