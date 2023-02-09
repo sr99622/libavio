@@ -49,19 +49,16 @@ class Display
 {
 
 public:
-    Display(Reader& reader) : reader(&reader) { }
+    Display(Reader& reader, Filter& audioFilter) : reader(&reader), audioFilter(&audioFilter) { }
     ~Display();
 
     void* player = nullptr;
-    uint64_t hWnd = 0;
   	std::function<void(const std::string&)> infoCallback = nullptr;
 	std::function<void(const std::string&)> errorCallback = nullptr;
-    std::function<void(float)> progressCallback = nullptr;
-    std::function<void(const Frame&)> renderCallback = nullptr;
-    std::function<Frame(Frame&)> pythonCallback  = nullptr;
     //std::function<void(Frame&)> pythonCallback = nullptr;
 
     Reader* reader;
+    Filter* audioFilter;
 
     void init();
     int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);

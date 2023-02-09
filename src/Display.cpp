@@ -26,10 +26,10 @@ namespace avio
 
 void Display::init()
 {
-    if (P->audioFilter)
-        initAudio(P->audioFilter->sample_rate(), P->audioFilter->sample_format(), P->audioFilter->channels(), P->audioFilter->channel_layout(), P->audioFilter->frame_size());
-    else if (P->audioDecoder)
-        initAudio(P->audioDecoder->sample_rate(), P->audioDecoder->sample_format(), P->audioDecoder->channels(), P->audioDecoder->channel_layout(), P->audioDecoder->frame_size());
+    //if (P->audioFilter)
+        initAudio(audioFilter->sample_rate(), audioFilter->sample_format(), audioFilter->channels(), audioFilter->channel_layout(), audioFilter->frame_size());
+    //else if (P->audioDecoder)
+    //    initAudio(P->audioDecoder->sample_rate(), P->audioDecoder->sample_format(), P->audioDecoder->channels(), P->audioDecoder->channel_layout(), P->audioDecoder->frame_size());
 }
 
 Display::~Display()
@@ -91,8 +91,8 @@ int Display::initVideo(/*int width, int height, AVPixelFormat pix_fmt*/)
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
             ex.msg(str.str());
 
-            if (hWnd) {
-                window = SDL_CreateWindowFrom((void*)hWnd);
+            if (P->hWnd) {
+                window = SDL_CreateWindowFrom((void*)P->hWnd);
                 SDL_SetWindowSize(window, P->width(), P->height());
             }
             else {
@@ -226,7 +226,7 @@ bool Display::display()
                     }
                 }
 
-                if (!renderCallback) {
+                if (!P->renderCallback) {
                     videoPresentation();
                 }
 
@@ -254,7 +254,7 @@ bool Display::display()
 
             paused_frame = f;
 
-            if (pythonCallback) f = pythonCallback(f);
+            if (P->pythonCallback) f = P->pythonCallback(f);
             //if (pythonCallback) pythonCallback(f);
 
             int delay = rtClock.update(f.m_rts - reader->start_time());
@@ -268,8 +268,8 @@ bool Display::display()
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             } while (std::chrono::high_resolution_clock::now() < end);
 
-            if (renderCallback) {
-                renderCallback(f);
+            if (P->renderCallback) {
+                P->renderCallback(f);
             }
             else {
                 pix_width = f.m_frame->width;
@@ -280,10 +280,10 @@ bool Display::display()
             }
             reader->last_video_pts = f.m_frame->pts;
 
-            if (progressCallback) {
+            if (P->progressCallback) {
                 if (reader->duration()) {
                     float pct = (float)f.m_rts / (float)reader->duration();
-                    progressCallback(pct);
+                    P->progressCallback(pct);
                 }
             }
 

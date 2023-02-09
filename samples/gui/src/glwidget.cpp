@@ -183,8 +183,8 @@ void GLWidget::start(void* widget)
 
         avio::Display display(reader);
         //display.renderCallback = renderCallback;
-        display.hWnd = glWidget->winId();
-        display.progressCallback = progressCallback;
+        //display.hWnd = glWidget->winId();
+        player.progressCallback = progressCallback;
         display.infoCallback = infoCallback;
         display.errorCallback = errorCallback;
         display.volume = (float)glWidget->volume / 100.0f;
