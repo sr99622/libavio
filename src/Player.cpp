@@ -98,49 +98,54 @@ void Player::run()
     running = true;
 
     Reader reader(uri.c_str());
-    Queue<Packet> vpq_reader;
-    Queue<Packet> apq_reader;
-    reader.vpq = &vpq_reader;
-    reader.apq = &apq_reader;
     this->reader = &reader;
 
-    Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, hw_device_type);
-    videoDecoder.pkt_q = &vpq_reader;
-    Queue<Frame> vfq_decoder;
-    videoDecoder.frame_q = &vfq_decoder;
-    this->videoDecoder = &videoDecoder;
+    //if (reader.has_video()) {
+        Queue<Packet> vpq_reader;
+        reader.vpq = &vpq_reader;
 
-    Filter videoFilter(videoDecoder, video_filter.c_str());
-    videoFilter.frame_in_q = &vfq_decoder;
-    Queue<Frame> vfq_filter;
-    videoFilter.frame_out_q = &vfq_filter;
-    this->videoFilter = &videoFilter;
+        Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, hw_device_type);
+        videoDecoder.pkt_q = &vpq_reader;
+        Queue<Frame> vfq_decoder;
+        videoDecoder.frame_q = &vfq_decoder;
+        this->videoDecoder = &videoDecoder;
 
-    Decoder audioDecoder(reader, AVMEDIA_TYPE_AUDIO);
-    audioDecoder.pkt_q = &apq_reader;
-    Queue<Frame> afq_decoder;
-    audioDecoder.frame_q = &afq_decoder;
-    this->audioDecoder = &audioDecoder;
+        Filter videoFilter(videoDecoder, video_filter.c_str());
+        videoFilter.frame_in_q = &vfq_decoder;
+        Queue<Frame> vfq_filter;
+        videoFilter.frame_out_q = &vfq_filter;
+        this->videoFilter = &videoFilter;
+    //}
 
-    Filter audioFilter(audioDecoder, audio_filter.c_str());
-    audioFilter.frame_in_q = &afq_decoder;
-    Queue<Frame> afq_filter;
-    audioFilter.frame_out_q = &afq_filter;
-    this->audioFilter = &audioFilter;
+    //if (reader.has_audio()) {
+        Queue<Packet> apq_reader;
+        reader.apq = &apq_reader;
 
-    Display display(reader, audioFilter);
-    display.vfq_in = &vfq_filter;
-    display.afq_in = &afq_filter;
+        Decoder audioDecoder(reader, AVMEDIA_TYPE_AUDIO);
+        audioDecoder.pkt_q = &apq_reader;
+        Queue<Frame> afq_decoder;
+        audioDecoder.frame_q = &afq_decoder;
+        this->audioDecoder = &audioDecoder;
+
+        Filter audioFilter(audioDecoder, audio_filter.c_str());
+        audioFilter.frame_in_q = &afq_decoder;
+        Queue<Frame> afq_filter;
+        audioFilter.frame_out_q = &afq_filter;
+        this->audioFilter = &audioFilter;
+    //}
+
+    ops.push_back(new std::thread(read, this->reader, this));
+    ops.push_back(new std::thread(decode, this->videoDecoder));
+    ops.push_back(new std::thread(filter, this->videoFilter));
+    ops.push_back(new std::thread(decode, this->audioDecoder));
+    ops.push_back(new std::thread(filter, this->audioFilter));
+
+    Display display(reader);
+    display.vfq_in = this->videoFilter->frame_out_q;
+    display.afq_in = this->audioFilter->frame_out_q;
     display.player = this;
     this->display = &display;
-    
-    ops.push_back(new std::thread(read, &reader, this));
-    ops.push_back(new std::thread(decode, &videoDecoder));
-    ops.push_back(new std::thread(filter, &videoFilter));
-    ops.push_back(new std::thread(decode, &audioDecoder));
-    ops.push_back(new std::thread(filter, &audioFilter));
-
-    display.init();
+    display.initAudio(this->audioFilter);
 
     while (display.display()) {}
     running = false;
