@@ -113,7 +113,7 @@ PYBIND11_MODULE(avio, m)
         .def("frame_size", &Filter::frame_size)
         .def_readwrite("show_frames", &Filter::show_frames);
     py::class_<Display>(m, "Display")
-        .def(py::init<Reader&, Filter&>())
+        .def(py::init<Reader&>())
         .def("initVideo", &Display::initVideo)
         .def_readwrite("start_time", &Display::start_time)
         .def_readwrite("duration", &Display::duration)

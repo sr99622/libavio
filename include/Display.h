@@ -49,7 +49,7 @@ class Display
 {
 
 public:
-    Display(Reader& reader, Filter& audioFilter) : reader(&reader), audioFilter(&audioFilter) { }
+    Display(Reader& reader) : reader(&reader) { }
     ~Display();
 
     void* player = nullptr;
@@ -58,10 +58,11 @@ public:
     //std::function<void(Frame&)> pythonCallback = nullptr;
 
     Reader* reader;
-    Filter* audioFilter;
+    //Filter* audioFilter;
 
     void init();
-    int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);
+    //int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);
+    int initAudio(Filter* audioFilter);
     int initVideo();
     static void AudioCallback(void* userdata, uint8_t* stream, int len);
     void videoPresentation();
