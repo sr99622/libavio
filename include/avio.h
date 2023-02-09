@@ -35,14 +35,11 @@ namespace avio
 
 static void read(Reader* reader, Player* player) 
 {
-    //Reader* reader = player->reader;
     if (reader->has_video()) {
-        //reader->vpq = player->pkt_queues[reader->vpq_name];
         if (reader->vpq_max_size > 0)
             reader->vpq->set_max_size(reader->vpq_max_size);
     }
     if (reader->has_audio()) {
-        //reader->apq = player->pkt_queues[reader->apq_name];
         if (reader->apq_max_size > 0)
             reader->apq->set_max_size(reader->apq_max_size);
     }
@@ -128,26 +125,8 @@ static void read(Reader* reader, Player* player)
     catch (const QueueClosedException& e) {}
 }
 
-static void decode(Decoder* decoder, Queue<Frame>* frame_q) 
+static void decode(Decoder* decoder) 
 {
-
-    /*
-    Decoder* decoder = nullptr;
-    switch (mediaType) {
-        case AVMEDIA_TYPE_VIDEO:
-            decoder = player->videoDecoder;
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            decoder = player->audioDecoder;
-            break;
-    }
-
-    decoder->frame_q = player->frame_queues[decoder->frame_q_name];
-    decoder->pkt_q = player->pkt_queues[decoder->pkt_q_name];
-    */
-    //decoder->pkt_q = pkt_q;
-    decoder->frame_q = frame_q;
-
     try {
         while (true)
         {
@@ -169,28 +148,10 @@ static void decode(Decoder* decoder, Queue<Frame>* frame_q)
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
-    //std::cout << decoder->strMediaType << " decoder finish: " << std::endl;
 }
 
-static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
+static void filter(Filter* filter)
 {
-    /*
-    Filter* filter = nullptr;
-    switch (mediaType) {
-        case AVMEDIA_TYPE_VIDEO:
-            filter = player->videoFilter;
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            filter = player->audioFilter;
-            break;
-    }
-    /**/
-
-    //filter->frame_in_q = player->frame_queues[filter->q_in_name];
-    //filter->frame_out_q = player->frame_queues[filter->q_out_name];
-    filter->frame_in_q = q_in;
-    filter->frame_out_q = q_out;
-
     try {
         while (true)
         {
@@ -206,10 +167,8 @@ static void filter(Filter* filter, Queue<Frame>* q_in, Queue<Frame>* q_out)
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
-        //player->send_error(str.str());
         if (filter->errorCallback) filter->errorCallback(str.str());
     }
-    //std::cout << "filter finished" << std::endl;
 }
 
 

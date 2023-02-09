@@ -26,10 +26,7 @@ namespace avio
 
 void Display::init()
 {
-    //if (P->audioFilter)
-        initAudio(audioFilter->sample_rate(), audioFilter->sample_format(), audioFilter->channels(), audioFilter->channel_layout(), audioFilter->frame_size());
-    //else if (P->audioDecoder)
-    //    initAudio(P->audioDecoder->sample_rate(), P->audioDecoder->sample_format(), P->audioDecoder->channels(), P->audioDecoder->channel_layout(), P->audioDecoder->frame_size());
+    initAudio(audioFilter->sample_rate(), audioFilter->sample_format(), audioFilter->channels(), audioFilter->channel_layout(), audioFilter->frame_size());
 }
 
 Display::~Display()
@@ -48,14 +45,12 @@ Display::~Display()
     SDL_Quit();
 }
 
-int Display::initVideo(/*int width, int height, AVPixelFormat pix_fmt*/)
+int Display::initVideo()
 {
     int ret = 0;
 
     try {
         Uint32 sdl_format = 0;
-        //int w = pix_width;
-        //int h = pix_height;
 
         switch (pix_fmt) {
         case AV_PIX_FMT_YUV420P:
