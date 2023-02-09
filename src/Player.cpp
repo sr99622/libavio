@@ -48,10 +48,12 @@ void Player::toggle_pipe_out(const std::string& filename)
 
 void Player::clear_queues()
 {
-    //FRAME_Q_MAP::iterator frame_q;
-    //for (frame_q = frame_queues.begin(); frame_q != frame_queues.end(); ++frame_q) {
-    //    frame_q->second->clear();
-    //}
+    if (reader->vpq) reader->vpq->clear();
+    if (reader->apq) reader->apq->clear();
+    if (videoDecoder) videoDecoder->frame_q->clear();
+    if (videoFilter) videoFilter->frame_out_q->clear();
+    if (audioDecoder) audioDecoder->frame_q->clear();
+    if (audioFilter) audioFilter->frame_out_q->clear();
 }
 
 void Player::clear_decoders()
@@ -68,20 +70,7 @@ void Player::key_event(int keyCode)
     SDL_PushEvent(&event);
 }
 
-void Player::cleanup()
-{
-    if (reader) {
-        if (reader->vpq) reader->vpq->close();
-        if (reader->apq) reader->apq->close();
-    }
-
-    for (int i = 0; i < ops.size(); i++) {
-        ops[i]->join();
-        delete ops[i];
-    }
-}
-
-void Player::twink(void* caller)
+void Player::hook(void* caller)
 {
     Player* player = (Player*)caller;
     player->run();
@@ -89,7 +78,7 @@ void Player::twink(void* caller)
 
 void Player::start()
 {
-    std::thread process_thread(twink, this);
+    std::thread process_thread(hook, this);
     process_thread.detach();
 }
 
@@ -97,62 +86,67 @@ void Player::run()
 {
     running = true;
 
-    Reader reader(uri.c_str());
-    this->reader = &reader;
+    reader = new Reader(uri.c_str());
 
-    //if (reader.has_video()) {
+    if (reader->has_video()) {
         Queue<Packet> vpq_reader;
-        reader.vpq = &vpq_reader;
+        reader->vpq = &vpq_reader;
 
-        Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, hw_device_type);
-        videoDecoder.pkt_q = &vpq_reader;
+        videoDecoder = new Decoder(*reader, AVMEDIA_TYPE_VIDEO, hw_device_type);
+        videoDecoder->pkt_q = &vpq_reader;
         Queue<Frame> vfq_decoder;
-        videoDecoder.frame_q = &vfq_decoder;
-        this->videoDecoder = &videoDecoder;
+        videoDecoder->frame_q = &vfq_decoder;
 
-        Filter videoFilter(videoDecoder, video_filter.c_str());
-        videoFilter.frame_in_q = &vfq_decoder;
+        videoFilter = new Filter(*videoDecoder, video_filter.c_str());
+        videoFilter->frame_in_q = &vfq_decoder;
         Queue<Frame> vfq_filter;
-        videoFilter.frame_out_q = &vfq_filter;
-        this->videoFilter = &videoFilter;
-    //}
+        videoFilter->frame_out_q = &vfq_filter;
+    }
 
-    //if (reader.has_audio()) {
+    if (reader->has_audio()) {
         Queue<Packet> apq_reader;
-        reader.apq = &apq_reader;
+        reader->apq = &apq_reader;
 
-        Decoder audioDecoder(reader, AVMEDIA_TYPE_AUDIO);
-        audioDecoder.pkt_q = &apq_reader;
+        audioDecoder = new Decoder(*reader, AVMEDIA_TYPE_AUDIO);
+        audioDecoder->pkt_q = &apq_reader;
         Queue<Frame> afq_decoder;
-        audioDecoder.frame_q = &afq_decoder;
-        this->audioDecoder = &audioDecoder;
+        audioDecoder->frame_q = &afq_decoder;
 
-        Filter audioFilter(audioDecoder, audio_filter.c_str());
-        audioFilter.frame_in_q = &afq_decoder;
+        audioFilter = new Filter(*audioDecoder, audio_filter.c_str());
+        audioFilter->frame_in_q = &afq_decoder;
         Queue<Frame> afq_filter;
-        audioFilter.frame_out_q = &afq_filter;
-        this->audioFilter = &audioFilter;
-    //}
+        audioFilter->frame_out_q = &afq_filter;
+    }
 
-    ops.push_back(new std::thread(read, this->reader, this));
-    ops.push_back(new std::thread(decode, this->videoDecoder));
-    ops.push_back(new std::thread(filter, this->videoFilter));
-    ops.push_back(new std::thread(decode, this->audioDecoder));
-    ops.push_back(new std::thread(filter, this->audioFilter));
+    ops.push_back(new std::thread(read, reader, this));
+    if (videoDecoder) ops.push_back(new std::thread(decode, videoDecoder));
+    if (videoFilter) ops.push_back(new std::thread(filter, videoFilter));
+    if (audioDecoder) ops.push_back(new std::thread(decode, this->audioDecoder));
+    if (audioFilter) ops.push_back(new std::thread(filter, this->audioFilter));
 
-    Display display(reader);
-    display.vfq_in = this->videoFilter->frame_out_q;
-    display.afq_in = this->audioFilter->frame_out_q;
-    display.player = this;
-    this->display = &display;
-    display.initAudio(this->audioFilter);
+    display = new Display(*reader);
+    if (videoFilter) display->vfq_in = videoFilter->frame_out_q;
+    if (audioFilter) display->afq_in = audioFilter->frame_out_q;
+    if (audioFilter) display->initAudio(audioFilter);
+    display->player = this;
 
-    while (display.display()) {}
+    while (display->display()) {}
     running = false;
 
-    std::cout << "display done" << std::endl;
+    if (reader->vpq) reader->vpq->close();
+    if (reader->apq) reader->apq->close();
 
-    cleanup();
+    for (int i = 0; i < ops.size(); i++) {
+        ops[i]->join();
+        delete ops[i];
+    }
+
+    delete reader;
+    if (videoFilter) delete videoFilter;
+    if (videoDecoder) delete videoDecoder;
+    if (audioFilter) delete audioFilter;
+    if (audioDecoder) delete audioDecoder;
+    delete display;
 
 }
 
