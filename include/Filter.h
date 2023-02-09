@@ -76,20 +76,7 @@ public:
 	Queue<Frame>* frame_in_q = nullptr;
 	Queue<Frame>* frame_out_q = nullptr;
 
-	std::string q_in_name;
-	std::string q_out_name;
-
 	bool show_frames = false;
-
-	std::string video_in() const { return std::string(q_in_name); }
-	std::string video_out() const { return std::string(q_out_name); }
-	std::string audio_in() const { return std::string(q_in_name); }
-	std::string audio_out() const { return std::string(q_out_name); }
-	void set_audio_in(const std::string& name) { q_in_name = std::string(name); }
-	void set_audio_out(const std::string& name) { q_out_name = std::string(name); }
-	void set_video_in(const std::string& name) { q_in_name = std::string(name); }
-	void set_video_out(const std::string& name) { q_out_name = std::string(name); }
-
 
 	ExceptionHandler ex;
 };

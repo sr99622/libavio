@@ -89,24 +89,10 @@ public:
     SDL_AudioSpec sdl = { 0 };
     SDL_AudioSpec have = { 0 };
 
-    std::string vfq_in_name;
-    std::string afq_in_name;
-    std::string vfq_out_name;
-    std::string afq_out_name;
-
     Queue<Frame>* vfq_in = nullptr;
     Queue<Frame>* afq_in = nullptr;
     Queue<Frame>* vfq_out = nullptr;
     Queue<Frame>* afq_out = nullptr;
-
-    std::string video_in() const { return std::string(vfq_in_name); }
-    std::string audio_in() const { return std::string(afq_in_name); }
-    std::string video_out() const { return std::string(vfq_out_name); }
-    std::string audio_out() const { return std::string(afq_out_name); }
-    void set_video_in(const std::string& name) { vfq_in_name = std::string(name); }
-    void set_audio_in(const std::string& name) { afq_in_name = std::string(name); }
-    void set_video_out(const std::string& name) { vfq_out_name = std::string(name); }
-    void set_audio_out(const std::string& name) { afq_out_name = std::string(name); }
 
     bool fullscreen = false;
 

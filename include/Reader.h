@@ -111,16 +111,8 @@ public:
 	Queue<Packet>* vpq = nullptr;
 	Queue<Packet>* apq = nullptr;
 
-	std::string vpq_name;
-	std::string apq_name;
-
 	int vpq_max_size = 0;
 	int apq_max_size = 0;
-
-	std::string video_out() const { return std::string(vpq_name); }
-	std::string audio_out() const { return std::string(apq_name); }
-	void set_video_out(const std::string& name) { vpq_name = std::string(name); }
-	void set_audio_out(const std::string& name) { apq_name = std::string(name); }
 
 	ExceptionHandler ex;
 };
