@@ -84,70 +84,100 @@ void Player::start()
 
 void Player::run()
 {
-    running = true;
+    try {
+        running = true;
 
-    reader = new Reader(uri.c_str());
+        reader = new Reader(uri.c_str());
+        reader->infoCallback = infoCallback;
+        reader->errorCallback = errorCallback;
 
-    if (reader->has_video()) {
-        Queue<Packet> vpq_reader;
-        reader->vpq = &vpq_reader;
+        if (reader->has_video()) {
+            Queue<Packet> vpq_reader;
+            reader->vpq = &vpq_reader;
 
-        videoDecoder = new Decoder(*reader, AVMEDIA_TYPE_VIDEO, hw_device_type);
-        videoDecoder->pkt_q = &vpq_reader;
-        Queue<Frame> vfq_decoder;
-        videoDecoder->frame_q = &vfq_decoder;
+            videoDecoder = new Decoder(*reader, AVMEDIA_TYPE_VIDEO, hw_device_type);
+            videoDecoder->infoCallback = infoCallback;
+            videoDecoder->errorCallback = errorCallback;
+            videoDecoder->pkt_q = &vpq_reader;
+            Queue<Frame> vfq_decoder;
+            videoDecoder->frame_q = &vfq_decoder;
 
-        videoFilter = new Filter(*videoDecoder, video_filter.c_str());
-        videoFilter->frame_in_q = &vfq_decoder;
-        Queue<Frame> vfq_filter;
-        videoFilter->frame_out_q = &vfq_filter;
+            videoFilter = new Filter(*videoDecoder, video_filter.c_str());
+            videoFilter->infoCallback = infoCallback;
+            videoFilter->errorCallback = errorCallback;
+            videoFilter->frame_in_q = &vfq_decoder;
+            Queue<Frame> vfq_filter;
+            videoFilter->frame_out_q = &vfq_filter;
+        }
+
+        if (reader->has_audio()) {
+            Queue<Packet> apq_reader;
+            reader->apq = &apq_reader;
+
+            audioDecoder = new Decoder(*reader, AVMEDIA_TYPE_AUDIO);
+            audioDecoder->infoCallback = infoCallback;
+            audioDecoder->errorCallback = errorCallback;
+            audioDecoder->pkt_q = &apq_reader;
+            Queue<Frame> afq_decoder;
+            audioDecoder->frame_q = &afq_decoder;
+
+            audioFilter = new Filter(*audioDecoder, audio_filter.c_str());
+            audioFilter->infoCallback = infoCallback;
+            audioFilter->errorCallback = errorCallback;
+            audioFilter->frame_in_q = &afq_decoder;
+            Queue<Frame> afq_filter;
+            audioFilter->frame_out_q = &afq_filter;
+        }
+
+        ops.push_back(new std::thread(read, reader, this));
+        if (videoDecoder) ops.push_back(new std::thread(decode, videoDecoder));
+        if (videoFilter) ops.push_back(new std::thread(filter, videoFilter));
+        if (audioDecoder) ops.push_back(new std::thread(decode, this->audioDecoder));
+        if (audioFilter) ops.push_back(new std::thread(filter, this->audioFilter));
+
+        display = new Display(*reader);
+        display->infoCallback = infoCallback;
+        display->errorCallback = errorCallback;
+        if (videoFilter) display->vfq_in = videoFilter->frame_out_q;
+        if (audioFilter) display->afq_in = audioFilter->frame_out_q;
+        if (audioFilter) display->initAudio(audioFilter);
+        display->player = this;
+
+        if (cbMediaPlayingStarted) cbMediaPlayingStarted(reader->duration());
+        while (display->display()) {}
+        std::cout << "display done" << std::endl;
+    }
+    catch (const Exception& e) {
+        std::stringstream str;
+        str << "avio Player error: " << e.what();
+        errorCallback(str.str());
     }
 
-    if (reader->has_audio()) {
-        Queue<Packet> apq_reader;
-        reader->apq = &apq_reader;
-
-        audioDecoder = new Decoder(*reader, AVMEDIA_TYPE_AUDIO);
-        audioDecoder->pkt_q = &apq_reader;
-        Queue<Frame> afq_decoder;
-        audioDecoder->frame_q = &afq_decoder;
-
-        audioFilter = new Filter(*audioDecoder, audio_filter.c_str());
-        audioFilter->frame_in_q = &afq_decoder;
-        Queue<Frame> afq_filter;
-        audioFilter->frame_out_q = &afq_filter;
-    }
-
-    ops.push_back(new std::thread(read, reader, this));
-    if (videoDecoder) ops.push_back(new std::thread(decode, videoDecoder));
-    if (videoFilter) ops.push_back(new std::thread(filter, videoFilter));
-    if (audioDecoder) ops.push_back(new std::thread(decode, this->audioDecoder));
-    if (audioFilter) ops.push_back(new std::thread(filter, this->audioFilter));
-
-    display = new Display(*reader);
-    if (videoFilter) display->vfq_in = videoFilter->frame_out_q;
-    if (audioFilter) display->afq_in = audioFilter->frame_out_q;
-    if (audioFilter) display->initAudio(audioFilter);
-    display->player = this;
-
-    while (display->display()) {}
     running = false;
 
-    if (reader->vpq) reader->vpq->close();
-    if (reader->apq) reader->apq->close();
+std::cout << "test 1" << std::endl;
+    if (reader) {
+        if (reader->vpq) reader->vpq->close();
+        if (reader->apq) reader->apq->close();
+    }
 
+std::cout << "test 2" << std::endl;
     for (int i = 0; i < ops.size(); i++) {
         ops[i]->join();
         delete ops[i];
     }
 
-    delete reader;
+std::cout << "test 3" << std::endl;
+    if (reader) delete reader;
     if (videoFilter) delete videoFilter;
     if (videoDecoder) delete videoDecoder;
     if (audioFilter) delete audioFilter;
     if (audioDecoder) delete audioDecoder;
-    delete display;
+    if (display) delete display;
 
+std::cout << "test 4" << std::endl;
+    if (cbMediaPlayingStopped) cbMediaPlayingStopped();
+std::cout << "test 5" << std::endl;
 }
 
 }

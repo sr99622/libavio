@@ -124,7 +124,6 @@ AVPacket* Reader::seek()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Reader seek exception: " << e.what();
-        //if (P) P->send_info(str.str());
         if (errorCallback) errorCallback(str.str());
         return nullptr;
     }
@@ -171,7 +170,6 @@ void Reader::pipe_write(AVPacket* pkt)
     try {
         if (!pipe) {
             pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
-            //pipe->process = process;
             pipe->infoCallback = infoCallback;
             pipe->errorCallback = errorCallback;
             pipe->open(pipe_out_filename);
@@ -197,8 +195,6 @@ void Reader::pipe_write(AVPacket* pkt)
         }
         pipe = nullptr;
         request_pipe_write = false;
-
-        //if (P) P->send_error(str.str());
         std::stringstream str;
         str << "Record function failure: " << e.what();
         if (errorCallback) errorCallback(str.str());

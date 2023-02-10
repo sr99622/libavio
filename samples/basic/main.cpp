@@ -8,39 +8,26 @@ int main(int argc, char** argv)
     }
 
     std::cout << "playing file: " << argv[1] << std::endl;
+    
+    try {
+        std::function<void(const std::string& arg)> errorCallback = [&](const std::string& arg)
+        {
+            std::cout << "msg: " << arg << std::endl;
+        };
 
-    avio::Player player;
+        avio::Player player;
 
-    avio::Reader reader(argv[1]);
-    reader.set_video_out("vpq_reader");
-    reader.set_audio_out("apq_reader");
+        player.uri = argv[1];
+        player.video_filter = "scale=1280x720";
+        player.errorCallback = errorCallback;
+        player.infoCallback = errorCallback;
 
-    avio::Decoder videoDecoder(reader, AVMEDIA_TYPE_VIDEO, AV_HWDEVICE_TYPE_CUDA);
-    videoDecoder.set_video_in(reader.video_out());
-    videoDecoder.set_video_out("vfq_decoder");
+        player.run();
+    }
+    catch (const avio::Exception& e) {
+        std::cout << "error: " << e.what() << std::endl;
+    }
 
-    //avio::Filter videoFilter(videoDecoder, "scale=1280x720,format=rgb24");
-    avio::Filter videoFilter(videoDecoder, "null");
-    videoFilter.set_video_in(videoDecoder.video_out());
-    videoFilter.set_video_out("vfq_filter");
-    //videoFilter.show_frames = true;
-
-    avio::Decoder audioDecoder(reader, AVMEDIA_TYPE_AUDIO);
-    audioDecoder.set_audio_in(reader.audio_out());
-    audioDecoder.set_audio_out("afq_decoder");
-
-    avio::Display display(reader);
-    display.set_video_in(videoFilter.video_out());
-    //display.set_video_in(videoDecoder.video_out());
-    display.set_audio_in(audioDecoder.audio_out());
-
-    player.add_reader(reader);
-    player.add_decoder(videoDecoder);
-    player.add_filter(videoFilter);
-    player.add_decoder(audioDecoder);
-    player.add_display(display);
-
-    player.run();
 
     return 0;
 }

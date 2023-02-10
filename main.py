@@ -6,7 +6,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, \
-QGridLayout, QWidget, QSlider, QLabel
+QGridLayout, QWidget, QSlider, QLabel, QMessageBox
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QPainter, QImage, QGuiApplication
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
@@ -32,14 +32,14 @@ class AVWidget(QLabel):
         self.update()
 
     #def paintGL(self):
-    def paintEvent(self, e):
-        if (not self.image.isNull()):
-            painter = QPainter(self)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            tmp = self.image.scaled(self.width(), self.height(), Qt.AspectRatioMode.KeepAspectRatio)
-            dx = self.width() - tmp.width()
-            dy = self.height() - tmp.height()
-            painter.drawImage(int(dx/2), int(dy/2), tmp)
+    #def paintEvent(self, e):
+    #    if (not self.image.isNull()):
+    #        painter = QPainter(self)
+    #        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    #        tmp = self.image.scaled(self.width(), self.height(), Qt.AspectRatioMode.KeepAspectRatio)
+    #        dx = self.width() - tmp.width()
+    #        dy = self.height() - tmp.height()
+    #        painter.drawImage(int(dx/2), int(dy/2), tmp)
 
 class MainWindow(QMainWindow):
 
@@ -109,6 +109,13 @@ class MainWindow(QMainWindow):
         self.progress.setValue(int(n * 100))
         self.progress.update()
 
+    def showInfo(self, str):
+        print("SHOW INFO", str)
+
+    def showError(self, str):
+        print("SHOW ERROR", str)
+        self.avWidget.setText(str)
+
     def btnPauseClicked(self):
         print("btnPauseClicked")
         self.player.togglePaused()
@@ -133,6 +140,8 @@ class MainWindow(QMainWindow):
         self.player.hWnd = self.avWidget.winId()
         self.player.width = lambda : self.avWidget.width()
         self.player.height = lambda : self.avWidget.height()
+        self.player.infoCallback = lambda s: self.showInfo(s)
+        self.player.errorCallback = lambda s: self.showError(s)
 
         self.player.start()
 
