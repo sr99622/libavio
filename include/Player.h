@@ -47,13 +47,13 @@ public:
 
     std::vector<std::thread*> ops;
 
-    std::function<int(void)> width = nullptr;
-    std::function<int(void)> height = nullptr;
-    std::function<void(float)> progressCallback = nullptr;
+    std::function<int(void)> cbWidth = nullptr;
+    std::function<int(void)> cbHeight = nullptr;
+    std::function<void(float)> cbProgress = nullptr;
     std::function<void(const Frame&)> renderCallback = nullptr;
-    std::function<Frame(Frame&)> pythonCallback  = nullptr;
-  	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
+    std::function<Frame(Frame&)> cbFrame  = nullptr;
+  	std::function<void(const std::string&)> cbInfo = nullptr;
+	std::function<void(const std::string&)> cbError = nullptr;
     std::function<void(int64_t)> cbMediaPlayingStarted = nullptr;
     std::function<void(void)> cbMediaPlayingStopped = nullptr;
 
