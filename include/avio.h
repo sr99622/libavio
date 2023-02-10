@@ -115,7 +115,7 @@ static void read(Reader* reader, Player* player)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Reader thread loop error: " << e.what();
-        if (reader->errorCallback) reader->errorCallback(str.str());
+        if (reader->cbError) reader->cbError(str.str());
     }
 
     try {
@@ -144,7 +144,7 @@ static void decode(Decoder* decoder)
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
-        if (decoder->errorCallback) decoder->errorCallback(str.str());
+        if (decoder->cbError) decoder->cbError(str.str());
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
@@ -167,7 +167,7 @@ static void filter(Filter* filter)
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
-        if (filter->errorCallback) filter->errorCallback(str.str());
+        if (filter->cbError) filter->cbError(str.str());
     }
 }
 

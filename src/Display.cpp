@@ -83,7 +83,7 @@ int Display::initVideo()
 
             if (P->hWnd) {
                 window = SDL_CreateWindowFrom((void*)P->hWnd);
-                SDL_SetWindowSize(window, P->width(), P->height());
+                SDL_SetWindowSize(window, P->cbWidth(), P->cbHeight());
             }
             else {
                 window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pix_width, pix_height, 0);
@@ -107,8 +107,8 @@ int Display::initVideo()
                     int window_width;
                     int window_height;
                     SDL_GetWindowSize(window, &window_width, &window_height);
-                    if (!(window_width == P->width() && window_height == P->height())) {
-                        SDL_SetWindowSize(window, P->width(), P->height());
+                    if (!(window_width == P->cbWidth() && window_height == P->cbHeight())) {
+                        SDL_SetWindowSize(window, P->cbWidth(), P->cbHeight());
                     }
                 }
             }
@@ -117,7 +117,7 @@ int Display::initVideo()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init video exception: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (cbError) cbError(str.str());
         ret = -1;
     }
     
@@ -246,8 +246,8 @@ bool Display::display()
 
             paused_frame = f;
 
-            if (P->pythonCallback) f = P->pythonCallback(f);
-            //if (pythonCallback) pythonCallback(f);
+            if (P->cbFrame) f = P->cbFrame(f);
+            //if (cbFrame) cbFrame(f);
 
             int delay = rtClock.update(f.m_rts - reader->start_time());
             //SDL_Delay(delay);
@@ -272,10 +272,10 @@ bool Display::display()
             }
             reader->last_video_pts = f.m_frame->pts;
 
-            if (P->progressCallback) {
+            if (P->cbProgress) {
                 if (reader->duration()) {
                     float pct = (float)f.m_rts / (float)reader->duration();
-                    P->progressCallback(pct);
+                    P->cbProgress(pct);
                 }
             }
 
@@ -289,7 +289,7 @@ bool Display::display()
         catch (const Exception& e) {
             std::stringstream str;
             str << "Display exception: " << e.what();
-            if (infoCallback) infoCallback(str.str());
+            if (cbInfo) cbInfo(str.str());
         }
     }
 
@@ -372,7 +372,7 @@ int Display::initAudio(Filter* audioFilter)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init audio exception: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (cbError) cbError(str.str());
     }
 
     return ret;
@@ -443,7 +443,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Audio callback exception: " << e.what();
-        if (d->infoCallback) d->infoCallback(str.str());
+        if (d->cbInfo) d->cbInfo(str.str());
     }
 
     free(temp);

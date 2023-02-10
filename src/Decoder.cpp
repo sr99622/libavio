@@ -222,7 +222,7 @@ int Decoder::decode(AVPacket* pkt)
     catch (const Exception& e) {
         std::stringstream str;
         str << strMediaType << " Decoder::decode exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        if (cbInfo) cbInfo(str.str());
         ret = -1;
     }
 

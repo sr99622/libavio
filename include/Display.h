@@ -53,9 +53,9 @@ public:
     ~Display();
 
     void* player = nullptr;
-  	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
-    //std::function<void(Frame&)> pythonCallback = nullptr;
+  	std::function<void(const std::string&)> cbInfo = nullptr;
+	std::function<void(const std::string&)> cbError = nullptr;
+    //std::function<void(Frame&)> cbFrame = nullptr;
 
     Reader* reader;
     //Filter* audioFilter;

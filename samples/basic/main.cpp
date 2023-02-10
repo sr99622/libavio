@@ -10,7 +10,7 @@ int main(int argc, char** argv)
     std::cout << "playing file: " << argv[1] << std::endl;
     
     try {
-        std::function<void(const std::string& arg)> errorCallback = [&](const std::string& arg)
+        std::function<void(const std::string& arg)> cbError = [&](const std::string& arg)
         {
             std::cout << "msg: " << arg << std::endl;
         };
@@ -19,8 +19,8 @@ int main(int argc, char** argv)
 
         player.uri = argv[1];
         player.video_filter = "scale=1280x720";
-        player.errorCallback = errorCallback;
-        player.infoCallback = errorCallback;
+        player.cbError = cbError;
+        player.cbInfo = cbError;
 
         player.run();
     }

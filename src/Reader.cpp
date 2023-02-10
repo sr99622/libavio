@@ -83,6 +83,7 @@ Reader::Reader(const char* filename)
 Reader::~Reader()
 {
     std::cout << "~Reader" << std::endl;
+    close_pipe();
     close();
 }
 
@@ -124,7 +125,7 @@ AVPacket* Reader::seek()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Reader seek exception: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (cbError) cbError(str.str());
         return nullptr;
     }
 
@@ -170,8 +171,8 @@ void Reader::pipe_write(AVPacket* pkt)
     try {
         if (!pipe) {
             pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
-            pipe->infoCallback = infoCallback;
-            pipe->errorCallback = errorCallback;
+            pipe->cbInfo = cbInfo;
+            pipe->cbError = cbError;
             pipe->open(pipe_out_filename);
             while (pkts_cache.size() > 0) {
                 AVPacket* tmp = pkts_cache.front();
@@ -197,7 +198,7 @@ void Reader::pipe_write(AVPacket* pkt)
         request_pipe_write = false;
         std::stringstream str;
         str << "Record function failure: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (cbError) cbError(str.str());
     }
 }
 
@@ -460,7 +461,7 @@ void Reader::showStreamParameters()
         str << "\nNo Audio Stream Found";
     }
     
-    if (infoCallback) infoCallback(str.str());
+    if (cbInfo) cbInfo(str.str());
 }
 
 

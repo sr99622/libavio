@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         from time import sleep
         sleep(0.5)
 
-    def pythonCallback(self, f):
+    def cbFrame(self, f):
         print("rts:", f.m_rts)
         img = np.array(f, copy = False)
 
@@ -135,13 +135,13 @@ class MainWindow(QMainWindow):
         self.player.hw_device_type = avio.AV_HWDEVICE_TYPE_CUDA
         self.player.video_filter = "format=bgr24,fps=5"
         self.player.audio_filter = "anull"
-        self.player.pythonCallback = lambda f: self.pythonCallback(f)
-        self.player.progressCallback = lambda n: self.updateProgress(n)
+        self.player.cbFrame = lambda f: self.cbFrame(f)
+        self.player.cbProgress = lambda n: self.updateProgress(n)
         self.player.hWnd = self.avWidget.winId()
-        self.player.width = lambda : self.avWidget.width()
-        self.player.height = lambda : self.avWidget.height()
-        self.player.infoCallback = lambda s: self.showInfo(s)
-        self.player.errorCallback = lambda s: self.showError(s)
+        self.player.cbWidth = lambda : self.avWidget.width()
+        self.player.cbHeight = lambda : self.avWidget.height()
+        self.player.cbInfo = lambda s: self.showInfo(s)
+        self.player.cbError = lambda s: self.showError(s)
 
         self.player.start()
 

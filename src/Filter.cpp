@@ -189,7 +189,7 @@ void Filter::filter(Frame& f)
         std::stringstream str;
         str << "Filter exception: " << e.what();
         //if (P) P->send_info(str.str());
-        if (infoCallback) infoCallback(str.str());
+        if (cbInfo) cbInfo(str.str());
     }
 }
 

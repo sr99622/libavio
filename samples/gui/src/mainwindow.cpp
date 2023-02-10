@@ -15,7 +15,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     btnRecord = new QPushButton("Record");
     connect(btnRecord, SIGNAL(clicked()), this, SLOT(onBtnRecordClicked()));
-    btnRecord->setEnabled(false);
 
     progress = new Progress(this);
     connect(progress, SIGNAL(seek(float)), this, SLOT(seek(float)));
@@ -53,6 +52,15 @@ void MainWindow::setPlayButton()
 
 void MainWindow::setRecordButton()
 {
+    if (player) {
+        if (player->isPiping())
+            btnRecord->setText("=*=*=");
+        else
+            btnRecord->setText("Record");
+    }
+    else {
+        btnRecord->setText("Record");
+    }
 }
 
 void MainWindow::onBtnPlayClicked()
@@ -65,11 +73,11 @@ void MainWindow::onBtnPlayClicked()
         player = new avio::Player();
         player->uri = "C:/Users/sr996/Videos/news.mp4";
         player->hWnd = label->winId();
-        player->width = [&]() { return label->width(); };
-        player->height = [&]() { return label->height(); };
-        player->infoCallback = [&](const std::string& msg) { infoMessage(msg); };
-        player->errorCallback = [&](const std::string& msg) { criticalError(msg); };
-        player->progressCallback = [&](float pct) { progress->setProgress(pct); };
+        player->cbWidth = [&]() { return label->width(); };
+        player->cbHeight = [&]() { return label->height(); };
+        player->cbInfo = [&](const std::string& msg) { infoMessage(msg); };
+        player->cbError = [&](const std::string& msg) { criticalError(msg); };
+        player->cbProgress = [&](float pct) { progress->setProgress(pct); };
         player->cbMediaPlayingStarted = [&](int64_t duration) { mediaPlayingStarted(duration); };
         player->cbMediaPlayingStopped = [&]() { mediaPlayingStopped(); };
         player->start();
@@ -89,11 +97,16 @@ void MainWindow::onBtnStopClicked()
 void MainWindow::onBtnRecordClicked()
 {
     std::cout << "record" << std::endl;
+    if (player) player->toggle_pipe_out("test.mp4");
+    setRecordButton();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    if (player) player->running = false;
+    if (player) {
+        player->running = false;
+        while (player) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 }
 
 void MainWindow::mediaPlayingStarted(qint64 duration)
@@ -108,6 +121,7 @@ void MainWindow::mediaPlayingStopped()
     progress->setProgress(0);
     player = nullptr;
     setPlayButton();
+    setRecordButton();
 }
 
 void MainWindow::seek(float pct)

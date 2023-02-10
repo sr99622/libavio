@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
 
         #def gen_p():
         #    return lambda n: self.updateProgress(n)
-        #self.display.progressCallback = gen_p()
+        #self.display.cbProgress = gen_p()
 
         def gen_f():
             return lambda f: self.avWidget.renderCallback(f)
