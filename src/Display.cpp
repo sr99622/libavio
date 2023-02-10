@@ -103,11 +103,13 @@ int Display::initVideo()
         }
         else {
             if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN)) {
-                int window_width;
-                int window_height;
-                SDL_GetWindowSize(window, &window_width, &window_height);
-                if (!(window_width == P->width() && window_height == P->height())) {
-                    SDL_SetWindowSize(window, P->width(), P->height());
+                if (P->hWnd) {
+                    int window_width;
+                    int window_height;
+                    SDL_GetWindowSize(window, &window_width, &window_height);
+                    if (!(window_width == P->width() && window_height == P->height())) {
+                        SDL_SetWindowSize(window, P->width(), P->height());
+                    }
                 }
             }
         }
@@ -266,7 +268,7 @@ bool Display::display()
                 pix_height = f.m_frame->height;
                 pix_fmt = (AVPixelFormat)f.m_frame->format;
                 ex.ck(initVideo(), "initVideo");
-                videoPresentation();
+                if (P->running) videoPresentation();
             }
             reader->last_video_pts = f.m_frame->pts;
 

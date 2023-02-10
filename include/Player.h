@@ -52,12 +52,16 @@ public:
     std::function<void(float)> progressCallback = nullptr;
     std::function<void(const Frame&)> renderCallback = nullptr;
     std::function<Frame(Frame&)> pythonCallback  = nullptr;
+  	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
+    std::function<void(int64_t)> cbMediaPlayingStarted = nullptr;
+    std::function<void(void)> cbMediaPlayingStopped = nullptr;
 
     uint64_t hWnd = 0;
     std::string uri;
-    std::string video_filter;
-    std::string audio_filter;
-    AVHWDeviceType hw_device_type;
+    std::string video_filter = "null";
+    std::string audio_filter = "anull";
+    AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 
     bool running = false;
 

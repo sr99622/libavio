@@ -28,7 +28,9 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("hw_device_type", &Player::hw_device_type)
         .def_readwrite("renderCallback", &Player::renderCallback)
         .def_readwrite("progressCallback", &Player::progressCallback)
-        .def_readwrite("pythonCallback", &Player::pythonCallback);
+        .def_readwrite("pythonCallback", &Player::pythonCallback)
+        .def_readwrite("infoCallback", &Player::infoCallback)
+        .def_readwrite("errorCallback", &Player::errorCallback);
     py::class_<Reader>(m, "Reader")
         .def(py::init<const char*>())
         .def("start_time", &Reader::start_time)

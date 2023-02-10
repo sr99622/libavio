@@ -6,8 +6,17 @@
 #include <QSlider>
 
 #include "avio.h"
-#include "glwidget.h"
 #include "progress.h"
+
+ class Label : public QLabel
+ {
+    Q_OBJECT
+
+    QSize Label::sizeHint() const
+    {
+        return QSize(640, 480);
+    }
+ };
 
 class MainWindow : public QMainWindow
 {
@@ -19,12 +28,17 @@ public:
 
     void setPlayButton();
     void setRecordButton();
+    void mediaPlayingStarted(qint64);
+    void mediaPlayingStopped();
+    void criticalError(const std::string&);
+    void infoMessage(const std::string&);
 
     QPushButton* btnPlay;
     QPushButton* btnStop;
     QPushButton* btnRecord;
     Progress* progress;
-    GLWidget* glWidget;
+    Label* label;
+    avio::Player* player = nullptr;
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -33,11 +47,7 @@ public slots:
     void onBtnPlayClicked();
     void onBtnStopClicked();
     void onBtnRecordClicked();
-    void mediaPlayingStarted(qint64);
-    void mediaPlayingStopped();
-    void mediaProgress(float);
-    void criticalError(const QString&);
-    void infoMessage(const QString&);
+    void seek(float);
 
 };
 
