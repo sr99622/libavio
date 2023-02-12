@@ -409,8 +409,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
                     swr_convert(d->swr_ctx, &d->swr_buffer, nb_samples, data, nb_samples);
                     int mark = std::min(len, d->swr_buffer_size);
-                    //int mark = min(len, d->swr_buffer_size);
-                    memcpy(temp + ptr, d->swr_buffer, mark);
+                    if (((Player*)(d->player))->running) memcpy(temp + ptr, d->swr_buffer, mark);
                     ptr += mark;
                     len -= mark;
                 }
