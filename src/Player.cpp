@@ -18,8 +18,16 @@ bool Player::isPiping()
     return result;
 }
 
+bool Player::isMute()
+{
+    bool result = false;
+    if (display) result = display->mute;
+    return result;
+}
+
 void Player::setMute(bool arg)
 {
+    mute = arg;
     if (display) display->mute = arg;
 }
 
@@ -138,6 +146,7 @@ void Player::run()
         display = new Display(*reader);
         display->cbInfo = cbInfo;
         display->cbError = cbError;
+        display->mute = mute;
         if (videoFilter) display->vfq_in = videoFilter->frame_out_q;
         if (audioFilter) display->afq_in = audioFilter->frame_out_q;
         if (audioFilter) display->initAudio(audioFilter);

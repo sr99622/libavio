@@ -64,12 +64,14 @@ public:
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 
     bool running = false;
+    bool mute = false;
 
     Player() { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }
 
     bool isPaused();
     bool isPiping();
+    bool isMute();
     void setMute(bool arg);
     void setVolume(int arg);
     void togglePaused();
