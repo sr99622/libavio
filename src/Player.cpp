@@ -33,6 +33,7 @@ void Player::setMute(bool arg)
 
 void Player::setVolume(int arg)
 {
+    volume = arg;
     if (display) display->volume = (float)arg / 100.0f;
 }
 
@@ -147,6 +148,7 @@ void Player::run()
         display->cbInfo = cbInfo;
         display->cbError = cbError;
         display->mute = mute;
+        display->volume = (float)volume / 100.0f;
         if (videoFilter) display->vfq_in = videoFilter->frame_out_q;
         if (audioFilter) display->afq_in = audioFilter->frame_out_q;
         if (audioFilter) display->initAudio(audioFilter);

@@ -65,6 +65,7 @@ public:
 
     bool running = false;
     bool mute = false;
+    int volume = 0;
 
     Player() { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }
