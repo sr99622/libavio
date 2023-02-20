@@ -44,7 +44,6 @@ static void read(Reader* reader, Player* player)
             reader->apq->set_max_size(reader->apq_max_size);
     }
 
-
     try {
         while (true)
         {
@@ -115,7 +114,8 @@ static void read(Reader* reader, Player* player)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Reader thread loop error: " << e.what();
-        if (reader->cbError) reader->cbError(str.str());
+        std::cout << str.str() << std::endl;
+        if (player->errorCallback) reader->errorCallback(str.str());
     }
 
     try {
@@ -123,6 +123,7 @@ static void read(Reader* reader, Player* player)
         if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
     catch (const QueueClosedException& e) {}
+    std::cout << "reader finished" << std::endl;
 }
 
 static void decode(Decoder* decoder) 
@@ -137,17 +138,18 @@ static void decode(Decoder* decoder)
 
             decoder->decode(p.m_pkt);
         }
-        decoder->decode(nullptr);
-        decoder->flush();
+        //decoder->decode(nullptr);
+        //decoder->flush();
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
-        if (decoder->cbError) decoder->cbError(str.str());
+        if (decoder->errorCallback) decoder->errorCallback(str.str());
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
+    std::cout << decoder->strMediaType << " decoder finished" << std::endl;
 }
 
 static void filter(Filter* filter)
@@ -162,13 +164,16 @@ static void filter(Filter* filter)
 
             filter->filter(f);
         }
-        filter->frame_out_q->push_move(Frame(nullptr));
+        //filter->frame_out_q->push_move(Frame(nullptr));
     }
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
-        if (filter->cbError) filter->cbError(str.str());
+        if (filter->errorCallback) filter->errorCallback(str.str());
     }
+
+    filter->frame_out_q->push_move(Frame(nullptr));
+    std::cout << filter->strMediaType() << " filter finished" << std::endl;
 }
 
 

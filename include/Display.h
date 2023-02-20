@@ -34,7 +34,7 @@
 #include "Filter.h"
 #include "Reader.h"
 
-#define SDL_EVENT_LOOP_WAIT 10
+#define SDL_EVENT_LOOP_WAIT 30
 
 namespace avio
 {
@@ -49,25 +49,21 @@ class Display
 {
 
 public:
-    Display(Reader& reader) : reader(&reader) { }
+    Display(Reader* reader, void* player) : reader(reader), player(player) { }
     ~Display();
 
-    void* player = nullptr;
-  	std::function<void(const std::string&)> cbInfo = nullptr;
-	std::function<void(const std::string&)> cbError = nullptr;
-    //std::function<void(Frame&)> cbFrame = nullptr;
-
     Reader* reader;
-    //Filter* audioFilter;
+    void* player = nullptr;
+    uint64_t hWnd = 0;
+  	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
-    void init();
-    //int initAudio(int sample_rate, AVSampleFormat sample_fmt, int channels, uint64_t channel_layout, int stream_nb_samples);
     int initAudio(Filter* audioFilter);
     int initVideo();
     static void AudioCallback(void* userdata, uint8_t* stream, int len);
     void videoPresentation();
     PlayState getEvents(std::vector<SDL_Event>* events);
-    bool display();
+    void display();
     void snapshot();
     
     bool paused = false;
@@ -118,8 +114,6 @@ public:
 
     uint64_t start_time;
     uint64_t duration;
-
-    std::chrono::steady_clock clock;
 
     ExceptionHandler ex;
 

@@ -43,6 +43,7 @@ class Queue
 {
 public:
 	Queue(size_t max_size = 1);
+	//Queue::~Queue() { std::cout << "~Queue" << std::endl; }
 
 	void push(T const&);
 	void push_move(T);

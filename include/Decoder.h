@@ -32,11 +32,10 @@ namespace avio
 class Decoder
 {
 public:
-	Decoder(Reader& reader, AVMediaType mediaType, AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE);
+	Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE);
 
 	~Decoder();
 	int decode(AVPacket* pkt);
-	void close();
 	void flush();
 
 	int sample_rate() { return dec_ctx->sample_rate; }
@@ -52,8 +51,8 @@ public:
 	int64_t duration() { return reader->fmt_ctx->streams[stream_index]->duration; }
 	AVRational time_base() { return reader->fmt_ctx->streams[stream_index]->time_base; }
 
-	std::function<void(const std::string&)> cbInfo = nullptr;
-	std::function<void(const std::string&)> cbError = nullptr;
+	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
 	AVMediaType mediaType;
 	std::string strMediaType;
@@ -73,9 +72,8 @@ public:
 
 	bool show_frames = false;
 
-	Queue<Packet>* pkt_q = nullptr;
 	Queue<Frame>* frame_q = nullptr;
-
+	Queue<Packet>* pkt_q = nullptr;
 
 	ExceptionHandler ex;
 };

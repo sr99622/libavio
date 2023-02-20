@@ -37,8 +37,8 @@ public:
     ~Pipe();
 
     //void* process;
-	std::function<void(const std::string&)> cbInfo = nullptr;
-	std::function<void(const std::string&)> cbError = nullptr;
+	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
     AVCodecContext* getContext(AVMediaType mediaType);
     void open(const std::string& filename);

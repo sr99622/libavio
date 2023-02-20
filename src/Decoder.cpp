@@ -42,19 +42,19 @@ AVPixelFormat get_hw_format(AVCodecContext* ctx, const AVPixelFormat* pix_fmts)
 namespace avio
 {
 
-Decoder::Decoder(Reader& reader, AVMediaType mediaType, AVHWDeviceType hw_device_type) : reader(&reader), mediaType(mediaType)
+Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device_type) : reader(reader), mediaType(mediaType)
 {
     try {
         const char* str = av_get_media_type_string(mediaType);
         strMediaType = (str ? str : "UNKNOWN MEDIA TYPE");
 
-        stream_index = av_find_best_stream(reader.fmt_ctx, mediaType, -1, -1, NULL, 0);
+        stream_index = av_find_best_stream(reader->fmt_ctx, mediaType, -1, -1, NULL, 0);
         if (stream_index < 0) {
             std::stringstream str;
             str << "Error opening stream, unable to find " << strMediaType << " stream";
             throw Exception(str.str());
         }
-        stream = reader.fmt_ctx->streams[stream_index];
+        stream = reader->fmt_ctx->streams[stream_index];
         dec = avcodec_find_decoder(stream->codecpar->codec_id);
 
         if (!dec) {
@@ -117,21 +117,15 @@ Decoder::Decoder(Reader& reader, AVMediaType mediaType, AVHWDeviceType hw_device
         ex.ck(avcodec_open2(dec_ctx, dec, NULL), AO2);
     }
     catch (const Exception& e) {
-        close();
         std::stringstream str;
         str << "Decoder constructor exception: " << e.what();
-        throw Exception(str.str());
+        throw std::runtime_error(str.str());
     }
 }
 
 Decoder::~Decoder()
 {
     std::cout << "~Decoder" << std::endl;
-    close();
-}
-
-void Decoder::close()
-{
     if (frame) av_frame_free(&frame);
     if (sw_frame) av_frame_free(&sw_frame);
     if (cvt_frame) av_frame_free(&cvt_frame);
@@ -222,7 +216,7 @@ int Decoder::decode(AVPacket* pkt)
     catch (const Exception& e) {
         std::stringstream str;
         str << strMediaType << " Decoder::decode exception: " << e.what();
-        if (cbInfo) cbInfo(str.str());
+        if (infoCallback) infoCallback(str.str());
         ret = -1;
     }
 

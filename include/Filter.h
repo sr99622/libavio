@@ -44,13 +44,12 @@ public:
 	void initVideo();
 	void initAudio();
 	~Filter();
-	void close();
 	void filter(Frame& f);
 	AVMediaType mediaType() { return decoder->mediaType; }
+	std::string strMediaType() const { return decoder->strMediaType; }
 
-	//void* process = nullptr;
-	std::function<void(const std::string&)> cbInfo = nullptr;
-	std::function<void(const std::string&)> cbError = nullptr;
+	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
 	Decoder* decoder = nullptr;
 	AVFilterContext* sink_ctx = nullptr;
