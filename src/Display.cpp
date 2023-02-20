@@ -81,9 +81,9 @@ int Display::initVideo()
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
             ex.msg(str.str());
 
-            if (P->hWnd) {
-                window = SDL_CreateWindowFrom((void*)P->hWnd);
-                SDL_SetWindowSize(window, P->cbWidth(), P->cbHeight());
+            if (hWnd) {
+                window = SDL_CreateWindowFrom((void*)hWnd);
+                SDL_SetWindowSize(window, P->width(), P->height());
             }
             else {
                 window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pix_width, pix_height, 0);
@@ -103,13 +103,11 @@ int Display::initVideo()
         }
         else {
             if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN)) {
-                if (P->hWnd) {
-                    int window_width;
-                    int window_height;
-                    SDL_GetWindowSize(window, &window_width, &window_height);
-                    if (!(window_width == P->cbWidth() && window_height == P->cbHeight())) {
-                        SDL_SetWindowSize(window, P->cbWidth(), P->cbHeight());
-                    }
+                int window_width;
+                int window_height;
+                SDL_GetWindowSize(window, &window_width, &window_height);
+                if (!(window_width == P->width() && window_height == P->height())) {
+                    SDL_SetWindowSize(window, P->width(), P->height());
                 }
             }
         }
@@ -117,7 +115,8 @@ int Display::initVideo()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init video exception: " << e.what();
-        if (cbError) cbError(str.str());
+        if (errorCallback) errorCallback(str.str());
+        else std::cout << str.str() << std::endl;
         ret = -1;
     }
     
@@ -174,10 +173,8 @@ PlayState Display::getEvents(std::vector<SDL_Event>* events)
     return state;
 }
 
-bool Display::display()
+void Display::display()
 {
-    bool playing = true;
-
     while (true)
     {
         try {
@@ -195,12 +192,12 @@ bool Display::display()
             if (paused) 
             {
                 if (!P->running) {
-                    playing = false;
-                    break;
+                    togglePause();
+                    continue;
                 }
 
                 f = paused_frame;
-                bool flag_out = true;
+                bool found = false;
                 
                 while (reader->seeking() || state == PlayState::QUIT) {
                     if (afq_in) afq_in->clear();
@@ -208,32 +205,31 @@ bool Display::display()
                     if (f.isValid()) {
                         if (f.m_frame->pts == reader->seek_found_pts) {
                             reader->seek_found_pts = AV_NOPTS_VALUE;
-                            flag_out = false;
+                            found = true;
                         }
                     }
                     else {
                         std::cout << "Display received eof" << std::endl;
-                        playing = false;
                         break;
                     }
                 }
 
-                if (!P->renderCallback) {
+                if (P->renderCallback)
+                    P->renderCallback(f);
+                else
                     videoPresentation();
-                }
 
-                //SDL_Delay(SDL_EVENT_LOOP_WAIT);
                 std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
-                if (flag_out)
-                    break;
+                if (!found)
+                    continue;
 
             }
 
             if (vfq_in) {
                 vfq_in->pop_move(f);
                 if (!f.isValid()) {
-                    playing = false;
+                    std::cout << "recvd null frame" << std::endl;
                     break;
                 }
             }
@@ -241,24 +237,18 @@ bool Display::display()
                 SDL_Delay(SDL_EVENT_LOOP_WAIT);
                 f = Frame(640, 480, AV_PIX_FMT_YUV420P);
                 f.m_rts = rtClock.stream_time();
+                if (P->running)
+                    continue;
+                else
+                    break;
             }
-
 
             paused_frame = f;
 
-            if (P->cbFrame) f = P->cbFrame(f);
-            //if (cbFrame) cbFrame(f);
+            if (P->pythonCallback) f = P->pythonCallback(f);
 
             int delay = rtClock.update(f.m_rts - reader->start_time());
-            //SDL_Delay(delay);
-
-            auto start = std::chrono::high_resolution_clock::now();
-            std::chrono::milliseconds ms(delay);
-            auto end = start + ms;
-            do {
-                std::this_thread::yield();
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            } while (std::chrono::high_resolution_clock::now() < end);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
             if (P->renderCallback) {
                 P->renderCallback(f);
@@ -268,40 +258,35 @@ bool Display::display()
                 pix_height = f.m_frame->height;
                 pix_fmt = (AVPixelFormat)f.m_frame->format;
                 ex.ck(initVideo(), "initVideo");
-                if (P->running) videoPresentation();
+                videoPresentation();
             }
             reader->last_video_pts = f.m_frame->pts;
 
-            if (P->cbProgress) {
+            if (P->progressCallback) {
                 if (reader->duration()) {
                     float pct = (float)f.m_rts / (float)reader->duration();
-                    P->cbProgress(pct);
+                    int progress = (int)(1000 * pct);
+                    if (progress != P->last_progress) {
+                        P->progressCallback(pct);
+                        P->last_progress = progress;
+                    }
                 }
             }
 
-            if (vfq_out) {
+            if (vfq_out)
                 vfq_out->push_move(f);
-            }
-            else {
+            else
                 f.invalidate();
-            }
+
         }
         catch (const Exception& e) {
             std::stringstream str;
             str << "Display exception: " << e.what();
-            if (cbInfo) cbInfo(str.str());
+            if (infoCallback) infoCallback(str.str());
         }
     }
-
-    return playing;
 }
 
-void Display::init()
-{
-    //initAudio(audioFilter->sample_rate(), audioFilter->sample_format(), audioFilter->channels(), audioFilter->channel_layout(), audioFilter->frame_size());
-}
-
-//int Display::initAudio(int stream_sample_rate, AVSampleFormat stream_sample_format, int stream_channels, uint64_t stream_channel_layout, int stream_nb_samples)
 int Display::initAudio(Filter* audioFilter)
 {
     int stream_sample_rate = audioFilter->sample_rate();
@@ -309,8 +294,8 @@ int Display::initAudio(Filter* audioFilter)
     int stream_channels = audioFilter->channels();
     uint64_t stream_channel_layout = audioFilter->channel_layout();
     int stream_nb_samples = audioFilter->frame_size();
-
     int ret = 0;
+
     try {
 
         if (stream_nb_samples == 0) {
@@ -372,7 +357,7 @@ int Display::initAudio(Filter* audioFilter)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init audio exception: " << e.what();
-        if (cbError) cbError(str.str());
+        if (errorCallback) errorCallback(str.str());
     }
 
     return ret;
@@ -386,6 +371,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
     memset(temp, 0, len);
     Frame f;
     int ptr = 0;
+    Player* player = (Player*)d->player;
 
     if (d->paused)
         return;
@@ -409,7 +395,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
                     swr_convert(d->swr_ctx, &d->swr_buffer, nb_samples, data, nb_samples);
                     int mark = std::min(len, d->swr_buffer_size);
-                    if (((Player*)(d->player))->running) memcpy(temp + ptr, d->swr_buffer, mark);
+                    if (player->running) memcpy(temp + ptr, d->swr_buffer, mark);
                     ptr += mark;
                     len -= mark;
                 }
@@ -423,6 +409,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                         event.type = SDL_QUIT;
                         SDL_PushEvent(&event);
                     }
+                    std::cout << "audio display done" << std::endl;
                     return;
                 }
             }
@@ -433,6 +420,17 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
             d->rtClock.sync(f.m_rts); 
             d->reader->seek_found_pts = AV_NOPTS_VALUE;
 
+            if (player->progressCallback) {
+                if (d->reader->duration()) {
+                    float pct = (float)f.m_rts / (float)d->reader->duration();
+                    int progress = (int)(1000 * pct);
+                    if (progress != player->last_progress) {
+                        player->progressCallback(pct);
+                        player->last_progress = progress;
+                    }
+                }
+            }
+
             if (d->afq_out)
                 d->afq_out->push_move(f);
             else
@@ -442,7 +440,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Audio callback exception: " << e.what();
-        if (d->cbInfo) d->cbInfo(str.str());
+        if (d->infoCallback) d->infoCallback(str.str());
     }
 
     free(temp);
@@ -562,7 +560,7 @@ void Display::snapshot()
         av_packet_unref(&pkt);
         ex.ck(av_write_trailer(fmt_ctx), AWT);
     }    
-    catch (Exception& e) {
+    catch (const Exception& e) {
         std::cout << "Display::snapshot exception: " << e.what() << std::endl;
     }    
 

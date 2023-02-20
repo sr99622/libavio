@@ -78,7 +78,6 @@ void Filter::initVideo()
     catch (const Exception& e) {
         avfilter_inout_free(&inputs);
         avfilter_inout_free(&outputs);
-        close();
         std::stringstream str;
         str << "Video filter constructor exception: " << e.what();
         throw Exception(str.str());
@@ -143,7 +142,6 @@ void Filter::initAudio()
     catch (const Exception& e) {
         avfilter_inout_free(&outputs);
         avfilter_inout_free(&inputs);
-        close();
         std::stringstream str;
         str << "Audio filter constructor exception: " << e.what();
         throw Exception(str.str());
@@ -154,11 +152,6 @@ void Filter::initAudio()
 Filter::~Filter()
 {
     std::cout << "~Filter" << std::endl;
-    close();
-}
-
-void Filter::close()
-{
     if (sink_ctx) avfilter_free(sink_ctx);
     if (src_ctx) avfilter_free(src_ctx);
     if (graph) avfilter_graph_free(&graph);
@@ -188,8 +181,7 @@ void Filter::filter(Frame& f)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Filter exception: " << e.what();
-        //if (P) P->send_info(str.str());
-        if (cbInfo) cbInfo(str.str());
+        if (infoCallback) infoCallback(str.str());
     }
 }
 

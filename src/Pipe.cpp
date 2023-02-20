@@ -52,7 +52,7 @@ AVCodecContext* Pipe::getContext(AVMediaType mediaType)
         stream_index = audio_stream_index;
     }
 
-    if (stream_index < 0) throw Exception("invalid stream index from reader");
+    if (stream_index < 0) return nullptr;
     AVStream* stream = reader_fmt_ctx->streams[stream_index];
     const AVCodec* enc = avcodec_find_encoder(stream->codecpar->codec_id);
     if (!enc) throw Exception("could not find encoder");
@@ -92,8 +92,7 @@ void Pipe::open(const std::string& filename)
 
     std::stringstream str;
     str << "Pipe opened write file: " << filename.c_str();
-    //if (P) P->send_info(str.str());
-    if (cbInfo) cbInfo(str.str());
+    if (infoCallback) infoCallback(str.str());
 }
 
 void Pipe::adjust_pts(AVPacket* pkt)
@@ -120,8 +119,7 @@ void Pipe::write(AVPacket* pkt)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Pipe write packet exception: " << e.what();
-        //if (P) P->send_info(str.str());
-        if (cbInfo) cbInfo(str.str());
+        if (infoCallback) infoCallback(str.str());
     }
 }
 
@@ -150,15 +148,13 @@ void Pipe::close()
 
         std::stringstream str;
         str << "Pipe closed file: " << url;
-        //if (P) P->send_info(str.str());
-        if (cbInfo) cbInfo(str.str());
+        if (infoCallback) infoCallback(str.str());
 
     }
     catch (const Exception& e) {
         std::stringstream str;
         str << "Record to file close error: " << e.what();
-        //if (P) P->send_error(str.str());
-        if (cbError) cbError(str.str());
+        if (errorCallback) errorCallback(str.str());
     }
 }
 

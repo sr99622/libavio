@@ -33,32 +33,15 @@ endif()
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-#[[
-add_executable(skeletal
-    skeletal/main.cpp
-)
-
-target_link_libraries(skeletal
-    libavio
-)
-]]
-
-add_executable(basic
-    basic/main.cpp
-)
-
-target_link_libraries(basic PRIVATE
-    libavio
-)
-
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 add_executable(gui
+    gui/src/glwidget.cpp
     gui/src/main.cpp
     gui/src/mainwindow.cpp
     gui/src/progress.cpp
+    gui/include/glwidget.h
     gui/include/mainwindow.h
     gui/include/progress.h
 )

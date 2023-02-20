@@ -27,6 +27,7 @@
 #include "Pipe.h"
 #include "Filter.h"
 #include "Display.h"
+#include "Packet.h"
 #include <functional>
 
 #define P ((Player*)player)
@@ -45,17 +46,22 @@ public:
     Filter*   audioFilter  = nullptr;
     Display*  display      = nullptr;
 
-    std::vector<std::thread*> ops;
+    Queue<Packet>* vpq_reader;
+    Queue<Frame>*  vfq_decoder;
+    Queue<Frame>*  vfq_filter;
+    Queue<Packet>* apq_reader;
+    Queue<Frame>*  afq_decoder;
+    Queue<Frame>*  afq_filter;
 
-    std::function<int(void)> cbWidth = nullptr;
-    std::function<int(void)> cbHeight = nullptr;
-    std::function<void(float)> cbProgress = nullptr;
+    std::function<int(void)> width = nullptr;
+    std::function<int(void)> height = nullptr;
+    std::function<void(float)> progressCallback = nullptr;
     std::function<void(const Frame&)> renderCallback = nullptr;
-    std::function<Frame(Frame&)> cbFrame  = nullptr;
-  	std::function<void(const std::string&)> cbInfo = nullptr;
-	std::function<void(const std::string&)> cbError = nullptr;
+    std::function<Frame(Frame&)> pythonCallback  = nullptr;
     std::function<void(int64_t)> cbMediaPlayingStarted = nullptr;
     std::function<void(void)> cbMediaPlayingStopped = nullptr;
+  	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
     uint64_t hWnd = 0;
     std::string uri;
@@ -65,25 +71,31 @@ public:
 
     bool running = false;
     bool mute = false;
-    int volume = 80;
+    int volume = 100;
+    int last_progress = 0;
+
+    int vpq_size = 0;
+    int apq_size = 0;
+
+    bool disable_video = false;
+    bool disable_audio = false;
 
     Player() { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }
 
     bool isPaused();
     bool isPiping();
-    bool isMute();
-    void setMute(bool arg);
-    void setVolume(int arg);
     void togglePaused();
-    void seek(float arg);
-    void toggle_pipe_out(const std::string& filename);
+    void togglePiping(const std::string& filename);
     void key_event(int keyCode);
     void clear_queues();
     void clear_decoders();
     void run();
     void start();
-    static void hook(void* caller);
+    void seek(float arg);
+    void setMute(bool arg);
+    void setVolume(int arg);
+    bool checkForStreamHeader(const char* name);
 
 };
 

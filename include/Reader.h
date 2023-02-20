@@ -42,9 +42,8 @@ public:
 	~Reader();
 	AVPacket* read();
 
-	//void* process = nullptr;
-	std::function<void(const std::string&)> cbInfo = nullptr;
-	std::function<void(const std::string&)> cbError = nullptr;
+	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&)> errorCallback = nullptr;
 
 	void request_seek(float pct);
 	int64_t seek_target_pts = AV_NOPTS_VALUE;
@@ -56,7 +55,6 @@ public:
 	void start_from(int milliseconds);
 	void end_at(int milliseconds);
 	void showStreamParameters();
-	void close();
 
 	int64_t start_time();
 	int64_t duration();
