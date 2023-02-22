@@ -151,7 +151,6 @@ void Filter::initAudio()
 
 Filter::~Filter()
 {
-    std::cout << "~Filter" << std::endl;
     if (sink_ctx) avfilter_free(sink_ctx);
     if (src_ctx) avfilter_free(src_ctx);
     if (graph) avfilter_graph_free(&graph);

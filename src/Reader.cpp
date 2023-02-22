@@ -28,6 +28,7 @@ extern "C"
 #define MAX_TIMEOUT 5
 
 time_t timeout_start = time(nullptr);
+std::string timeout_msg;
 
 static int interrupt_callback(void *ctx)
 {
@@ -35,6 +36,7 @@ static int interrupt_callback(void *ctx)
     time_t diff = time(nullptr) - timeout_start;
 
     if (diff > MAX_TIMEOUT) {
+        timeout_msg = "camera timeout";
         return 1;
     }
     return 0;
@@ -69,8 +71,6 @@ Reader::Reader(const char* filename)
         if (audio_stream_index < 0) 
             ex.msg("did not find audio stream", MsgPriority::INFO);
 
-
-        //if (video_codec() == AV_CODEC_ID_HEVC) throw Exception("HEVC compression is not supported by default configuration");
     }
     catch (const Exception& e) {
         std::stringstream str;
@@ -81,7 +81,6 @@ Reader::Reader(const char* filename)
 
 Reader::~Reader()
 {
-    std::cout << "~Reader" << std::endl;
     if (fmt_ctx) avformat_close_input(&fmt_ctx);
 }
 
@@ -99,8 +98,15 @@ AVPacket* Reader::read()
     catch (const Exception& e) {
         av_packet_free(&pkt);
         pkt = nullptr;
-        if (ret != AVERROR_EOF)
-            throw Exception(e.what());
+        if (ret != AVERROR_EOF) {
+            std::stringstream str;
+            str << "Packet read error: ";
+            if (!timeout_msg.empty())
+                str << timeout_msg;
+            else
+                str << e.what();
+            throw Exception(str.str());
+        }
     }
 
     return pkt;
@@ -436,7 +442,7 @@ int Reader::keyframe_cache_size()
 void Reader::showStreamParameters()
 {
     std::stringstream str;
-    str << "\n" << fmt_ctx->url;
+    str << "\n";
     if (has_video()) {
         str << "\nVideo Stream Parameters"
             << "\n  Video Codec:  " << str_video_codec()
@@ -459,6 +465,5 @@ void Reader::showStreamParameters()
     
     if (infoCallback) infoCallback(str.str());
 }
-
 
 }

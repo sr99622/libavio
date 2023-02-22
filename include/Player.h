@@ -95,7 +95,7 @@ public:
     void seek(float arg);
     void setMute(bool arg);
     void setVolume(int arg);
-    bool checkForStreamHeader(const char* name);
+    bool checkForStreamHeader();
 
 };
 

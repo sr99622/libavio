@@ -49,7 +49,6 @@ static void read(Reader* reader, Player* player)
         {
             AVPacket* pkt = reader->read();
             if (!pkt) {
-                //player->send_info("reader recieved null packet eof");
                 break;
             }
 
@@ -64,16 +63,14 @@ static void read(Reader* reader, Player* player)
             if (reader->seek_target_pts != AV_NOPTS_VALUE) {
                 AVPacket* tmp = reader->seek();
                 reader->clear_pkts_cache(0);
+                player->clear_queues();
                 if (tmp) {
                     av_packet_free(&pkt);
                     pkt = tmp;
-                    player->clear_queues();
                 }
                 else {
                     player->running = false;
                     if (reader->pipe) reader->close_pipe();
-                    reader->clear_pkts_cache(0);
-                    player->clear_queues();
                     av_packet_free(&pkt);
                     break;
                 }
@@ -123,7 +120,6 @@ static void read(Reader* reader, Player* player)
         if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
     catch (const QueueClosedException& e) {}
-    std::cout << "reader finished" << std::endl;
 }
 
 static void decode(Decoder* decoder) 
@@ -138,8 +134,6 @@ static void decode(Decoder* decoder)
 
             decoder->decode(p.m_pkt);
         }
-        //decoder->decode(nullptr);
-        //decoder->flush();
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { 
@@ -149,7 +143,6 @@ static void decode(Decoder* decoder)
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
-    std::cout << decoder->strMediaType << " decoder finished" << std::endl;
 }
 
 static void filter(Filter* filter)
@@ -164,7 +157,6 @@ static void filter(Filter* filter)
 
             filter->filter(f);
         }
-        //filter->frame_out_q->push_move(Frame(nullptr));
     }
     catch (const Exception& e) {
         std::stringstream str;
@@ -173,7 +165,6 @@ static void filter(Filter* filter)
     }
 
     filter->frame_out_q->push_move(Frame(nullptr));
-    std::cout << filter->strMediaType() << " filter finished" << std::endl;
 }
 
 
