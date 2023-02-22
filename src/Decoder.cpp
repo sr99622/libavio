@@ -125,7 +125,6 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
 
 Decoder::~Decoder()
 {
-    std::cout << "~Decoder" << std::endl;
     if (frame) av_frame_free(&frame);
     if (sw_frame) av_frame_free(&sw_frame);
     if (cvt_frame) av_frame_free(&cvt_frame);

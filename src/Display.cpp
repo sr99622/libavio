@@ -26,7 +26,6 @@ namespace avio
 
 Display::~Display()
 {
-    std::cout << "~Display" << std::endl;
     if (SDL_WasInit(SDL_INIT_AUDIO)) {
         SDL_LockAudioDevice(audioDeviceID);
         SDL_CloseAudioDevice(audioDeviceID);
@@ -209,7 +208,6 @@ void Display::display()
                         }
                     }
                     else {
-                        std::cout << "Display received eof" << std::endl;
                         break;
                     }
                 }
@@ -229,7 +227,6 @@ void Display::display()
             if (vfq_in) {
                 vfq_in->pop_move(f);
                 if (!f.isValid()) {
-                    std::cout << "recvd null frame" << std::endl;
                     break;
                 }
             }
@@ -400,7 +397,6 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     len -= mark;
                 }
                 else {
-                    std::cout << "audio callback revcd null eof" << std::endl;
                     SDL_PauseAudioDevice(d->audioDeviceID, true);
                     if (!d->vfq_in) {
                         len = -1;
@@ -409,7 +405,6 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                         event.type = SDL_QUIT;
                         SDL_PushEvent(&event);
                     }
-                    std::cout << "audio display done" << std::endl;
                     return;
                 }
             }

@@ -82,6 +82,9 @@ void Queue<T>::clear()
 {
 	std::unique_lock<std::mutex> lock(m_mutex);
 
+	m_front = m_rear = -1;
+	m_size = 0;
+	/*
 	while (!empty()) {
 		T arg = std::move(m_data[m_front]);
 		if (m_front == m_rear) m_front = m_rear = -1;
@@ -89,6 +92,7 @@ void Queue<T>::clear()
 		else m_front++;
 		m_size--;
 	}
+	*/
 
 	m_cond_push.notify_one();
 }
