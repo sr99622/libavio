@@ -127,7 +127,7 @@ void Display::videoPresentation()
     if (!f.isValid())
         return;
 
-    if (f.m_frame->format == AV_PIX_FMT_YUV420P) {
+    if (f.m_frame->format == AV_PIX_FMT_YUV420P || f.m_frame->format == AV_PIX_FMT_YUVJ420P) {
         ex.ck(SDL_UpdateYUVTexture(texture, NULL,
             f.m_frame->data[0], f.m_frame->linesize[0],
             f.m_frame->data[1], f.m_frame->linesize[1],
