@@ -117,8 +117,9 @@ void MainWindow::onBtnPlayClicked()
         player->width = [&]() { return glWidget->width(); };
         player->height = [&]() { return glWidget->height(); };
         player->uri = uri;
-        player->video_filter = "format=rgb24";
-        player->renderCallback = [&](const avio::Frame& frame) { glWidget->renderCallback(frame); };
+        //player->video_filter = "format=rgb24";
+        player->hWnd = glWidget->winId();
+        //player->renderCallback = [&](const avio::Frame& frame) { glWidget->renderCallback(frame); };
         player->progressCallback = [&](float arg) { progress->setProgress(arg); };
         player->cbMediaPlayingStarted = [&](int64_t duration) { mediaPlayingStarted(duration); };
         player->cbMediaPlayingStopped = [&]() { mediaPlayingStopped(); };
@@ -126,6 +127,7 @@ void MainWindow::onBtnPlayClicked()
         player->infoCallback = [&](const std::string& msg) { infoMessage(msg); };
         player->setMute(mute);
         player->setVolume(sldVolume->value());
+        player->hw_device_type = AV_HWDEVICE_TYPE_CUDA;
         player->start();
 
     }

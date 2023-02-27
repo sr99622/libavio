@@ -20,9 +20,11 @@
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 from PyQt6.QtGui import QPainter, QImage
 from PyQt6.QtCore import QRect, QSize
+from PyQt6.QtWidgets import QLabel
 import numpy as np
 
-class GLWidget(QOpenGLWidget):
+#class GLWidget(QOpenGLWidget):
+class GLWidget(QLabel):
     def __init__(self):
         super().__init__()
         self.image = QImage()
