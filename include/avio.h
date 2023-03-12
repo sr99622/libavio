@@ -21,6 +21,7 @@
 #define AVIO_H
 
 #include <iostream>
+#include <iomanip>
 #include "Exception.h"
 #include "Queue.h"
 #include "Reader.h"
@@ -167,6 +168,43 @@ static void filter(Filter* filter)
     filter->frame_out_q->push_move(Frame(nullptr));
 }
 
+static void write(Writer* writer, Encoder* encoder)
+{
+    Frame f;
+    while (true) 
+    {
+        encoder->frame_q->pop_move(f);
+        if (!f.isValid()) {
+            break;
+        }
+
+        if (writer->enabled) {
+
+            if (!encoder->opened) {
+                encoder->init();
+            }
+
+            if (!writer->opened) {
+                writer->open();
+            }
+
+            if (writer->opened && encoder->opened) {
+                encoder->encode(f);
+            }
+        }
+        else {
+            if (writer->opened) {
+                if (encoder->opened) {
+                    Frame tmp(nullptr);
+                    encoder->encode(tmp);
+                    encoder->close();
+                }
+                writer->close();
+            }
+        }
+    }
+    std::cout << "write thread finished" << std::endl;
+}
 
 }
 

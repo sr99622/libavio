@@ -1,5 +1,5 @@
 /********************************************************************
-* libavio/include/avio.h
+* libavio/include/Player.h
 *
 * Copyright (c) 2022  Stephen Rhodes
 *
@@ -28,6 +28,8 @@
 #include "Filter.h"
 #include "Display.h"
 #include "Packet.h"
+#include "Encoder.h"
+#include "Writer.h"
 #include <functional>
 
 #define P ((Player*)player)
@@ -45,13 +47,20 @@ public:
     Filter*   videoFilter  = nullptr;
     Filter*   audioFilter  = nullptr;
     Display*  display      = nullptr;
+    Encoder*  videoEncoder = nullptr;
+    Encoder*  audioEncoder = nullptr;
+    Writer*   writer       = nullptr;
 
     Queue<Packet>* vpq_reader;
     Queue<Frame>*  vfq_decoder;
     Queue<Frame>*  vfq_filter;
+    Queue<Frame>*  vfq_display;
+    Queue<Packet>* vpq_encoder;
     Queue<Packet>* apq_reader;
     Queue<Frame>*  afq_decoder;
     Queue<Frame>*  afq_filter;
+    Queue<Frame>*  afq_display;
+    Queue<Packet>* apq_encoder;
 
     std::function<int(void)> width = nullptr;
     std::function<int(void)> height = nullptr;
@@ -73,6 +82,7 @@ public:
     bool mute = false;
     int volume = 100;
     int last_progress = 0;
+    bool hw_encoding = false;
 
     int vpq_size = 0;
     int apq_size = 0;
@@ -85,6 +95,7 @@ public:
 
     bool isPaused();
     bool isPiping();
+    bool isEncoding();
     void togglePaused();
     void togglePiping(const std::string& filename);
     void key_event(int keyCode);
@@ -92,6 +103,7 @@ public:
     void clear_decoders();
     void run();
     void start();
+    void toggleEncoding(const std::string& filename);
     void seek(float arg);
     void setMute(bool arg);
     void setVolume(int arg);
