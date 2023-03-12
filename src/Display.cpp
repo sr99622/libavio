@@ -182,6 +182,7 @@ void Display::display()
             PlayState state = getEvents(&events);
 
             if (state == PlayState::QUIT) {
+                std::cout << "PLayState::QUIT" << std::endl;
                 P->running = false;
             }
             else if (state == PlayState::PAUSE) {
@@ -227,6 +228,11 @@ void Display::display()
             if (vfq_in) {
                 vfq_in->pop_move(f);
                 if (!f.isValid()) {
+                    std::cout << "DISPLAY EXIT !f.isValid" << std::endl;
+                    if (vfq_out) {
+                        std::cout << "pushing null" << std::endl;
+                        //vfq_out->push(f);
+                    }
                     break;
                 }
             }
@@ -281,6 +287,12 @@ void Display::display()
             str << "Display exception: " << e.what();
             if (infoCallback) infoCallback(str.str());
         }
+    }
+
+    f.invalidate();
+    if (vfq_out) {
+        std::cout << "eof" << std::endl;
+        vfq_out->push_move(f);
     }
 }
 
@@ -397,6 +409,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     len -= mark;
                 }
                 else {
+                    if (d->afq_out) d->afq_out->push_move(f);
                     SDL_PauseAudioDevice(d->audioDeviceID, true);
                     if (!d->vfq_in) {
                         len = -1;

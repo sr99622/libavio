@@ -157,7 +157,8 @@ std::string Frame::description() const
 			const char* pix_fmt_name = av_get_pix_fmt_name((AVPixelFormat)m_frame->format);
 			str << "VIDEO FRAME, width: " << m_frame->width << " height: " << m_frame->height
 				<< " format: " << (pix_fmt_name ? pix_fmt_name : "unknown pixel format")
-				<< " pts: " << m_frame->pts << " m_rts: " << m_rts;
+				<< " pts: " << m_frame->pts << " m_rts: " << m_rts
+				<< " linesize[0]: " << m_frame->linesize[0];
 		}
 		else if (mediaType() == AVMEDIA_TYPE_AUDIO) {
 			const char* sample_fmt_name = av_get_sample_fmt_name((AVSampleFormat)m_frame->format);
