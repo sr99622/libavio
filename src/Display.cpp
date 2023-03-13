@@ -227,14 +227,8 @@ void Display::display()
 
             if (vfq_in) {
                 vfq_in->pop_move(f);
-                if (!f.isValid()) {
-                    std::cout << "DISPLAY EXIT !f.isValid" << std::endl;
-                    if (vfq_out) {
-                        std::cout << "pushing null" << std::endl;
-                        //vfq_out->push(f);
-                    }
+                if (!f.isValid())
                     break;
-                }
             }
             else {
                 SDL_Delay(SDL_EVENT_LOOP_WAIT);
@@ -290,10 +284,8 @@ void Display::display()
     }
 
     f.invalidate();
-    if (vfq_out) {
-        std::cout << "eof" << std::endl;
+    if (vfq_out)
         vfq_out->push_move(f);
-    }
 }
 
 int Display::initAudio(Filter* audioFilter)

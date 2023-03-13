@@ -77,11 +77,30 @@ void Player::togglePiping(const std::string& filename)
 
 void Player::toggleEncoding(const std::string& filename)
 {
-    std::cout << "Player::toggleEncoding" << filename << std::endl;
+    std::cout << "Player::toggleEncoding " << filename << std::endl;
     if (writer) {
         writer->filename = filename;
         writer->enabled = !writer->enabled;
     }
+}
+
+void Player::toggleRecording(const std::string& filename)
+{
+    std::cout << "Player::toggleRecording " << filename << std::endl;
+    if (post_encode) {
+        toggleEncoding(filename);
+    }
+    else {
+        togglePiping(filename);
+    }
+}
+
+bool Player::isRecording()
+{
+    if (post_encode)
+        return isEncoding();
+    else
+        return isPiping();
 }
 
 void Player::clear_queues()
@@ -181,16 +200,15 @@ void Player::run()
 
             bool video_encoder_enabled = true;
             if (video_encoder_enabled) {
+                
                 videoEncoder = new Encoder(writer, AVMEDIA_TYPE_VIDEO);
                 videoEncoder->frame_q = vfq_display;
-                videoEncoder->pkt_q = vpq_encoder;
                 videoEncoder->width = videoFilter->width();
                 videoEncoder->height = videoFilter->height();
-                //videoEncoder->frame_rate = (int)((float)reader->frame_rate().num / (float)reader->frame_rate().den);
-                videoEncoder->frame_rate = 29;
-                videoEncoder->video_time_base.num = 1;
-                videoEncoder->video_time_base.den = videoEncoder->frame_rate;
-                videoEncoder->video_bit_rate = int(videoDecoder->bit_rate()/4);
+                videoEncoder->frame_rate = reader->frame_rate();
+                videoEncoder->video_time_base = reader->video_time_base();
+                videoEncoder->video_bit_rate = reader->video_bit_rate();
+
                 videoEncoder->gop_size = 30;
                 videoEncoder->profile = "high";
                 videoEncoder->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -226,13 +244,14 @@ void Player::run()
             if (audio_encoder_enabled) {
                 audioEncoder = new Encoder(writer, AVMEDIA_TYPE_AUDIO);
                 audioEncoder->frame_q = afq_display;
-                audioEncoder->pkt_q = apq_encoder;
+                //audioEncoder->pkt_q = apq_encoder;
                 audioEncoder->set_channel_layout_stereo();
                 audioEncoder->sample_fmt = AV_SAMPLE_FMT_FLTP;
                 audioEncoder->audio_bit_rate = reader->audio_bit_rate();
                 audioEncoder->sample_rate = reader->sample_rate();
-                audioEncoder->audio_time_base.num = 1;
-                audioEncoder->audio_time_base.den = audioEncoder->sample_rate;
+                //audioEncoder->audio_time_base.num = 1;
+                //audioEncoder->audio_time_base.den = audioEncoder->sample_rate;
+                audioEncoder->audio_time_base = reader->audio_time_base();
                 audioEncoder->nb_samples = reader->frame_size();
                 audioEncoder->channels = reader->channels();
             }
