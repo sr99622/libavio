@@ -40,7 +40,6 @@ void Writer::init()
 
 void Writer::open()
 {
-    std::cout << "start writer open " << filename << std::endl;
     std::unique_lock<std::mutex> lock(mutex);
     try {
         if (getEncoderState() == EncoderState::OPEN && !opened) {
@@ -49,7 +48,6 @@ void Writer::open()
 
             ex.ck(avformat_write_header(fmt_ctx, NULL), AWH);
             opened = true;
-            std::cout << "writer open success" << std::endl;
         }
     }
     catch (const Exception& e) {

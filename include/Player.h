@@ -82,6 +82,7 @@ public:
     bool mute = false;
     int volume = 100;
     int last_progress = 0;
+    bool post_encode = false;
     bool hw_encoding = false;
 
     int vpq_size = 0;
@@ -96,14 +97,16 @@ public:
     bool isPaused();
     bool isPiping();
     bool isEncoding();
+    bool isRecording();
     void togglePaused();
     void togglePiping(const std::string& filename);
+    void toggleEncoding(const std::string& filename);
+    void toggleRecording(const std::string& filename);
     void key_event(int keyCode);
     void clear_queues();
     void clear_decoders();
     void run();
     void start();
-    void toggleEncoding(const std::string& filename);
     void seek(float arg);
     void setMute(bool arg);
     void setVolume(int arg);

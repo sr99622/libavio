@@ -32,8 +32,6 @@ public:
     void init();
     int encode(Frame& f);
     void close();
-    void showParameters();
-    void showPacket(AVPacket* pkt);
     bool cmpFrame(AVFrame* frame);
     bool opened = false;
 
@@ -62,8 +60,8 @@ public:
     int width = 0;
     int height = 0;
     int video_bit_rate = 0;
-    int frame_rate = 0;
     int gop_size = 0;
+    AVRational frame_rate = av_make_q(0, 0);
     AVRational video_time_base = av_make_q(0, 0);
     AVDictionary* opts = NULL;
 
@@ -84,21 +82,8 @@ public:
     bool first_pass = true;
 
     Queue<Frame>* frame_q = nullptr;
-    Queue<Packet>* pkt_q = nullptr;
-
-    std::string frame_q_name;
-    std::string pkt_q_name;
 
     int frame_q_max_size = 0;
-
-    std::string video_in() const { return std::string(frame_q_name); }
-    std::string audio_in() const { return std::string(frame_q_name); }
-    std::string video_out() const { return std::string(pkt_q_name); }
-    std::string audio_out() const { return std::string(pkt_q_name); }
-    void set_video_in(const std::string& name) { frame_q_name = std::string(name); }
-    void set_audio_in(const std::string& name) { frame_q_name = std::string(name); }
-    void set_video_out(const std::string& name) { pkt_q_name = std::string(name); }
-    void set_audio_out(const std::string& name) { pkt_q_name = std::string(name); }
 
     ExceptionHandler ex;
 };

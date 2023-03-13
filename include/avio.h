@@ -203,7 +203,7 @@ static void write(Writer* writer, Encoder* encoder)
             }
         }
     }
-    std::cout << "write thread finished" << std::endl;
+
 }
 
 }
