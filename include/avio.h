@@ -36,15 +36,15 @@ namespace avio
 
 static void read(Reader* reader, Player* player) 
 {
-    if (reader->has_video()) {
+    if (reader->has_video() && !player->disable_video) {
         if (reader->vpq_max_size > 0)
             reader->vpq->set_max_size(reader->vpq_max_size);
     }
-    if (reader->has_audio()) {
+    if (reader->has_audio() && !player->disable_audio) {
         if (reader->apq_max_size > 0)
             reader->apq->set_max_size(reader->apq_max_size);
     }
-
+    
     try {
         while (true)
         {
@@ -52,6 +52,16 @@ static void read(Reader* reader, Player* player)
             if (!pkt) {
                 break;
             }
+
+            if (reader->disable_video && pkt->stream_index == reader->video_stream_index) {
+                av_packet_free(&pkt);
+                continue;
+            }
+
+            if (reader->disable_audio && pkt->stream_index == reader->audio_stream_index) {
+                av_packet_free(&pkt);
+                continue;
+            } 
 
             if (!player->running) {
                 if (reader->pipe) reader->close_pipe();
@@ -81,7 +91,7 @@ static void read(Reader* reader, Player* player)
                 reader->pipe_write(pkt);
             }
             else {
-                if (reader->pipe) reader->close_pipe();
+                reader->close_pipe();
                 reader->fill_pkts_cache(pkt);
             }
 
@@ -110,10 +120,17 @@ static void read(Reader* reader, Player* player)
     }
     catch (const QueueClosedException& e) {}
     catch (const Exception& e) { 
+        reader->close_pipe();
+        reader->clear_pkts_cache(0);
+        std::string msg(e.what());
+        std::string mark("-138");
+        if (msg.find(mark) != std::string::npos)
+            msg = "No connection to server";
         std::stringstream str;
-        str << "Reader thread loop error: " << e.what();
+        str << "Reader thread loop error: " << msg;
         std::cout << str.str() << std::endl;
         if (player->errorCallback) reader->errorCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 
     try {
@@ -170,6 +187,7 @@ static void filter(Filter* filter)
 
 static void write(Writer* writer, Encoder* encoder)
 {
+    std::cout << "starting " << encoder->strMediaType << " writer loop" << std::endl;
     Frame f;
     while (true) 
     {
@@ -204,6 +222,15 @@ static void write(Writer* writer, Encoder* encoder)
         }
     }
 
+    if (writer->opened) {
+        if (encoder->opened) {
+            Frame tmp(nullptr);
+            encoder->encode(tmp);
+            encoder->close();
+        }
+        writer->close();
+    }
+    
 }
 
 }
