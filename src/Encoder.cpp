@@ -254,6 +254,7 @@ int Encoder::encode(Frame& f)
                     av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", sample_fmt, 0);
                     ex.ck(swr_init(swr_ctx), SI);
                 }
+
                 ex.ck(swr_convert(swr_ctx, cvt_frame->data, cvt_frame->nb_samples, (const uint8_t**)frame->data, frame->nb_samples), SC);
 
                 cvt_frame->pts = av_rescale_q(total_samples, av_make_q(1, enc_ctx->sample_rate), enc_ctx->time_base);

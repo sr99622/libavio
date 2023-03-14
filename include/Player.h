@@ -112,6 +112,41 @@ public:
     void setVolume(int arg);
     bool checkForStreamHeader();
 
+    std::string getVideoCodec() const {
+        std::string result = "Unknown codec";
+        if (reader)
+            result = reader->str_video_codec();
+        return result;
+    }
+
+    int getVideoWidth() {
+        int result = 0;
+        if (reader)
+            result = reader->width();
+        return result;
+    }
+
+    int getVideoHeight() {
+        int result = 0;
+        if (reader)
+            result = reader->height();
+        return result;
+    }
+
+    int getVideoFrameRate() {
+        int result = 0;
+        if (reader)
+            result = (int)av_q2d(reader->frame_rate());
+        return result;
+    }
+
+    int getVideoBitrate() {
+        int result = 0;
+        if (reader)
+            result = reader->video_bit_rate();
+        return result;
+    }
+
 };
 
 

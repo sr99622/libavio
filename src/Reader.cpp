@@ -73,8 +73,12 @@ Reader::Reader(const char* filename)
 
     }
     catch (const Exception& e) {
+        std::string msg(e.what());
+        std::string mark("-138");
+        if (msg.find(mark) != std::string::npos)
+            msg = "No connection to server";
         std::stringstream str;
-        str << "Reader constructor exception: " << e.what();
+        str << "Reader constructor exception: " << msg;
         throw Exception(str.str());
     }
 }
@@ -170,7 +174,15 @@ void Reader::pipe_write(AVPacket* pkt)
 {
     try {
         if (!pipe) {
-            pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index);
+            if (strcmp(str_audio_codec(), "aac")) {
+                std::stringstream str;
+                str << "Warning, " << str_audio_codec() 
+                << " audio codec is not supported for recording, only video packets will be recorded."
+                << "\nOnly aac codec is supported for this function";
+                if (infoCallback) infoCallback(str.str());
+                disable_audio = true;
+            }
+            pipe = new Pipe(fmt_ctx, (disable_video ? -1 : video_stream_index), (disable_audio ? -1 : audio_stream_index));
             pipe->infoCallback = infoCallback;
             pipe->errorCallback = errorCallback;
             pipe->open(pipe_out_filename);
@@ -457,7 +469,8 @@ void Reader::showStreamParameters()
         str << "\nAudio Stream Parameters"
             << "\n  Audio Codec:   " << str_audio_codec()
             << "\n  Sample Format: " << str_sample_format()
-            << "\n  Channels:      " << str_channel_layout();
+            << "\n  Channels:      " << str_channel_layout()
+            << "\n  Sample Rate:   " << sample_rate();
     }
     else {
         str << "\nNo Audio Stream Found";

@@ -103,6 +103,9 @@ public:
 	int64_t last_video_pts = 0;
 	int64_t last_audio_pts = 0;
 
+	bool disable_video = false;
+	bool disable_audio = false;
+
 	bool show_video_pkts = false;
 	bool show_audio_pkts = false;
 

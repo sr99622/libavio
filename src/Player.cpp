@@ -31,20 +31,6 @@ bool Player::isPaused()
     return result;
 }
 
-bool Player::isPiping()
-{
-    bool result = false;
-    if (reader) result = reader->request_pipe_write;
-    return result;
-}
-
-bool Player::isEncoding()
-{
-    bool result = false;
-    if (writer) result = writer->enabled;
-    return result;
-}
-
 void Player::setMute(bool arg)
 {
     mute = arg;
@@ -69,6 +55,7 @@ void Player::seek(float arg)
 
 void Player::togglePiping(const std::string& filename)
 {
+    //std::cout << "Player::togglePiping " << (post_encode ? "YES " : "NO ") << filename << std::endl;
     if (reader) {
         reader->pipe_out_filename = filename;
         reader->request_pipe_write = !reader->request_pipe_write;
@@ -77,7 +64,7 @@ void Player::togglePiping(const std::string& filename)
 
 void Player::toggleEncoding(const std::string& filename)
 {
-    std::cout << "Player::toggleEncoding " << filename << std::endl;
+    //std::cout << "Player::toggleEncoding " << (post_encode ? "YES " : "NO ") << filename << std::endl;
     if (writer) {
         writer->filename = filename;
         writer->enabled = !writer->enabled;
@@ -86,13 +73,27 @@ void Player::toggleEncoding(const std::string& filename)
 
 void Player::toggleRecording(const std::string& filename)
 {
-    std::cout << "Player::toggleRecording " << filename << std::endl;
+    //std::cout << "Player::TOGGLE_RECORDING " << (post_encode ? "YES " : "NO ") << filename << std::endl;
     if (post_encode) {
         toggleEncoding(filename);
     }
     else {
         togglePiping(filename);
     }
+}
+
+bool Player::isPiping()
+{
+    bool result = false;
+    if (reader) result = reader->request_pipe_write;
+    return result;
+}
+
+bool Player::isEncoding()
+{
+    bool result = false;
+    if (writer) result = writer->enabled;
+    return result;
 }
 
 bool Player::isRecording()
@@ -176,6 +177,17 @@ void Player::run()
         reader = new Reader(uri.c_str());
         reader->errorCallback = errorCallback;
         reader->infoCallback = infoCallback;
+        reader->disable_video = disable_video;
+        reader->disable_audio = disable_audio;
+
+        if (disable_video) {
+            std::cout << "player video disabled" << std::endl;
+        }
+
+        if (disable_audio) {
+            std::cout << "player audio disabled" << std::endl;
+        }
+
         reader->showStreamParameters();
 
         writer = new Writer("mp4");
@@ -230,30 +242,27 @@ void Player::run()
             audioDecoder->frame_q = afq_decoder;
             audioDecoder->errorCallback = errorCallback;
             audioDecoder->infoCallback = infoCallback;
-            //audioDecoder->show_frames = true;
-            //std::cout << "AUDio filter: " << audio_filter << std::endl;
 
             audioFilter = new Filter(*audioDecoder, audio_filter.c_str());
             audioFilter->frame_in_q = afq_decoder;
             audioFilter->frame_out_q = afq_filter;
             audioFilter->errorCallback = errorCallback;
             audioFilter->infoCallback = infoCallback;
-            //audioFilter->show_frames = true;
 
             bool audio_encoder_enabled = true;
             if (audio_encoder_enabled) {
                 audioEncoder = new Encoder(writer, AVMEDIA_TYPE_AUDIO);
                 audioEncoder->frame_q = afq_display;
-                //audioEncoder->pkt_q = apq_encoder;
-                audioEncoder->set_channel_layout_stereo();
                 audioEncoder->sample_fmt = AV_SAMPLE_FMT_FLTP;
                 audioEncoder->audio_bit_rate = reader->audio_bit_rate();
                 audioEncoder->sample_rate = reader->sample_rate();
-                //audioEncoder->audio_time_base.num = 1;
-                //audioEncoder->audio_time_base.den = audioEncoder->sample_rate;
                 audioEncoder->audio_time_base = reader->audio_time_base();
                 audioEncoder->nb_samples = reader->frame_size();
                 audioEncoder->channels = reader->channels();
+                if (audioEncoder->channels = 1)
+                    audioEncoder->set_channel_layout_mono();
+                else 
+                    audioEncoder->set_channel_layout_stereo();
             }
         }
 
@@ -288,6 +297,10 @@ void Player::run()
 
         if (cbMediaPlayingStarted) cbMediaPlayingStarted(reader->duration());
         display->display();
+
+        if (isRecording()) 
+            toggleRecording("");
+
         running = false;
     }
     catch (const Exception& e) {
