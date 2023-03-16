@@ -80,10 +80,8 @@ static void read(Reader* reader, Player* player)
                     pkt = tmp;
                 }
                 else {
+                    reader->seek_target_pts = AV_NOPTS_VALUE;
                     player->running = false;
-                    if (reader->pipe) reader->close_pipe();
-                    av_packet_free(&pkt);
-                    break;
                 }
             }
 
@@ -138,6 +136,8 @@ static void read(Reader* reader, Player* player)
         if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
     catch (const QueueClosedException& e) {}
+
+    std::cout << "avio read loop finished" << std::endl;
 }
 
 static void decode(Decoder* decoder) 
