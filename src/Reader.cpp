@@ -128,7 +128,7 @@ AVPacket* Reader::seek()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Reader seek exception: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (infoCallback) infoCallback(str.str());
         else std::cout << str.str() << std::endl;
         return nullptr;
     }
