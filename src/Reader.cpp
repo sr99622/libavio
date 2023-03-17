@@ -215,7 +215,7 @@ void Reader::fill_pkts_cache(AVPacket* pkt)
 {
     if (pkt->stream_index == video_stream_index) {
         if (pkt->flags) {
-            if (++keyframe_count >= keyframe_cache_size()) {
+            if (++keyframe_count >= keyframe_cache_size) {
                 clear_pkts_cache(keyframe_marker);
                 keyframe_count--;
             }
@@ -435,14 +435,6 @@ AVRational Reader::audio_time_base()
     AVRational result = av_make_q(0, 0);
     if (audio_stream_index >= 0)
         result = fmt_ctx->streams[audio_stream_index]->time_base;
-    return result;
-}
-
-int Reader::keyframe_cache_size()
-{
-    int result = 1;
-    //if (P->glWidget) 
-    //    result = P->glWidget->keyframe_cache_size;
     return result;
 }
 

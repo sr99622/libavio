@@ -82,6 +82,7 @@ public:
     int last_progress = 0;
     bool post_encode = false;
     bool hw_encoding = false;
+    int keyframe_cache_size = 1;
 
     int vpq_size = 0;
     int apq_size = 0;
