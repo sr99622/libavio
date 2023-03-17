@@ -86,7 +86,7 @@ public:
 	AVRational audio_time_base();
 
 	Pipe* pipe = nullptr;
-	int keyframe_cache_size();
+	int keyframe_cache_size = 1;
 	void clear_pkts_cache(int mark);
 	void fill_pkts_cache(AVPacket* pkt);
 	void pipe_write(AVPacket* pkt);

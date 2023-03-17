@@ -70,6 +70,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("apq_size", &Player::apq_size)
         .def_readwrite("video_filter", &Player::video_filter)
         .def_readwrite("audio_filter", &Player::audio_filter)
+        .def_readwrite("keyframe_cache_size", &Player::keyframe_cache_size)
         .def_readwrite("post_encode", &Player::post_encode)
         .def_readwrite("hw_encoding", &Player::hw_encoding)
         .def_readwrite("hw_device_type", &Player::hw_device_type);

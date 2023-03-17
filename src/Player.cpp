@@ -174,6 +174,7 @@ void Player::run()
         reader->infoCallback = infoCallback;
         reader->disable_video = disable_video;
         reader->disable_audio = disable_audio;
+        reader->keyframe_cache_size = keyframe_cache_size;
 
         if (disable_video) {
             std::cout << "player video disabled" << std::endl;
