@@ -136,8 +136,6 @@ static void read(Reader* reader, Player* player)
         if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
     catch (const QueueClosedException& e) {}
-
-    std::cout << "avio read loop finished" << std::endl;
 }
 
 static void decode(Decoder* decoder) 
@@ -187,7 +185,6 @@ static void filter(Filter* filter)
 
 static void write(Writer* writer, Encoder* encoder)
 {
-    std::cout << "starting " << encoder->strMediaType << " writer loop" << std::endl;
     Frame f;
     while (true) 
     {

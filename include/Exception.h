@@ -136,8 +136,6 @@ public:
     const Exception getNullException(CmdTag cmd_tag);
     const char* tag(CmdTag cmd_tag);
 
-    std::function<void(const std::string&, MsgPriority, const std::string&)> fnMsgOut = nullptr;
-    void msg(const std::string& msg, MsgPriority priority = MsgPriority::INFO, const std::string& qualifier = "");
 };
 
 }

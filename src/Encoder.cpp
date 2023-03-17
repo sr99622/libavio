@@ -41,7 +41,9 @@ void Encoder::init()
         openAudioStream();
         break;
     default:
-        ex.msg("Encoder constructor failed: unknown media type", MsgPriority::CRITICAL);
+        std::string msg = "Encoder constructor failed: unknown media type";
+        if (infoCallback) infoCallback(msg);
+        else std::cout << msg << std::endl;
     }
 }
 
@@ -85,7 +87,6 @@ void Encoder::openVideoStream()
             codec = avcodec_find_encoder(fmt_ctx->oformat->video_codec);
             if (!codec) throw Exception("avcodec_find_encoder");
         }
-        ex.msg(std::string("encoder opened codec ") + codec->long_name);
 
         ex.ck(stream = avformat_new_stream(fmt_ctx, NULL), ANS);
         stream->id = fmt_ctx->nb_streams - 1;
@@ -146,7 +147,10 @@ void Encoder::openVideoStream()
         opened = true;
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "Encoder video stream constructor exception: ");
+        std::stringstream str;
+        str << "Encoder video stream constructor exception: " << e.what();
+        if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
         close();
     }
 }
@@ -166,9 +170,7 @@ void Encoder::openAudioStream()
         const AVCodec* codec;
         codec = avcodec_find_encoder(codec_id);
 
-        if (codec)
-            ex.msg(std::string("Encoder opened audio stream codec ") + codec->long_name);
-        else
+        if (!codec)
             throw Exception(std::string("avcodec_find_decoder could not find ") + avcodec_get_name(codec_id));
 
         ex.ck(pkt = av_packet_alloc(), APA);
@@ -202,7 +204,10 @@ void Encoder::openAudioStream()
         opened = true;
     }
     catch (const Exception& e) {
-        ex.msg(e.what(), MsgPriority::CRITICAL, "AudioStream constructor exception: ");
+        std::stringstream str;
+        str << "AudioStream constructor exception: " << e.what();
+        if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
         close();
     }
 }
@@ -300,25 +305,17 @@ int Encoder::encode(Frame& f)
             tmp->pts -= pts_offset;
             tmp->dts -= pts_offset;
 
-            /*
-            std::stringstream str;
-            str
-                << " index: " << tmp->stream_index
-                << " flags: " << tmp->flags
-                << " pts: " << tmp->pts
-                << " dts: " << tmp->dts
-                << " size: " << tmp->size
-                << " duration: " << tmp->duration;
-
-            std::cout << strMediaType << "  " << str.str() << std::endl;
-            /**/
-
             writer->write(tmp);
+
         }
     }
     catch (const Exception& e) {
-        if (strcmp(e.what(), "End of file"))
-            std::cout << strMediaType << "Encode::encode exception: " << e.what() << std::endl;
+        if (strcmp(e.what(), "End of file")) {
+            std::stringstream str;
+            str << strMediaType << " encode exception: " << e.what(); 
+            if (infoCallback) infoCallback(str.str());
+            else std::cout << str.str() << std::endl;
+        }
     }
 
     return ret;

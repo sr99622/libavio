@@ -81,28 +81,6 @@ const Exception ExceptionHandler::getNullException(CmdTag cmd_tag)
     }
 }
 
-void ExceptionHandler::msg(const std::string& msg, MsgPriority priority, const std::string& qualifier)
-{
-    if (fnMsgOut)
-        fnMsgOut(msg, priority, qualifier);
-    else {
-        std::stringstream str;
-        switch (priority) {
-        case INFO:
-            str << "I: ";
-            break;
-        case CRITICAL:
-            str << "CRITICAL ERROR! ";
-            break;
-        case DEBUG:
-            str << "D: ";
-            break;
-        }
-        str << qualifier << msg;
-        std::cout << str.str() << std::endl;
-    }
-}
-
 const char* ExceptionHandler::tag(CmdTag cmd_tag)
 {
     switch (cmd_tag) {

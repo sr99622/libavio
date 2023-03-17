@@ -93,6 +93,7 @@ void Pipe::open(const std::string& filename)
     std::stringstream str;
     str << "Pipe opened write file: " << filename.c_str();
     if (infoCallback) infoCallback(str.str());
+    else std::cout << str.str() << std::endl;
 }
 
 void Pipe::adjust_pts(AVPacket* pkt)
@@ -120,6 +121,7 @@ void Pipe::write(AVPacket* pkt)
         std::stringstream str;
         str << "Pipe write packet exception: " << e.what();
         if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 }
 
@@ -149,36 +151,14 @@ void Pipe::close()
         std::stringstream str;
         str << "Pipe closed file: " << url;
         if (infoCallback) infoCallback(str.str());
-
+        else std::cout << str.str() << std::endl;
     }
     catch (const Exception& e) {
         std::stringstream str;
         str << "Record to file close error: " << e.what();
         if (errorCallback) errorCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 }
-
-void Pipe::show_ctx()
-{
-    for (int i = 0; i < fmt_ctx->nb_streams; i++) {
-        AVStream* stream = fmt_ctx->streams[i];
-        enum AVMediaType media_type = stream->codecpar->codec_type;
-        switch (media_type) {
-            case AVMEDIA_TYPE_VIDEO:
-                std::cout << "Video Stream" << std::endl;
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                std::cout << "Audio Stream" << std::endl;
-                std::cout << "sample rate:       " << stream->codecpar->sample_rate << std::endl;
-                std::cout << "sample channels:   " << stream->codecpar->channels << std::endl;
-                std::cout << "sample frame_size: " << stream->codecpar->frame_size << std::endl;
-                std::cout << "sample format:     " << stream->codecpar->format << std::endl;
-                break;
-        }
-
-        std::cout << "stream time base: " << stream->time_base.num << " / " << stream->time_base.den << std::endl;
-    }
-}
-
 
 }

@@ -64,12 +64,7 @@ Reader::Reader(const char* filename)
         ex.ck(avformat_find_stream_info(fmt_ctx, nullptr), CmdTag::AFSI);
 
         video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-        if (video_stream_index < 0) 
-            ex.msg("did not find video stream", MsgPriority::INFO);
-
         audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-        if (audio_stream_index < 0) 
-            ex.msg("did not find audio stream", MsgPriority::INFO);
 
     }
     catch (const Exception& e) {
