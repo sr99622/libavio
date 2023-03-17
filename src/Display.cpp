@@ -78,7 +78,8 @@ int Display::initVideo()
             std::stringstream str;
             str << "initializing video display | width: " << pix_width << " height: " << pix_height
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
-            ex.msg(str.str());
+            if (infoCallback) infoCallback(str.str());
+            else std::cout << str.str() << std::endl;
 
             if (hWnd) {
                 window = SDL_CreateWindowFrom((void*)hWnd);
@@ -280,6 +281,7 @@ void Display::display()
             std::stringstream str;
             str << "Display exception: " << e.what();
             if (infoCallback) infoCallback(str.str());
+            else std::cout << str.str() << std::endl;
         }
     }
 
@@ -359,6 +361,7 @@ int Display::initAudio(Filter* audioFilter)
         std::stringstream str;
         str << "Display init audio exception: " << e.what();
         if (errorCallback) errorCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 
     return ret;
@@ -441,6 +444,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
         std::stringstream str;
         str << "Audio callback exception: " << e.what();
         if (d->infoCallback) d->infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 
     free(temp);

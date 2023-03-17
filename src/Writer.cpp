@@ -51,7 +51,10 @@ void Writer::open()
         }
     }
     catch (const Exception& e) {
-        std::cout << "Writer::open exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "Writer::open exception: " << e.what();
+        if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 }
 
@@ -62,7 +65,10 @@ void Writer::write(AVPacket* pkt)
         ex.ck(av_interleaved_write_frame(fmt_ctx, pkt), AIWF);
     }
     catch (const Exception& e) {
-        std::cout << "Writer::write exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "Writer::write exception: " << e.what();
+        if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 }
 
@@ -83,7 +89,10 @@ void Writer::close()
         }
     }
     catch (const Exception& e) {
-        std::cout << "Writer::close exception: " << e.what() << std::endl;
+        std::stringstream str;
+        str << "Writer::close exception: " << e.what();
+        if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 }
 

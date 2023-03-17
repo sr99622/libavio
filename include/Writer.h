@@ -74,6 +74,7 @@ public:
 
     std::mutex mutex;
 
+	std::function<void(const std::string&)> infoCallback = nullptr;
     ExceptionHandler ex;
 
 };

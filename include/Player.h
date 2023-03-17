@@ -55,12 +55,10 @@ public:
     Queue<Frame>*  vfq_decoder;
     Queue<Frame>*  vfq_filter;
     Queue<Frame>*  vfq_display;
-    Queue<Packet>* vpq_encoder;
     Queue<Packet>* apq_reader;
     Queue<Frame>*  afq_decoder;
     Queue<Frame>*  afq_filter;
     Queue<Frame>*  afq_display;
-    Queue<Packet>* apq_encoder;
 
     std::function<int(void)> width = nullptr;
     std::function<int(void)> height = nullptr;

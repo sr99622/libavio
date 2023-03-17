@@ -85,6 +85,7 @@ public:
 
     int frame_q_max_size = 0;
 
+	std::function<void(const std::string&)> infoCallback = nullptr;
     ExceptionHandler ex;
 };
 

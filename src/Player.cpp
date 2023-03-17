@@ -164,12 +164,10 @@ void Player::run()
         vfq_decoder = new Queue<Frame>;
         vfq_filter  = new Queue<Frame>;
         vfq_display = new Queue<Frame>;
-        vpq_encoder = new Queue<Packet>;
         apq_reader  = new Queue<Packet>;
         afq_decoder = new Queue<Frame>;
         afq_filter  = new Queue<Frame>;
         afq_display = new Queue<Frame>;
-        apq_encoder = new Queue<Packet>;
 
         reader = new Reader(uri.c_str());
         reader->errorCallback = errorCallback;
@@ -188,6 +186,7 @@ void Player::run()
         reader->showStreamParameters();
 
         writer = new Writer("mp4");
+        writer->infoCallback = infoCallback;
 
         if (reader->has_video() && !disable_video) {
             const AVPixFmtDescriptor* desc = av_pix_fmt_desc_get(reader->pix_fmt());
@@ -228,6 +227,8 @@ void Player::run()
                     videoEncoder->hw_pix_fmt = AV_PIX_FMT_CUDA;
                     videoEncoder->sw_pix_fmt = AV_PIX_FMT_YUV420P;
                 }
+
+                videoEncoder->infoCallback = infoCallback;
             }
         }
 
@@ -260,6 +261,7 @@ void Player::run()
                     audioEncoder->set_channel_layout_mono();
                 else 
                     audioEncoder->set_channel_layout_stereo();
+                audioEncoder->infoCallback = infoCallback;
             }
         }
 
@@ -343,12 +345,10 @@ void Player::run()
     if (vfq_decoder) delete  vfq_decoder;
     if (vfq_filter)  delete  vfq_filter;
     if (vfq_display) delete  vfq_display;
-    if (vpq_encoder) delete  vpq_encoder;
     if (apq_reader)  delete  apq_reader;
     if (afq_decoder) delete  afq_decoder;
     if (afq_filter)  delete  afq_filter;
     if (afq_display) delete  afq_display;
-    if (apq_encoder) delete  apq_encoder;
 
     if (cbMediaPlayingStopped) cbMediaPlayingStopped();
     
