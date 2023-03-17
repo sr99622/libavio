@@ -71,23 +71,6 @@ void ExceptionHandler::ck(void* arg, CmdTag cmd_tag)
     if (arg == NULL) throw getNullException(cmd_tag);
 }
 
-/*
-void av::ExceptionHandler::ck(void* arg, const std::string& msg)
-{
-    if (arg == NULL) throw Exception(msg);
-}
-
-void av::ExceptionHandler::ck(const void* arg, CmdTag cmd_tag)
-{
-    if (arg == NULL) throw getNullException(cmd_tag);
-}
-
-void av::ExceptionHandler::ck(const void* arg, const std::string& msg)
-{
-    if (arg == NULL) throw Exception(msg);
-}
-*/
-
 const Exception ExceptionHandler::getNullException(CmdTag cmd_tag)
 {
     if (cmd_tag == CmdTag::NONE) {

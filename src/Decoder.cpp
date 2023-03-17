@@ -119,7 +119,7 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
     catch (const Exception& e) {
         std::stringstream str;
         str << "Decoder constructor exception: " << e.what();
-        throw std::runtime_error(str.str());
+        throw Exception(str.str());
     }
 }
 

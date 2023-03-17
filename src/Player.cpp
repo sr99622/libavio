@@ -55,7 +55,6 @@ void Player::seek(float arg)
 
 void Player::togglePiping(const std::string& filename)
 {
-    //std::cout << "Player::togglePiping " << (post_encode ? "YES " : "NO ") << filename << std::endl;
     if (reader) {
         reader->pipe_out_filename = filename;
         reader->request_pipe_write = !reader->request_pipe_write;
@@ -64,7 +63,6 @@ void Player::togglePiping(const std::string& filename)
 
 void Player::toggleEncoding(const std::string& filename)
 {
-    //std::cout << "Player::toggleEncoding " << (post_encode ? "YES " : "NO ") << filename << std::endl;
     if (writer) {
         writer->filename = filename;
         writer->enabled = !writer->enabled;
@@ -73,7 +71,6 @@ void Player::toggleEncoding(const std::string& filename)
 
 void Player::toggleRecording(const std::string& filename)
 {
-    //std::cout << "Player::TOGGLE_RECORDING " << (post_encode ? "YES " : "NO ") << filename << std::endl;
     if (post_encode) {
         toggleEncoding(filename);
     }
