@@ -198,9 +198,9 @@ class MainWindow(QMainWindow):
             self.player.width = lambda : self.glWidget.width()
             self.player.height = lambda : self.glWidget.height()
             self.player.progressCallback = lambda f : self.progressCallback(f)
-            self.player.hWnd = self.glWidget.winId()
-            #self.player.video_filter = "format=rgb24"
-            #self.player.renderCallback = lambda F : self.glWidget.renderCallback(F)
+            #self.player.hWnd = self.glWidget.winId()
+            self.player.video_filter = "format=rgb24"
+            self.player.renderCallback = lambda F : self.glWidget.renderCallback(F)
             #self.player.pythonCallback = lambda F : self.pythonCallback(F)
             self.player.cbMediaPlayingStarted = lambda n : self.mediaPlayingStarted(n)
             self.player.cbMediaPlayingStopped = lambda : self.mediaPlayingStopped()
@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
             self.player.setVolume(self.sldVolume.value())
             self.player.setMute(self.mute)
             #self.player.disable_video = True
-            self.player.hw_device_type = avio.AV_HWDEVICE_TYPE_CUDA
+            #self.player.hw_device_type = avio.AV_HWDEVICE_TYPE_CUDA
             self.player.start()
 
 if __name__ == '__main__':

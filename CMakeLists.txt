@@ -102,8 +102,3 @@ target_link_libraries(avio PRIVATE
 target_include_directories(avio PUBLIC
     include
 )
-
-if (BUILD_SAMPLES)
-    add_subdirectory(samples)
-endif()
-
