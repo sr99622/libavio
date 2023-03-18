@@ -36,7 +36,6 @@ public:
     Pipe(AVFormatContext* reader_fmt_ctx, int video_stream_index, int audio_stream_index);
     ~Pipe();
 
-    //void* process;
 	std::function<void(const std::string&)> infoCallback = nullptr;
 	std::function<void(const std::string&)> errorCallback = nullptr;
 
@@ -45,7 +44,6 @@ public:
     void close();
     void adjust_pts(AVPacket* pkt);
     void write(AVPacket* pkt);
-    void show_ctx();
 
     std::string m_filename;
 

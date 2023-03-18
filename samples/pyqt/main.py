@@ -20,7 +20,6 @@
 import os
 import sys
 import numpy as np
-import cv2
 from time import sleep
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, \
 QGridLayout, QWidget, QSlider, QLabel, QMessageBox

@@ -78,7 +78,8 @@ int Display::initVideo()
             std::stringstream str;
             str << "initializing video display | width: " << pix_width << " height: " << pix_height
                 << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
-            ex.msg(str.str());
+            if (infoCallback) infoCallback(str.str());
+            else std::cout << str.str() << std::endl;
 
             if (hWnd) {
                 window = SDL_CreateWindowFrom((void*)hWnd);
@@ -182,6 +183,7 @@ void Display::display()
             PlayState state = getEvents(&events);
 
             if (state == PlayState::QUIT) {
+                std::cout << "PLayState::QUIT" << std::endl;
                 P->running = false;
             }
             else if (state == PlayState::PAUSE) {
@@ -226,9 +228,8 @@ void Display::display()
 
             if (vfq_in) {
                 vfq_in->pop_move(f);
-                if (!f.isValid()) {
+                if (!f.isValid())
                     break;
-                }
             }
             else {
                 SDL_Delay(SDL_EVENT_LOOP_WAIT);
@@ -280,8 +281,13 @@ void Display::display()
             std::stringstream str;
             str << "Display exception: " << e.what();
             if (infoCallback) infoCallback(str.str());
+            else std::cout << str.str() << std::endl;
         }
     }
+
+    f.invalidate();
+    if (vfq_out)
+        vfq_out->push_move(f);
 }
 
 int Display::initAudio(Filter* audioFilter)
@@ -355,6 +361,7 @@ int Display::initAudio(Filter* audioFilter)
         std::stringstream str;
         str << "Display init audio exception: " << e.what();
         if (errorCallback) errorCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 
     return ret;
@@ -397,6 +404,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     len -= mark;
                 }
                 else {
+                    if (d->afq_out) d->afq_out->push_move(f);
                     SDL_PauseAudioDevice(d->audioDeviceID, true);
                     if (!d->vfq_in) {
                         len = -1;
@@ -436,6 +444,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
         std::stringstream str;
         str << "Audio callback exception: " << e.what();
         if (d->infoCallback) d->infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 
     free(temp);

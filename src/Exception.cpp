@@ -71,23 +71,6 @@ void ExceptionHandler::ck(void* arg, CmdTag cmd_tag)
     if (arg == NULL) throw getNullException(cmd_tag);
 }
 
-/*
-void av::ExceptionHandler::ck(void* arg, const std::string& msg)
-{
-    if (arg == NULL) throw Exception(msg);
-}
-
-void av::ExceptionHandler::ck(const void* arg, CmdTag cmd_tag)
-{
-    if (arg == NULL) throw getNullException(cmd_tag);
-}
-
-void av::ExceptionHandler::ck(const void* arg, const std::string& msg)
-{
-    if (arg == NULL) throw Exception(msg);
-}
-*/
-
 const Exception ExceptionHandler::getNullException(CmdTag cmd_tag)
 {
     if (cmd_tag == CmdTag::NONE) {
@@ -95,28 +78,6 @@ const Exception ExceptionHandler::getNullException(CmdTag cmd_tag)
     }
     else {
         return Exception(tag(cmd_tag) + std::string(" has failed with NULL value"));
-    }
-}
-
-void ExceptionHandler::msg(const std::string& msg, MsgPriority priority, const std::string& qualifier)
-{
-    if (fnMsgOut)
-        fnMsgOut(msg, priority, qualifier);
-    else {
-        std::stringstream str;
-        switch (priority) {
-        case INFO:
-            str << "I: ";
-            break;
-        case CRITICAL:
-            str << "CRITICAL ERROR! ";
-            break;
-        case DEBUG:
-            str << "D: ";
-            break;
-        }
-        str << qualifier << msg;
-        std::cout << str.str() << std::endl;
     }
 }
 

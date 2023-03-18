@@ -102,7 +102,6 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
             dec_ctx->get_format = get_hw_format;
             const char* hw_pix_fmt_name;
             hw_pix_fmt_name = av_get_pix_fmt_name(hw_pix_fmt);
-            ex.msg(hw_pix_fmt_name, MsgPriority::INFO, "using hw pix fmt: ");
 
             ex.ck(sws_ctx = sws_getContext(dec_ctx->width, dec_ctx->height, AV_PIX_FMT_NV12,
                 dec_ctx->width, dec_ctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL), SGC);
@@ -119,7 +118,7 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
     catch (const Exception& e) {
         std::stringstream str;
         str << "Decoder constructor exception: " << e.what();
-        throw std::runtime_error(str.str());
+        throw Exception(str.str());
     }
 }
 
@@ -216,6 +215,7 @@ int Decoder::decode(AVPacket* pkt)
         std::stringstream str;
         str << strMediaType << " Decoder::decode exception: " << e.what();
         if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
         ret = -1;
     }
 
