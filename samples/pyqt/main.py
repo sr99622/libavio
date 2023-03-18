@@ -198,17 +198,10 @@ class MainWindow(QMainWindow):
             self.player.width = lambda : self.glWidget.width()
             self.player.height = lambda : self.glWidget.height()
             self.player.progressCallback = lambda f : self.progressCallback(f)
-<<<<<<< HEAD
             #self.player.hWnd = self.glWidget.winId()
             self.player.video_filter = "format=rgb24"
             self.player.renderCallback = lambda F : self.glWidget.renderCallback(F)
             #self.player.pythonCallback = lambda F : self.pythonCallback(F)
-=======
-            self.player.hWnd = self.glWidget.winId()
-            #self.player.video_filter = "format=rgb24"
-            #self.player.renderCallback = lambda F : self.glWidget.renderCallback(F)
-            self.player.pythonCallback = lambda F : self.pythonCallback(F)
->>>>>>> 56a8f2c3bb61de8c6725ab560eaa7c44cc6e4b11
             self.player.cbMediaPlayingStarted = lambda n : self.mediaPlayingStarted(n)
             self.player.cbMediaPlayingStopped = lambda : self.mediaPlayingStopped()
             self.player.errorCallback = lambda s : self.errorCallback(s)
