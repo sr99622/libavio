@@ -41,6 +41,7 @@ add_library(libavio SHARED
     src/Clock.cpp
     src/Decoder.cpp
     src/Display.cpp
+    src/Encoder.cpp
     src/Exception.cpp
     src/Filter.cpp
     src/Frame.cpp
@@ -48,6 +49,7 @@ add_library(libavio SHARED
     src/Pipe.cpp
     src/Player.cpp
     src/Reader.cpp
+    src/Writer.cpp
 )
 
 if (WIN32)
@@ -62,8 +64,8 @@ else()
         pthread
     )
     set_target_properties(libavio PROPERTIES
-    OUTPUT_NAME avio
-    SOVERSION 1
+        OUTPUT_NAME avio
+        SOVERSION 1
     )
 endif()
 
@@ -80,6 +82,7 @@ pybind11_add_module(avio
     src/Clock.cpp
     src/Decoder.cpp
     src/Display.cpp
+    src/Encoder.cpp
     src/Exception.cpp
     src/Filter.cpp
     src/Frame.cpp
@@ -87,6 +90,7 @@ pybind11_add_module(avio
     src/Pipe.cpp
     src/Player.cpp
     src/Reader.cpp
+    src/Writer.cpp
 )
                 
 target_link_libraries(avio PRIVATE 

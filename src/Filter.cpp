@@ -181,6 +181,7 @@ void Filter::filter(Frame& f)
         std::stringstream str;
         str << "Filter exception: " << e.what();
         if (infoCallback) infoCallback(str.str());
+        else std::cout << str.str() << std::endl;
     }
 }
 

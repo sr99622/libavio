@@ -86,7 +86,7 @@ public:
 	AVRational audio_time_base();
 
 	Pipe* pipe = nullptr;
-	int keyframe_cache_size();
+	int keyframe_cache_size = 1;
 	void clear_pkts_cache(int mark);
 	void fill_pkts_cache(AVPacket* pkt);
 	void pipe_write(AVPacket* pkt);
@@ -102,6 +102,9 @@ public:
 	int audio_stream_index = -1;
 	int64_t last_video_pts = 0;
 	int64_t last_audio_pts = 0;
+
+	bool disable_video = false;
+	bool disable_audio = false;
 
 	bool show_video_pkts = false;
 	bool show_audio_pkts = false;
