@@ -128,14 +128,18 @@ void Player::key_event(int keyCode)
 bool Player::checkForStreamHeader()
 {
     std::string tmp = uri;
-    std::transform(tmp.begin(), tmp.end(), tmp.begin(),
-    [](unsigned char c){ return std::tolower(c); });
 
     if (tmp.rfind("rtsp://", 0) == 0)
         return true;
     if (tmp.rfind("http://", 0) == 0)
         return true;
     if (tmp.rfind("https://", 0) == 0)
+        return true;
+    if (tmp.rfind("RTSP://", 0) == 0)
+        return true;
+    if (tmp.rfind("HTTP://", 0) == 0)
+        return true;
+    if (tmp.rfind("HTTPS://", 0) == 0)
         return true;
 
     return false;

@@ -17,11 +17,8 @@
 #
 #********************************************************************/
 
-#ifndef CLOCK_H
-#define CLOCK_H
-
 {% set name = "avio" %}
-{% set version = "1.0.0" %}
+{% set version = "2.0.0" %}
 
 package:
   name: {{ name }}
@@ -40,28 +37,16 @@ requirements:
     - "{{ compiler('gcc') }}"  #[linux]
     - python
     - cmake
-    - ninja
-    - ffmpeg  #[win]
-    - numpy   #[win]
-    - opencv  #[linux]
-    - sdl2_ttf
+    - ffmpeg 
 
   host:
     - python
     - pip
-    - zlib
-    - ffmpeg  #[win]
-    - numpy   #[win]
-    - opencv  #[linux]
-    - sdl2_ttf
+    - ffmpeg 
 
   run:
     - python
-    - zlib
-    - ffmpeg  #[win]
-    - numpy   #[win]
-    - opencv  #[linux]
-    - sdl2_ttf
+    - ffmpeg 
 
 test:
   requires:

@@ -119,7 +119,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="avio",
-    version="1.0.0",
+    version="2.0.0",
     author="Stephen Rhodes",
     author_email="sr99622@gmail.com",
     description="A python media processing module",
