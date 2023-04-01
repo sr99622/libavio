@@ -1,24 +1,19 @@
 # libavio
 
 Has dependency on FFMPEG, Python and SDL2
-GUI sample has dependency on Qt5
-
 
 ```bash
 sudo apt install libavcodec-dev
 sudp apt install libavdevice-dev
 sudo apt install libsdl2-dev
-sudo apt install qtbase5-dev
-git clone --recurse-submodules https://github.com/sr99622/libavio.git
+sudo apt install python3-dev
+git clone --recursive https://github.com/sr99622/libavio.git
 cd libavio
 mkdir build
 cd build
-cmake -DBUILD_SAMPLES=ON ..
+cmake ..
 cmake --build . --config Release
-sudo cmake --install .
 ```
-
-Install FindAvio.cmake in your project CMAKE_MODULE_PATH to link
 
 To install avio python module
 ```
@@ -30,7 +25,7 @@ pip uninstall avio
 ```
 
 
-Copyright (c) 2022  Stephen Rhodes
+Copyright (c) 2022, 2023  Stephen Rhodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
