@@ -17,7 +17,7 @@
 #
 #******************************************************************************/
 
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.17)
 
 project(libavio VERSION 2.0.0)
 
