@@ -1,0 +1,5 @@
+include README.md CMakeLists.txt LICENSE
+recursive-include src *
+recursive-include include *
+recursive-include pybind11 *
+recursive-include cmake *
