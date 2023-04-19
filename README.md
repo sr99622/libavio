@@ -1,23 +1,32 @@
-# libavio
+# avio
 
-Has dependency on FFMPEG, Python and SDL2
+Python library for processing media streams
 
-```bash
-sudo apt install libavcodec-dev
-sudp apt install libavdevice-dev
-sudo apt install libsdl2-dev
-sudo apt install python3-dev
-git clone --recursive https://github.com/sr99622/libavio.git
-cd libavio
-mkdir build
-cd build
-cmake ..
-cmake --build . --config Release
+*Please Note*
+
+This python module has dependencies on development libraries which
+must be installed prior to installing.  This module is released as 
+a source distribution and is compiled on the host.
+
+**Debian or Ubuntu linux**, use the following command
+to install the dependencies.
+
+```
+sudo apt install cmake libavcodec-dev libavdevice-dev libsdl2-dev
 ```
 
-To install avio python module
+**Windows**, please use Anaconda.  The dependencies may
+be installed using the following command under a conda prompt.  The 
+Visual Studio C++ compiler must be installed as well.
+
 ```
-python3 setup.py install
+conda install cmake ffmpeg sdl2
+```
+
+If successful, install avio python module
+
+```
+pip install avio
 ```
 To uninstall
 ```

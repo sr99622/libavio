@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "avio"
+version = "2.1.1"
+authors = [
+    { name="Stephen Rhodes", email="sr99622@gmail.com" },
+]
+description = "A python module for processing media streams"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/sr99622/libavio"
+"Bug Tracker" = "https://github.com/sr99622/libavio/issues"
