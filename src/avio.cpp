@@ -185,7 +185,7 @@ PYBIND11_MODULE(avio, m)
         .value("AV_SAMPLE_FMT_NB", AVSampleFormat::AV_SAMPLE_FMT_NB)
         .export_values();
 
-    m.attr("__version__") = "2.1.2";
+    m.attr("__version__") = "2.1.3";
 
 }
 

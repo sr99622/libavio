@@ -79,12 +79,12 @@ class CMakeBuild(build_ext):
         if not os.path.exists(build_temp):
             os.makedirs(build_temp)
 
-        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_temp)
-        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_temp)
+        subprocess.run(["cmake", ext.sourcedir] + cmake_args, cwd=build_temp)
+        subprocess.run(["cmake", "--build", "."] + build_args, cwd=build_temp)
 
 setup(
     name="avio",
-    version="2.1.2",
+    version="2.1.3",
     author="Stephen Rhodes",
     author_email="sr99622@gmail.com",
     description="A python media processing module",
