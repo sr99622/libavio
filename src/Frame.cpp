@@ -232,4 +232,37 @@ int Frame::stride()
 	return result;
 }
 
+int Frame::nb_samples()
+{
+	int result = 0;
+	if (m_frame) result = m_frame->nb_samples;
+	return result;
+}
+
+int Frame::sample_rate()
+{
+	int result = 0;
+	if (m_frame) result = m_frame->sample_rate;
+	return result;
+}
+
+int64_t Frame::channels()
+{
+	int64_t result = 0;
+	if (m_frame) result = m_frame->channels;
+	return result;
+}
+
+int Frame::format()
+{
+	int result = -1;
+	if (m_frame) result = m_frame->format;
+	return result;
+}
+
+bool Frame::isPlanar()
+{
+	return av_sample_fmt_is_planar((AVSampleFormat)m_frame->format);
+}
+
 }

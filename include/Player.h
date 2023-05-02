@@ -65,10 +65,11 @@ public:
     std::function<void(float)> progressCallback = nullptr;
     std::function<void(const Frame&)> renderCallback = nullptr;
     std::function<Frame(Frame&)> pythonCallback  = nullptr;
+    std::function<Frame(Frame&)> pyAudioCallback = nullptr;
     std::function<void(int64_t)> cbMediaPlayingStarted = nullptr;
     std::function<void(void)> cbMediaPlayingStopped = nullptr;
-  	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
+    std::function<void(const std::string&)> infoCallback = nullptr;
+    std::function<void(const std::string&)> errorCallback = nullptr;
 
     uint64_t hWnd = 0;
     std::string uri;

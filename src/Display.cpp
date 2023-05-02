@@ -373,7 +373,6 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
     uint8_t* temp = (uint8_t*)malloc(len);
     memset(temp, 0, len);
     Frame f;
-    int ptr = 0;
     Player* player = (Player*)d->player;
 
     if (d->paused)
@@ -381,15 +380,19 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
     try {
         while (len > 0) {
-            if (ptr < d->audio_buffer_len) {
+            if (!d->swr_ptr) {
+
                 d->afq_in->pop_move(f);
+
+                if (player->pyAudioCallback) f = player->pyAudioCallback(f);
 
                 if (f.isValid()) {
                     uint64_t channels = f.m_frame->channels;
                     int nb_samples = f.m_frame->nb_samples;
+                    int format = f.m_frame->format;
                     const uint8_t** data = (const uint8_t**)&f.m_frame->data[0];
                     int frame_buffer_size = av_samples_get_buffer_size(NULL, channels, nb_samples, d->sdl_sample_format, 0);
-                        
+
                     if (frame_buffer_size != d->swr_buffer_size) {
                         if (d->swr_buffer) delete[] d->swr_buffer;
                         d->swr_buffer = new uint8_t[frame_buffer_size];
@@ -397,10 +400,27 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     }
 
                     swr_convert(d->swr_ctx, &d->swr_buffer, nb_samples, data, nb_samples);
-                    int mark = std::min(len, d->swr_buffer_size);
-                    if (player->running) memcpy(temp + ptr, d->swr_buffer, mark);
-                    ptr += mark;
-                    len -= mark;
+
+                    d->rtClock.sync(f.m_rts); 
+                    d->reader->seek_found_pts = AV_NOPTS_VALUE;
+
+                    if (player->progressCallback) {
+                        if (!d->reader->has_video()) {
+                            if (d->reader->duration()) {
+                                float pct = (float)f.m_rts / (float)d->reader->duration();
+                                int progress = (int)(1000 * pct);
+                                if (progress != player->last_progress) {
+                                    player->progressCallback(pct);
+                                    player->last_progress = progress;
+                                }
+                            }
+                        }
+                    }
+
+                    if (d->afq_out)
+                        d->afq_out->push_move(f);
+                    else
+                        f.invalidate();
                 }
                 else {
                     if (d->afq_out) d->afq_out->push_move(f);
@@ -416,28 +436,20 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                 }
             }
 
-            if (!d->mute)
-                SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
+            int swr_residual = d->swr_buffer_size - d->swr_ptr;
+            int tmp_residual = d->audio_buffer_len - len;
+            int mark = std::min(len, swr_residual);
 
-            d->rtClock.sync(f.m_rts); 
-            d->reader->seek_found_pts = AV_NOPTS_VALUE;
-
-            if (player->progressCallback) {
-                if (d->reader->duration()) {
-                    float pct = (float)f.m_rts / (float)d->reader->duration();
-                    int progress = (int)(1000 * pct);
-                    if (progress != player->last_progress) {
-                        player->progressCallback(pct);
-                        player->last_progress = progress;
-                    }
-                }
-            }
-
-            if (d->afq_out)
-                d->afq_out->push_move(f);
-            else
-                f.invalidate();
+            if (player->running) memcpy(temp + tmp_residual, d->swr_buffer + d->swr_ptr, mark);
+            len -= mark;
+            d->swr_ptr += mark;
+            if (d->swr_ptr >= d->swr_buffer_size)
+                d->swr_ptr = 0;
         }
+
+        if (!d->mute)
+            SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
+
     }
     catch (const Exception& e) { 
         std::stringstream str;
