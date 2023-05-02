@@ -105,6 +105,9 @@ public:
     bool audio_eof = false;
     float volume = 1.0f;
     bool mute = false;
+    int swr_ptr = 0;
+    bool first_pass = true;
+    int pass_count = 0;
 
     int win_width = 0;
     int win_height = 0;

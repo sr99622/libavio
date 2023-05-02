@@ -60,6 +60,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("progressCallback", &Player::progressCallback)
         .def_readwrite("renderCallback", &Player::renderCallback)
         .def_readwrite("pythonCallback", &Player::pythonCallback)
+        .def_readwrite("pyAudioCallback", &Player::pyAudioCallback)
         .def_readwrite("infoCallback", &Player::infoCallback)
         .def_readwrite("errorCallback", &Player::errorCallback)
         .def_readwrite("cbMediaPlayingStarted", &Player::cbMediaPlayingStarted)
@@ -117,16 +118,81 @@ PYBIND11_MODULE(avio, m)
         .def("width", &Frame::width)
         .def("height", &Frame::height)
         .def("stride", &Frame::stride)
+        .def("nb_samples", &Frame::nb_samples)
+        .def("sample_rate", &Frame::sample_rate)
+        .def("channels", &Frame::channels)
         .def_readwrite("m_rts", &Frame::m_rts)
         .def_buffer([](Frame &m) -> py::buffer_info {
-            return py::buffer_info(
-                m.data(),
-                sizeof(uint8_t),
-                py::format_descriptor<uint8_t>::format(),
-                3,
-                { m.height(), m.width(), 3},
-                { sizeof(uint8_t) * m.stride(), sizeof(uint8_t) * 3, sizeof(uint8_t) }
-            );
+            if (m.height() == 0 && m.width() == 0) {
+                AVSampleFormat fmt = (AVSampleFormat)m.format();
+                switch(fmt) {
+
+                    case AV_SAMPLE_FMT_U8:    //unsigned 8 bits
+                        std::cout << "AV_SAMPLE_FMT_U8" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_U8P:   //unsigned 8 bits, planar
+                        std::cout << "AV_SAMPLE_FMT_U8P" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_S16:   //signed 16 bits
+                        std::cout << "AV_SAMPLE_FMT_S16" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_S16P:  //signed 16 bits, planar
+                        std::cout << "AV_SAMPLE_FMT_S16P" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_S32:   //signed 32 bits
+                        std::cout << "AV_SAMPLE_FMT_S32" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_S32P:  //signed 32 bits, planar
+                        std::cout << "AV_SAMPLE_FMT_S32P" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_S64:   //signed 64 bits
+                        std::cout << "AV_SAMPLE_FMT_S64" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_S64P:  //signed 64 bits, planar
+                        std::cout << "AV_SAMPLE_FMT_S64P" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_FLT:   //float
+                        std::cout << "AV_SAMPLE_FMT_FLT" << std::endl;
+                        return py::buffer_info(
+                            m.data(),
+                            sizeof(float),
+                            py::format_descriptor<float>::format(),
+                            1,
+                            { m.nb_samples() * m.channels() },
+                            { sizeof(float) }
+                        );
+                    break;
+
+                    case AV_SAMPLE_FMT_FLTP:  //float, planar
+                        std::cout << "AV_SAMPLE_FMT_FLTP" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_DBL:   //double
+                        std::cout << "AV_SAMPLE_FMT_DBL" << std::endl;
+                    break;
+
+                    case AV_SAMPLE_FMT_DBLP:  //double, planar
+                        std::cout << "AV_SAMPLE_FMT_DBLP" << std::endl;
+                    break;
+
+                }
+            }
+            else {
+                py::ssize_t element_size = sizeof(uint8_t);
+                std::string fmt_desc =  py::format_descriptor<uint8_t>::format();
+                std::vector<py::ssize_t> dims = { m.height(), m.width(), 3};
+                py::ssize_t ndim = dims.size();
+                std::vector<py::ssize_t> strides = { sizeof(uint8_t) * m.stride(), (py::ssize_t)(sizeof(uint8_t) * ndim), sizeof(uint8_t) };
+                return py::buffer_info(m.data(), element_size, fmt_desc, ndim, dims, strides);
+            }
         });
     py::class_<AVRational>(m, "AVRational")
         .def(py::init<>())

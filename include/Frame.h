@@ -55,6 +55,11 @@ public:
 	int width();
 	int height();
 	int stride();
+	int nb_samples();
+	int sample_rate();
+	int64_t channels();
+	int format();
+	bool isPlanar();
 
 	AVFrame* m_frame = nullptr;
 	uint64_t m_rts;
