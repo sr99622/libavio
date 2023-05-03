@@ -124,66 +124,14 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("m_rts", &Frame::m_rts)
         .def_buffer([](Frame &m) -> py::buffer_info {
             if (m.height() == 0 && m.width() == 0) {
-                AVSampleFormat fmt = (AVSampleFormat)m.format();
-                switch(fmt) {
-
-                    case AV_SAMPLE_FMT_U8:    //unsigned 8 bits
-                        std::cout << "AV_SAMPLE_FMT_U8" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_U8P:   //unsigned 8 bits, planar
-                        std::cout << "AV_SAMPLE_FMT_U8P" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_S16:   //signed 16 bits
-                        std::cout << "AV_SAMPLE_FMT_S16" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_S16P:  //signed 16 bits, planar
-                        std::cout << "AV_SAMPLE_FMT_S16P" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_S32:   //signed 32 bits
-                        std::cout << "AV_SAMPLE_FMT_S32" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_S32P:  //signed 32 bits, planar
-                        std::cout << "AV_SAMPLE_FMT_S32P" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_S64:   //signed 64 bits
-                        std::cout << "AV_SAMPLE_FMT_S64" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_S64P:  //signed 64 bits, planar
-                        std::cout << "AV_SAMPLE_FMT_S64P" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_FLT:   //float
-                        std::cout << "AV_SAMPLE_FMT_FLT" << std::endl;
-                        return py::buffer_info(
-                            m.data(),
-                            sizeof(float),
-                            py::format_descriptor<float>::format(),
-                            1,
-                            { m.nb_samples() * m.channels() },
-                            { sizeof(float) }
-                        );
-                    break;
-
-                    case AV_SAMPLE_FMT_FLTP:  //float, planar
-                        std::cout << "AV_SAMPLE_FMT_FLTP" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_DBL:   //double
-                        std::cout << "AV_SAMPLE_FMT_DBL" << std::endl;
-                    break;
-
-                    case AV_SAMPLE_FMT_DBLP:  //double, planar
-                        std::cout << "AV_SAMPLE_FMT_DBLP" << std::endl;
-                    break;
-
-                }
+                return py::buffer_info(
+                    m.data(),
+                    sizeof(float),
+                    py::format_descriptor<float>::format(),
+                    1,
+                    { m.nb_samples() * m.channels() },
+                    { sizeof(float) }
+                );
             }
             else {
                 py::ssize_t element_size = sizeof(uint8_t);
