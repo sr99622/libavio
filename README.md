@@ -20,7 +20,7 @@ be installed using the following command under a conda prompt.  The
 Visual Studio C++ compiler must be installed as well.
 
 ```
-conda install cmake ffmpeg sdl2
+conda install cmake ffmpeg sdl2 -c conda-forge
 ```
 
 If successful, install avio python module
