@@ -84,7 +84,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name="avio",
-    version="2.1.5",
+    version="2.1.7",
     author="Stephen Rhodes",
     author_email="sr99622@gmail.com",
     description="A python media processing module",
