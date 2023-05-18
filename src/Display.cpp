@@ -213,12 +213,17 @@ void Display::display()
                     }
                 }
 
+                if (P->process_pause) {
+                    if (P->pythonCallback) f = P->pythonCallback(f);
+                }
+ 
                 if (P->renderCallback)
                     P->renderCallback(f);
                 else
                     videoPresentation();
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                if (!P->process_pause || !P->pythonCallback)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
                 if (!found)
                     continue;

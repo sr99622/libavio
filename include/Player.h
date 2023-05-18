@@ -81,6 +81,7 @@ public:
     bool mute = false;
     int volume = 100;
     int last_progress = 0;
+    bool process_pause = false;
     bool post_encode = false;
     bool hw_encoding = false;
     int keyframe_cache_size = 1;

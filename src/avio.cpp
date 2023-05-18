@@ -72,6 +72,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("video_filter", &Player::video_filter)
         .def_readwrite("audio_filter", &Player::audio_filter)
         .def_readwrite("keyframe_cache_size", &Player::keyframe_cache_size)
+        .def_readwrite("process_pause", &Player::process_pause)
         .def_readwrite("post_encode", &Player::post_encode)
         .def_readwrite("hw_encoding", &Player::hw_encoding)
         .def_readwrite("hw_device_type", &Player::hw_device_type);
@@ -199,7 +200,7 @@ PYBIND11_MODULE(avio, m)
         .value("AV_SAMPLE_FMT_NB", AVSampleFormat::AV_SAMPLE_FMT_NB)
         .export_values();
 
-    m.attr("__version__") = "2.1.3";
+    m.attr("__version__") = "2.1.5";
 
 }
 
