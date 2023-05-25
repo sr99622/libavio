@@ -7,7 +7,7 @@ from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 PKG_NAME = "avio"
-VERSION = "2.1.7"
+VERSION = "2.1.8"
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -61,7 +61,7 @@ setup(
     ext_modules=[CMakeExtension(PKG_NAME)],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     packages=[PKG_NAME],
     package_data = { PKG_NAME : get_package_data() }
 )
