@@ -1,7 +1,7 @@
 #*******************************************************************************
 # libavio/CMakeLists.txt
 #
-# Copyright (c) 2022 Stephen Rhodes 
+# Copyright (c) 2022, 2024 Stephen Rhodes 
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 cmake_minimum_required(VERSION 3.17)
 
-project(libavio VERSION 2.1.1)
+project(libavio VERSION 3.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

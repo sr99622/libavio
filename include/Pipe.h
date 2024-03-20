@@ -26,6 +26,10 @@ extern "C" {
 }
 
 #include "Exception.h"
+#include "Packet.h"
+#include "Frame.h"
+#include "Queue.h"
+#include <map>
 
 namespace avio
 {
@@ -33,17 +37,19 @@ namespace avio
 class Pipe
 {
 public:
-    Pipe(AVFormatContext* reader_fmt_ctx, int video_stream_index, int audio_stream_index);
+    Pipe(AVFormatContext* input_fmt_ctx, int video_stream_index, int audio_stream_index, void* decoder = nullptr, void* encoder = nullptr);
     ~Pipe();
 
-	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
+	std::function<void(const std::string&, const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&, const std::string&, bool)> errorCallback = nullptr;
 
     AVCodecContext* getContext(AVMediaType mediaType);
-    void open(const std::string& filename);
+    void open(const std::string& filename, std::map<std::string, std::string>& metadata);
     void close();
     void adjust_pts(AVPacket* pkt);
     void write(AVPacket* pkt);
+    void transcode(AVPacket* pkt);
+    int encode(Frame& f);
 
     std::string m_filename;
 
@@ -53,7 +59,7 @@ public:
     AVStream* video_stream = nullptr;
     AVStream* audio_stream = nullptr;
 
-    AVFormatContext* reader_fmt_ctx = nullptr;
+    AVFormatContext* input_fmt_ctx = nullptr;
     int video_stream_index = -1;
     int audio_stream_index = -1;
 
@@ -62,6 +68,12 @@ public:
     int last_video_pkt_duration = 0;
 
     bool opened = false;
+
+    AVRational onvif_frame_rate;
+    AVRational encoder_frame_rate;
+
+    void* decoder = nullptr;
+    void* encoder = nullptr;
 
     ExceptionHandler ex;
 

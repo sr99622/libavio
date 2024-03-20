@@ -53,7 +53,7 @@ void Writer::open()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Writer::open exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        if (infoCallback) infoCallback(str.str(), filename);
         else std::cout << str.str() << std::endl;
     }
 }
@@ -67,7 +67,7 @@ void Writer::write(AVPacket* pkt)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Writer::write exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        if (infoCallback) infoCallback(str.str(), filename);
         else std::cout << str.str() << std::endl;
     }
 }
@@ -91,7 +91,7 @@ void Writer::close()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Writer::close exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        if (infoCallback) infoCallback(str.str(), filename);
         else std::cout << str.str() << std::endl;
     }
 }

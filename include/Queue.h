@@ -43,7 +43,6 @@ class Queue
 {
 public:
 	Queue(size_t max_size = 1);
-	//Queue::~Queue() { std::cout << "~Queue" << std::endl; }
 
 	void push(T const&);
 	void push_move(T);
@@ -58,6 +57,7 @@ public:
 	bool empty() { return m_front == -1; }
 	bool closed() { return m_closed; }
 	void set_max_size(int arg);
+	int max_size() { return m_max_size; }
 
 private:
 	std::vector<T> m_data;
@@ -84,15 +84,6 @@ void Queue<T>::clear()
 
 	m_front = m_rear = -1;
 	m_size = 0;
-	/*
-	while (!empty()) {
-		T arg = std::move(m_data[m_front]);
-		if (m_front == m_rear) m_front = m_rear = -1;
-		else if (m_front == m_max_size - 1) m_front = 0;
-		else m_front++;
-		m_size--;
-	}
-	*/
 
 	m_cond_push.notify_one();
 }

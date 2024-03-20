@@ -63,7 +63,6 @@ public:
 
 	AVFrame* m_frame = nullptr;
 	uint64_t m_rts;
-	bool m_faded = false;  // used by osd to avoid duplicate background fade
 
 };
 

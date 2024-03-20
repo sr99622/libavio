@@ -1,7 +1,7 @@
 #/********************************************************************
 # libavio/pyproject.toml
 #
-# Copyright (c) 2023  Stephen Rhodes
+# Copyright (c) 2023, 2024  Stephen Rhodes
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "avio"
-version = "2.1.8"
+version = "3.1.0"
 authors = [
     { name="Stephen Rhodes", email="sr99622@gmail.com" },
 ]
 description = "A python module for processing media streams"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",

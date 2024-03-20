@@ -31,6 +31,7 @@
 #include "Encoder.h"
 #include "Writer.h"
 #include <functional>
+#include <map>
 
 #define P ((Player*)player)
 
@@ -62,14 +63,17 @@ public:
 
     std::function<int(void)> width = nullptr;
     std::function<int(void)> height = nullptr;
-    std::function<void(float)> progressCallback = nullptr;
-    std::function<void(const Frame&)> renderCallback = nullptr;
-    std::function<Frame(Frame&)> pythonCallback  = nullptr;
-    std::function<Frame(Frame&)> pyAudioCallback = nullptr;
-    std::function<void(int64_t)> cbMediaPlayingStarted = nullptr;
-    std::function<void(void)> cbMediaPlayingStopped = nullptr;
-    std::function<void(const std::string&)> infoCallback = nullptr;
-    std::function<void(const std::string&)> errorCallback = nullptr;
+    std::function<void(float progress, const std::string& uri)> progressCallback = nullptr;
+    std::function<void(const Frame&, Player&)> renderCallback = nullptr;
+    std::function<Frame(Frame&, Player&)> pyAudioCallback = nullptr;
+    std::function<void(const std::string& uri)> mediaPlayingStarted = nullptr;
+    std::function<void(const std::string& uri)> mediaPlayingStopped = nullptr;
+    std::function<void(const std::string& uri)> packetDrop = nullptr;
+    std::function<AudioStatus(void)> getAudioStatus = nullptr;
+    std::function<void(AudioStatus)> setAudioStatus = nullptr;
+
+    std::function<void(const std::string& msg, const std::string& uri)> infoCallback = nullptr;
+    std::function<void(const std::string& msg, const std::string& uri, bool reconnect)> errorCallback = nullptr;
 
     uint64_t hWnd = 0;
     std::string uri;
@@ -78,31 +82,46 @@ public:
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 
     bool running = false;
+    bool request_reconnect = true;
     bool mute = false;
     int volume = 100;
-    int last_progress = 0;
+    int64_t last_progress = -1;
+    int64_t duration = -1;
     bool process_pause = false;
     bool post_encode = false;
     bool hw_encoding = false;
-    int keyframe_cache_size = 1;
+    bool adjust_time_base = false;
+    int buffer_size_in_seconds = 1;
 
     int vpq_size = 0;
     int apq_size = 0;
 
     bool disable_video = false;
     bool disable_audio = false;
+    bool hidden = false;
 
-    Player() { av_log_set_level(AV_LOG_PANIC); }
+    AVRational onvif_frame_rate;
+
+    std::map<std::string, std::string> metadata;
+
+    Player(const std::string& uri) : uri(uri) { av_log_set_level(AV_LOG_PANIC); }
     ~Player() { }
+    bool operator==(const Player& other) const;
+    std::string toString() const { return uri; };
 
     bool isPaused();
     bool isPiping();
     bool isEncoding();
     bool isRecording();
+    bool isMuted();
     void togglePaused();
+    void startFileBreakPipe(const std::string& filename);
+    void fileBreakPipe();
+    int64_t pipeBytesWritten();
     void togglePiping(const std::string& filename);
     void toggleEncoding(const std::string& filename);
     void toggleRecording(const std::string& filename);
+    std::string pipeOutFilename() const;
     void key_event(int keyCode);
     void clear_queues();
     void clear_decoders();
@@ -111,42 +130,23 @@ public:
     void seek(float arg);
     void setMute(bool arg);
     void setVolume(int arg);
-    bool checkForStreamHeader();
-
-    std::string getVideoCodec() const {
-        std::string result = "Unknown codec";
-        if (reader)
-            result = reader->str_video_codec();
-        return result;
-    }
-
-    int getVideoWidth() {
-        int result = 0;
-        if (reader)
-            result = reader->width();
-        return result;
-    }
-
-    int getVideoHeight() {
-        int result = 0;
-        if (reader)
-            result = reader->height();
-        return result;
-    }
-
-    int getVideoFrameRate() {
-        int result = 0;
-        if (reader)
-            result = (int)av_q2d(reader->frame_rate());
-        return result;
-    }
-
-    int getVideoBitrate() {
-        int result = 0;
-        if (reader)
-            result = reader->video_bit_rate();
-        return result;
-    }
+    int  getVolume();
+    bool isCameraStream();
+    void setMetaData(const std::string& key, const std::string& value);
+    std::string getVideoCodec() const;
+    int getVideoWidth();
+    int getVideoHeight();
+    int getVideoFrameRate();
+    int getVideoBitrate();
+    bool hasAudio();
+    bool hasVideo();
+    std::string getAudioCodec() const;
+    std::string getAudioChannelLayout() const;
+    int getAudioBitrate();
+    int getAudioSampleRate();
+    int getCacheSize();
+    void clearCache();
+    std::string getStreamInfo() const;
 
 };
 

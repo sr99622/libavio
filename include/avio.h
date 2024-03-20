@@ -34,13 +34,14 @@
 namespace avio
 {
 
-static void read(Reader* reader, Player* player) 
+static void read(Reader* reader) 
 {
-    if (reader->has_video() && !player->disable_video) {
+    Player* player = (Player*)reader->player;
+    if (reader->has_video() && !(player->disable_video)) {
         if (reader->vpq_max_size > 0)
             reader->vpq->set_max_size(reader->vpq_max_size);
     }
-    if (reader->has_audio() && !player->disable_audio) {
+    if (reader->has_audio() && !(player->disable_audio)) {
         if (reader->apq_max_size > 0)
             reader->apq->set_max_size(reader->apq_max_size);
     }
@@ -49,19 +50,19 @@ static void read(Reader* reader, Player* player)
         while (true)
         {
             AVPacket* pkt = reader->read();
+
             if (!pkt) {
                 break;
             }
 
-            if (reader->disable_video && pkt->stream_index == reader->video_stream_index) {
-                av_packet_free(&pkt);
-                continue;
+            if (reader->vpq) {
+                if (player->isCameraStream() && (reader->vpq->size() == reader->vpq->max_size())) {
+                    av_packet_free(&pkt);
+                    player->infoCallback("dropping frames due to buffer overflow", player->uri);
+                    if (player->packetDrop) player->packetDrop(player->uri);
+                    continue;
+                }
             }
-
-            if (reader->disable_audio && pkt->stream_index == reader->audio_stream_index) {
-                av_packet_free(&pkt);
-                continue;
-            } 
 
             if (!player->running) {
                 if (reader->pipe) reader->close_pipe();
@@ -85,11 +86,14 @@ static void read(Reader* reader, Player* player)
                 }
             }
 
-            if (reader->request_pipe_write) {
-                reader->pipe_write(pkt);
-            }
-            else {
-                reader->close_pipe();
+            if (player->isCameraStream()) {
+                if (reader->request_pipe_write) {
+                    reader->pipe_bytes_written += pkt->size;
+                    reader->pipe_write(pkt);
+                }
+                else {
+                    reader->close_pipe();
+                }
                 reader->fill_pkts_cache(pkt);
             }
 
@@ -101,18 +105,19 @@ static void read(Reader* reader, Player* player)
             }
 
             Packet p(pkt);
-            if (pkt->stream_index == reader->video_stream_index) {
-                if (reader->show_video_pkts)
-                    std::cout << p.description() << std::endl;
-                if (reader->vpq)
-                    reader->vpq->push_move(p);
-            }
-
-            else if (pkt->stream_index == reader->audio_stream_index) {
-                if (reader->show_audio_pkts)
-                    std::cout << p.description() << std::endl;
-                if (reader->apq)
-                    reader->apq->push_move(p);
+            if (!player->hidden) {
+                if (pkt->stream_index == reader->video_stream_index) {
+                    if (reader->show_video_pkts)
+                        std::cout << p.description() << std::endl;
+                    if (reader->vpq && !player->disable_video)
+                        reader->vpq->push_move(p);
+                }
+                else if (pkt->stream_index == reader->audio_stream_index) {
+                    if (reader->show_audio_pkts)
+                        std::cout << p.description() << std::endl;
+                    if (reader->apq && !player->disable_audio)
+                        reader->apq->push_move(p);
+                }
             }
         }
     }
@@ -125,9 +130,8 @@ static void read(Reader* reader, Player* player)
         if (msg.find(mark) != std::string::npos)
             msg = "No connection to server";
         std::stringstream str;
-        str << "Reader thread loop error: " << msg;
         std::cout << str.str() << std::endl;
-        if (player->errorCallback) reader->errorCallback(str.str());
+        if (player->errorCallback) player->errorCallback(str.str(), player->uri, true);
         else std::cout << str.str() << std::endl;
     }
 
@@ -155,7 +159,7 @@ static void decode(Decoder* decoder)
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
-        if (decoder->errorCallback) decoder->errorCallback(str.str());
+        if (decoder->errorCallback) decoder->errorCallback(str.str(), "", false);
     }
 
     decoder->frame_q->push_move(Frame(nullptr));
@@ -177,7 +181,7 @@ static void filter(Filter* filter)
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
-        if (filter->errorCallback) filter->errorCallback(str.str());
+        if (filter->errorCallback) filter->errorCallback(str.str(), "", false);
     }
 
     filter->frame_out_q->push_move(Frame(nullptr));

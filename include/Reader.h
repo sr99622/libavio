@@ -34,16 +34,22 @@ extern "C" {
 namespace avio
 {
 
+enum AudioEncoding {
+    AAC,
+    G711,
+    G726,
+	NONE
+};
+
 class Reader
 {
 public:
-	Reader() {}
-	Reader(const char* filename);
+	Reader(const char* filename, void* player);
 	~Reader();
-	AVPacket* read();
 
-	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
+	void* player;
+
+	AVPacket* read();
 
 	void request_seek(float pct);
 	int64_t seek_target_pts = AV_NOPTS_VALUE;
@@ -54,7 +60,8 @@ public:
 	bool seeking();
 	void start_from(int milliseconds);
 	void end_at(int milliseconds);
-	void showStreamParameters();
+	//void showStreamParameters();
+	std::string getStreamInfo();
 
 	int64_t start_time();
 	int64_t duration();
@@ -70,6 +77,7 @@ public:
 	AVCodecID video_codec();
 	int64_t video_bit_rate();
 	AVRational video_time_base();
+	const char* metadata(const std::string& key);
 
 	bool has_audio();
 	int channels();
@@ -86,25 +94,24 @@ public:
 	AVRational audio_time_base();
 
 	Pipe* pipe = nullptr;
-	int keyframe_cache_size = 1;
 	void clear_pkts_cache(int mark);
 	void fill_pkts_cache(AVPacket* pkt);
 	void pipe_write(AVPacket* pkt);
+	int num_video_pkts_in_cache();
+	int64_t pipe_bytes_written = 0;
 	void close_pipe();
 	bool request_pipe_write = false;
 	std::string pipe_out_filename;
     std::deque<AVPacket*> pkts_cache;
-    int keyframe_count = 0;
-    int keyframe_marker = 0;
+	int last_pkts_cache_size = 0;
+	std::chrono::time_point<std::chrono::high_resolution_clock> frame_rate_measure_start;
+	Pipe* createPipe();
 
 	AVFormatContext* fmt_ctx = nullptr;
 	int video_stream_index = -1;
 	int audio_stream_index = -1;
 	int64_t last_video_pts = 0;
 	int64_t last_audio_pts = 0;
-
-	bool disable_video = false;
-	bool disable_audio = false;
 
 	bool show_video_pkts = false;
 	bool show_audio_pkts = false;
@@ -116,6 +123,7 @@ public:
 	int apq_max_size = 0;
 
 	ExceptionHandler ex;
+
 };
 
 }

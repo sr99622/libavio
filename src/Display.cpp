@@ -31,180 +31,29 @@ Display::~Display()
     }
     if (swr_ctx) swr_free(&swr_ctx);
     if (swr_buffer) delete[] swr_buffer;
-    if (texture)  SDL_DestroyTexture(texture);
-    if (renderer) SDL_DestroyRenderer(renderer);
-    if (window)   SDL_DestroyWindow(window);
-    if (screen)   SDL_FreeSurface(screen);
-    SDL_Quit();
 }
 
-int Display::initVideo()
-{
-    int ret = 0;
-
-    try {
-        Uint32 sdl_format = 0;
-
-        switch (pix_fmt) {
-        case AV_PIX_FMT_YUV420P:
-        case AV_PIX_FMT_YUVJ420P:
-            sdl_format = SDL_PIXELFORMAT_IYUV;
-            break;
-        case AV_PIX_FMT_RGB24:
-            sdl_format = SDL_PIXELFORMAT_RGB24;
-            break;
-        case AV_PIX_FMT_RGBA:
-            sdl_format = SDL_PIXELFORMAT_RGBA32;
-            break;
-        case AV_PIX_FMT_BGR24:
-            sdl_format = SDL_PIXELFORMAT_BGR24;
-            break;
-        case AV_PIX_FMT_BGRA:
-            sdl_format = SDL_PIXELFORMAT_BGRA32;
-            break;
-        default:
-            const char* pix_fmt_name = av_get_pix_fmt_name(pix_fmt);
-            std::stringstream str;
-            str << "unsupported pix fmt: " << (pix_fmt_name ? pix_fmt_name : std::to_string(pix_fmt));
-            throw Exception(str.str());
-        }
-
-        if (!SDL_WasInit(SDL_INIT_VIDEO))
-            if (SDL_Init(SDL_INIT_VIDEO)) throw Exception(std::string("SDL video init error: ") + SDL_GetError());
-
-        if (!window) {
-            const char* pix_fmt_name = av_get_pix_fmt_name(pix_fmt);
-            std::stringstream str;
-            str << "initializing video display | width: " << pix_width << " height: " << pix_height
-                << " pixel format: " << pix_fmt_name ? pix_fmt_name : "unknown pixel format";
-            if (infoCallback) infoCallback(str.str());
-            else std::cout << str.str() << std::endl;
-
-            if (hWnd) {
-                window = SDL_CreateWindowFrom((void*)hWnd);
-                SDL_SetWindowSize(window, P->width(), P->height());
-            }
-            else {
-                window = SDL_CreateWindow("window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pix_width, pix_height, 0);
-            }
-            if (!window) throw Exception(std::string("SDL_CreateWindow") + SDL_GetError());
-
-            if (fullscreen) SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
-
-            renderer = SDL_CreateRenderer(window, -1, 0);
-            if (!renderer) throw Exception(std::string("SDL_CreateRenderer") + SDL_GetError());
-
-            SDL_RenderSetLogicalSize(renderer, pix_width, pix_height);
-
-            texture = SDL_CreateTexture(renderer, sdl_format, SDL_TEXTUREACCESS_STREAMING, pix_width, pix_height);
-            if (!texture) throw Exception(std::string("SDL_CreateTexture") + SDL_GetError());
-
-        }
-        else {
-            if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN)) {
-                int window_width;
-                int window_height;
-                SDL_GetWindowSize(window, &window_width, &window_height);
-                if (!(window_width == P->width() && window_height == P->height())) {
-                    SDL_SetWindowSize(window, P->width(), P->height());
-                }
-            }
-        }
-    }
-    catch (const Exception& e) {
-        std::stringstream str;
-        str << "Display init video exception: " << e.what();
-        if (errorCallback) errorCallback(str.str());
-        else std::cout << str.str() << std::endl;
-        ret = -1;
-    }
-    
-    return ret;
-}
-
-void Display::videoPresentation()
-{
-    if (!f.isValid())
-        return;
-
-    if (f.m_frame->format == AV_PIX_FMT_YUV420P || f.m_frame->format == AV_PIX_FMT_YUVJ420P) {
-        ex.ck(SDL_UpdateYUVTexture(texture, NULL,
-            f.m_frame->data[0], f.m_frame->linesize[0],
-            f.m_frame->data[1], f.m_frame->linesize[1],
-            f.m_frame->data[2], f.m_frame->linesize[2]), 
-            SDL_GetError());
-    }
-    else {
-        ex.ck(SDL_UpdateTexture(texture, NULL, f.m_frame->data[0], f.m_frame->linesize[0]), SDL_GetError());
-    }
-
-    SDL_RenderClear(renderer);
-    ex.ck(SDL_RenderCopy(renderer, texture, NULL, NULL), SDL_GetError());
-    SDL_RenderPresent(renderer);
-}
-
-PlayState Display::getEvents(std::vector<SDL_Event>* events)
-{
-    PlayState state = PlayState::PLAY;
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
-        events->push_back(event);
-
-    if (events->empty()) {
-        SDL_Event user_event = { 0 };
-        user_event.type = SDL_USEREVENT;
-        events->push_back(user_event);
-    }
-
-    for (int i = 0; i < events->size(); i++) {
-        SDL_Event event = events->at(i);
-        if (event.type == SDL_QUIT)
-            state = PlayState::QUIT;
-        else if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.sym == SDLK_ESCAPE) {
-                state = PlayState::QUIT;
-            }
-            else if (event.key.keysym.sym == SDLK_SPACE) {
-                state = PlayState::PAUSE;
-            }
-        }
-    }
-    return state;
-}
-
-void Display::display()
+void Display::display(void* player)
 {
     while (true)
     {
         try {
-
-            std::vector<SDL_Event> events;
-            PlayState state = getEvents(&events);
-
-            if (state == PlayState::QUIT) {
-                std::cout << "PLayState::QUIT" << std::endl;
-                P->running = false;
-            }
-            else if (state == PlayState::PAUSE) {
-                togglePause();
-            }
-
-            if (paused) 
+            if (P->display->paused) 
             {
                 if (!P->running) {
-                    togglePause();
+                    P->display->togglePause();
                     continue;
                 }
 
-                f = paused_frame;
+                P->display->f = P->display->paused_frame;
                 bool found = false;
                 
-                while (reader->seeking() || state == PlayState::QUIT) {
-                    if (afq_in) afq_in->clear();
-                    if (vfq_in->size() > 0) vfq_in->pop_move(f);
-                    if (f.isValid()) {
-                        if (f.m_frame->pts == reader->seek_found_pts) {
-                            reader->seek_found_pts = AV_NOPTS_VALUE;
+                while (P->reader->seeking()) {
+                    if (P->display->afq_in) P->display->afq_in->clear();
+                    if (P->display->vfq_in->size() > 0) P->display->vfq_in->pop_move(P->display->f);
+                    if (P->display->f.isValid()) {
+                        if (P->display->f.m_frame->pts == P->reader->seek_found_pts) {
+                            P->reader->seek_found_pts = AV_NOPTS_VALUE;
                             found = true;
                         }
                     }
@@ -213,16 +62,10 @@ void Display::display()
                     }
                 }
 
-                if (P->process_pause) {
-                    if (P->pythonCallback) f = P->pythonCallback(f);
-                }
- 
                 if (P->renderCallback)
-                    P->renderCallback(f);
-                else
-                    videoPresentation();
+                    P->renderCallback(P->display->f, *P);
 
-                if (!P->process_pause || !P->pythonCallback)
+                if (!P->process_pause)
                     std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
                 if (!found)
@@ -230,68 +73,57 @@ void Display::display()
 
             }
 
-            if (vfq_in) {
-                vfq_in->pop_move(f);
-                if (!f.isValid())
+            if (P->display->vfq_in) {
+                P->display->vfq_in->pop_move(P->display->f);
+                if (!P->display->f.isValid())
                     break;
             }
             else {
-                SDL_Delay(SDL_EVENT_LOOP_WAIT);
-                f = Frame(640, 480, AV_PIX_FMT_YUV420P);
-                f.m_rts = rtClock.stream_time();
+                std::this_thread::sleep_for(std::chrono::milliseconds(SDL_EVENT_LOOP_WAIT));
+                P->display->f = Frame(640, 480, AV_PIX_FMT_YUV420P);
+                P->display->f.m_rts = P->display->rtClock.stream_time();
                 if (P->running)
                     continue;
                 else
                     break;
             }
 
-            paused_frame = f;
+            P->display->paused_frame = P->display->f;
 
-            if (P->pythonCallback) f = P->pythonCallback(f);
-
-            int delay = rtClock.update(f.m_rts - reader->start_time());
+            int delay = P->display->rtClock.update(P->display->f.m_rts - P->reader->start_time());
             std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
-            if (P->renderCallback) {
-                P->renderCallback(f);
-            }
-            else {
-                pix_width = f.m_frame->width;
-                pix_height = f.m_frame->height;
-                pix_fmt = (AVPixelFormat)f.m_frame->format;
-                ex.ck(initVideo(), "initVideo");
-                videoPresentation();
-            }
-            reader->last_video_pts = f.m_frame->pts;
+            if (P->renderCallback) P->renderCallback(P->display->f, *P);
+            P->reader->last_video_pts = P->display->f.m_frame->pts;
 
             if (P->progressCallback) {
-                if (reader->duration()) {
-                    float pct = (float)f.m_rts / (float)reader->duration();
+                if (P->reader->duration()) {
+                    float pct = (float)P->display->f.m_rts / (float)(P->reader->duration());
                     int progress = (int)(1000 * pct);
                     if (progress != P->last_progress) {
-                        P->progressCallback(pct);
+                        P->progressCallback(pct, P->uri);
                         P->last_progress = progress;
                     }
                 }
             }
 
-            if (vfq_out)
-                vfq_out->push_move(f);
+            if (P->display->vfq_out)
+                P->display->vfq_out->push_move(P->display->f);
             else
-                f.invalidate();
+                P->display->f.invalidate();
 
         }
         catch (const Exception& e) {
             std::stringstream str;
             str << "Display exception: " << e.what();
-            if (infoCallback) infoCallback(str.str());
+            if (P->infoCallback) P->infoCallback(str.str(), P->uri);
             else std::cout << str.str() << std::endl;
         }
     }
 
-    f.invalidate();
-    if (vfq_out)
-        vfq_out->push_move(f);
+    P->display->f.invalidate();
+    if (P->display->vfq_out)
+        P->display->vfq_out->push_move(P->display->f);
 }
 
 int Display::initAudio(Filter* audioFilter)
@@ -339,8 +171,9 @@ int Display::initAudio(Filter* audioFilter)
             const char* name = av_get_sample_fmt_name(sdl_sample_format);
             if (name)
                 result = name;
-            std::cout << "ERROR: incompatible sample format: " << result << std::endl;
-            std::cout << "supported formats: AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_U8" << std::endl;
+            std::stringstream str;
+            str << "ERROR: incompatible sample format: " << result << "supported formats: AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_U8";
+            throw Exception(str.str());
         }
 
         audio_buffer_len = av_samples_get_buffer_size(NULL, sdl.channels, sdl.samples, sdl_sample_format, 1);
@@ -349,14 +182,50 @@ int Display::initAudio(Filter* audioFilter)
             stream_channel_layout, stream_sample_format, stream_sample_rate, 0, NULL), SASO);
         ex.ck(swr_init(swr_ctx), SI);
 
-        if (!SDL_WasInit(SDL_INIT_AUDIO)) {
-            if (SDL_Init(SDL_INIT_AUDIO))
-                throw Exception(std::string("SDL audio init error: ") + SDL_GetError());
+        if (P->getAudioStatus && P->setAudioStatus) {
+            // multi stream threading issues during SLD_Init for audio, simple mutex held by main window
+            AudioStatus status = P->getAudioStatus();
+            switch (status) {
+                case AudioStatus::UNINITIALIZED:
+                    P->setAudioStatus(AudioStatus::INIT_STARTED);
+                    if (!SDL_WasInit(SDL_INIT_AUDIO)) {
+                        if (SDL_Init(SDL_INIT_AUDIO)) {
+                            std::stringstream str;
+                            str << "SDL audio init error: " << SDL_GetError();
+                            throw Exception(str.str());
+                        }
+                        else {
+                            P->setAudioStatus(AudioStatus::INITIALIZED);
+                        }
+                    }
+                break;
+                case AudioStatus::INIT_STARTED:
+                    while (P->getAudioStatus() == AudioStatus::INIT_STARTED) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+                break;
+                case AudioStatus::INITIALIZED:
+                break;
+            }
+        }
+        else {
+            // fall back to basic operation
+            if (P->infoCallback) P->infoCallback("getAudioStatus callback function not set", P->uri);
+            else std::cout << "getAudioStatus callback function not set" << std::endl;
+            if (!SDL_WasInit(SDL_INIT_AUDIO)) {
+                if (SDL_Init(SDL_INIT_AUDIO)) {
+                    std::stringstream str;
+                    str << "SDL audio init error: " << SDL_GetError();
+                    throw Exception(str.str());
+                }
+            }
         }
 
         audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &sdl, &have, 0);
         if (audioDeviceID == 0) {
-            throw Exception(std::string("SDL_OpenAudioDevice exception: ") + SDL_GetError());
+            std::stringstream str;
+            str << "SDL_OpenAudioDevice exception: " << SDL_GetError();
+            throw Exception(str.str());
         }
 
         SDL_PauseAudioDevice(audioDeviceID, 0);
@@ -364,8 +233,9 @@ int Display::initAudio(Filter* audioFilter)
     catch (const Exception& e) {
         std::stringstream str;
         str << "Display init audio exception: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (P->errorCallback) P->errorCallback(str.str(), P->uri, false);
         else std::cout << str.str() << std::endl;
+        ret = -1;
     }
 
     return ret;
@@ -389,7 +259,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
                 d->afq_in->pop_move(f);
 
-                if (player->pyAudioCallback) f = player->pyAudioCallback(f);
+                if (player->pyAudioCallback) f = player->pyAudioCallback(f, *player);
 
                 if (f.isValid()) {
                     uint64_t channels = f.m_frame->channels;
@@ -415,7 +285,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                                 float pct = (float)f.m_rts / (float)d->reader->duration();
                                 int progress = (int)(1000 * pct);
                                 if (progress != player->last_progress) {
-                                    player->progressCallback(pct);
+                                    player->progressCallback(pct, player->uri);
                                     player->last_progress = progress;
                                 }
                             }
@@ -431,11 +301,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     if (d->afq_out) d->afq_out->push_move(f);
                     SDL_PauseAudioDevice(d->audioDeviceID, true);
                     if (!d->vfq_in) {
-                        len = -1;
-                        d->audio_eof = true;
-                        SDL_Event event;
-                        event.type = SDL_QUIT;
-                        SDL_PushEvent(&event);
+                        player->running = false;
                     }
                     return;
                 }
@@ -459,7 +325,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Audio callback exception: " << e.what();
-        if (d->infoCallback) d->infoCallback(str.str());
+        if (player->infoCallback) player->infoCallback(str.str(), P->uri);
         else std::cout << str.str() << std::endl;
     }
 
@@ -502,17 +368,6 @@ std::string Display::audioDeviceStatus() const
 
 const char* Display::sdlAudioFormatName(SDL_AudioFormat format) const 
 {
-    /*
-     Note: SDL does not support planar format audio
-
-     AV_SAMPLE_FMT_NONE = -1,
-     AV_SAMPLE_FMT_U8,          ///< unsigned 8 bits
-     AV_SAMPLE_FMT_S16,         ///< signed 16 bits
-     AV_SAMPLE_FMT_S32,         ///< signed 32 bits
-     AV_SAMPLE_FMT_FLT,         ///< float
-     AV_SAMPLE_FMT_DBL,         ///< double
-    */
-
     switch (format) {
     case AUDIO_S8:
         return "AUDIO_S8";
@@ -534,60 +389,6 @@ const char* Display::sdlAudioFormatName(SDL_AudioFormat format) const
         break;
     default:
         return "UNKNOWN";
-    }
-}
-
-void Display::snapshot()
-{
-    std::cout << "Display::snapshot" << std::endl;
-
-    AVCodecContext* codec_ctx = NULL;
-    AVFormatContext* fmt_ctx = NULL;
-    AVStream* stream = NULL;
-    AVCodec* codec = NULL;
-
-    try {
-        const char* out_name = "filename.jpg";
-        int width = f.m_frame->width;
-        int height = f.m_frame->height;
-
-        ex.ck(fmt_ctx = avformat_alloc_context(), AAC);
-        fmt_ctx->oformat = av_guess_format("mjpeg", NULL, NULL);
-
-        ex.ck(avio_open(&fmt_ctx->pb, out_name, AVIO_FLAG_READ_WRITE), AO);
-        ex.ck(stream = avformat_new_stream(fmt_ctx, 0), ANS);
-
-        AVCodecParameters *parameters = stream->codecpar;
-        parameters->codec_id = fmt_ctx->oformat->video_codec;
-        parameters->codec_type = AVMEDIA_TYPE_VIDEO;
-        parameters->format = AV_PIX_FMT_YUVJ420P;
-        parameters->width = width;
-        parameters->height = height;
-
-        ex.ck(codec = (AVCodec *)avcodec_find_encoder(stream->codecpar->codec_id), AFE);
-        ex.ck(codec_ctx = avcodec_alloc_context3(codec), AAC3);
-        ex.ck(avcodec_parameters_to_context(codec_ctx, stream->codecpar), APTC);
-        codec_ctx->time_base = av_make_q(1, 25);
-        ex.ck(avcodec_open2(codec_ctx, codec, NULL), AO2);
-        ex.ck(avformat_write_header(fmt_ctx, NULL), AWH);
-
-        AVPacket pkt;
-        av_new_packet(&pkt, width * height * 3);
-
-        ex.ck(avcodec_send_frame(codec_ctx, f.m_frame), ASF);
-        ex.ck(avcodec_receive_packet(codec_ctx, &pkt), ARP);
-        ex.ck(av_write_frame(fmt_ctx, &pkt), AWF);
-        av_packet_unref(&pkt);
-        ex.ck(av_write_trailer(fmt_ctx), AWT);
-    }    
-    catch (const Exception& e) {
-        std::cout << "Display::snapshot exception: " << e.what() << std::endl;
-    }    
-
-    if (codec_ctx) avcodec_close(codec_ctx);
-    if (fmt_ctx) {
-        avio_close(fmt_ctx->pb);
-        avformat_free_context(fmt_ctx);
     }
 }
 
