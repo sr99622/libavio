@@ -189,9 +189,11 @@ void Frame::set_rts(AVStream* stream)
 			m_rts = 0;
 		}
 		else {
-			double factor = 1000 * av_q2d(stream->time_base);
-			uint64_t start_time = (stream->start_time == AV_NOPTS_VALUE ? 0 : stream->start_time);
-			m_rts = (pts() - start_time) * factor;
+			if (stream) {
+				double factor = 1000 * av_q2d(stream->time_base);
+				uint64_t start_time = (stream->start_time == AV_NOPTS_VALUE ? 0 : stream->start_time);
+				m_rts = (pts() - start_time) * factor;
+			}
 		}
 	}
 }
@@ -199,8 +201,10 @@ void Frame::set_rts(AVStream* stream)
 void Frame::set_pts(AVStream* stream)
 {
 	if (isValid()) {
-		double factor = av_q2d(stream->time_base);
-		m_frame->pts = m_rts / factor / 1000;
+		if (stream) {
+			double factor = av_q2d(stream->time_base);
+			m_frame->pts = m_rts / factor / 1000;
+		}
 	}
 }
 

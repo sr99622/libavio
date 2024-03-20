@@ -51,8 +51,8 @@ public:
 	int64_t duration() { return reader->fmt_ctx->streams[stream_index]->duration; }
 	AVRational time_base() { return reader->fmt_ctx->streams[stream_index]->time_base; }
 
-	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
+	std::function<void(const std::string&, const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&, const std::string&, bool)> errorCallback = nullptr;
 
 	AVMediaType mediaType;
 	std::string strMediaType;

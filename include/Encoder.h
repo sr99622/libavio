@@ -22,6 +22,12 @@ extern "C" {
 namespace avio
 {
 
+enum class EncoderOutput
+{
+    FILE,
+    PACKET
+};
+
 class Encoder
 {
 public:
@@ -29,7 +35,7 @@ public:
     ~Encoder();
     void openVideoStream();
     void openAudioStream();
-    void init();
+    bool init();
     int encode(Frame& f);
     void close();
     bool cmpFrame(AVFrame* frame);
@@ -38,6 +44,8 @@ public:
     Writer* writer;
     AVMediaType mediaType;
     std::string strMediaType;
+
+    EncoderOutput output = EncoderOutput::FILE;
 
     AVStream* stream = NULL;
     AVCodecContext* enc_ctx = NULL;
@@ -82,10 +90,11 @@ public:
     bool first_pass = true;
 
     Queue<Frame>* frame_q = nullptr;
+    Queue<Packet>* pkt_q = nullptr;
 
     int frame_q_max_size = 0;
 
-	std::function<void(const std::string&)> infoCallback = nullptr;
+	std::function<void(const std::string&, const std::string&)> infoCallback = nullptr;
     ExceptionHandler ex;
 };
 

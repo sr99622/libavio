@@ -24,6 +24,9 @@ extern "C"
 }
 
 #include "Reader.h"
+#include "Player.h"
+#include "Decoder.h"
+#include "avio.h"
 
 #define MAX_TIMEOUT 5
 
@@ -44,7 +47,7 @@ static int interrupt_callback(void *ctx)
 
 namespace avio {
 
-Reader::Reader(const char* filename)
+Reader::Reader(const char* filename, void* player) : player(player)
 {
     try {
         AVDictionary* opts = nullptr;
@@ -65,7 +68,9 @@ Reader::Reader(const char* filename)
 
         video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
         audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-
+        if (audio_stream_index < 0 && player) {
+            if (P->infoCallback) P->infoCallback("NO AUDIO STREAM FOUND", P->uri);
+        }
     }
     catch (const Exception& e) {
         std::string msg(e.what());
@@ -123,7 +128,7 @@ AVPacket* Reader::seek()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Reader seek exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        if (P->infoCallback) P->infoCallback(str.str(), P->uri);
         else std::cout << str.str() << std::endl;
         return nullptr;
     }
@@ -150,6 +155,160 @@ bool Reader::seeking()
     return seek_target_pts != AV_NOPTS_VALUE || seek_found_pts != AV_NOPTS_VALUE;
 }
 
+void Reader::close_pipe()
+{
+    if (pipe) pipe->close();
+    pipe = nullptr;
+}
+
+Pipe* Reader::createPipe()
+{
+    Pipe* result = nullptr;
+    try {
+        AudioEncoding audio_encoding = AudioEncoding::NONE;
+        if (!strcmp(str_audio_codec(), "aac")) audio_encoding = AudioEncoding::AAC;
+        if (!strcmp(str_audio_codec(), "pcm_mulaw")) audio_encoding = AudioEncoding::G711;
+        if (!strcmp(str_audio_codec(), "adpcm_g726le")) audio_encoding = AudioEncoding::G726;
+
+        if (has_audio() && (audio_encoding != AudioEncoding::AAC) && (audio_encoding != AudioEncoding::NONE) && !P->disable_audio) {
+            Decoder* decoder = new Decoder(this, AVMEDIA_TYPE_AUDIO);
+            decoder->frame_q = new Queue<Frame>;            
+
+            Encoder* encoder = new Encoder(new Writer("mp4"), AVMEDIA_TYPE_AUDIO);
+            encoder->output = EncoderOutput::PACKET;
+            encoder->pkt_q = new Queue<Packet>(100);
+            encoder->sample_fmt = AV_SAMPLE_FMT_FLTP;
+            encoder->nb_samples = 1024;
+            sample_rate() < 32000 ? encoder->sample_rate = 32000 : encoder->sample_rate = sample_rate();
+            encoder->audio_time_base = av_make_q(1, encoder->sample_rate);
+            encoder->audio_bit_rate = audio_bit_rate();
+            encoder->channels = channels();
+            encoder->channel_layout = channel_layout();
+            encoder->infoCallback = P->infoCallback;
+
+            if (encoder->init())  {
+                result = new Pipe(fmt_ctx, video_stream_index, audio_stream_index, decoder, encoder);
+            }
+            else {
+                result = new Pipe(fmt_ctx, video_stream_index, -1);
+            }
+        }
+        else {
+            result = new Pipe(fmt_ctx, video_stream_index, P->disable_audio || (audio_encoding == AudioEncoding::NONE) ? -1 : audio_stream_index);
+        }
+
+        if (audio_encoding == AudioEncoding::NONE) {
+            std::stringstream str;
+            str << "Audio format incompatible: (" << str_audio_codec() << ") only video packets will be written to file";
+            if (P->infoCallback) P->infoCallback(str.str(), P->uri);
+        }
+
+        result->infoCallback = P->infoCallback;
+        result->errorCallback = P->errorCallback;
+        result->onvif_frame_rate = P->onvif_frame_rate;
+        result->open(pipe_out_filename, P->metadata);
+    }
+    catch (const Exception& e) {
+        if (result->opened)
+            close_pipe();
+        else {
+            if (result->fmt_ctx) avformat_free_context(result->fmt_ctx);
+        }
+        result = nullptr;
+        request_pipe_write = false;
+
+        std::stringstream str;
+        str << "Record function failure: " << e.what();
+        if (P->errorCallback) P->errorCallback(str.str(), P->uri, false);
+        else std::cout << str.str() << std::endl;
+    }
+    return result;
+}
+
+void Reader::pipe_write(AVPacket* pkt)
+{
+    if (!pipe) {
+        pipe = createPipe();
+        pipe_bytes_written = 0;
+
+        if (pipe) {
+            while (pkts_cache.size() > 0) {
+                Packet tmp(pkts_cache.front());
+                pkts_cache.pop_front();
+                pipe_bytes_written += tmp.m_pkt->size;
+                pipe->write(tmp.m_pkt);
+            }
+        }
+    }
+
+    if (pipe) {
+        Packet tmp(av_packet_clone(pkt));
+        pipe->write(tmp.m_pkt);
+    }
+}
+
+void Reader::fill_pkts_cache(AVPacket* pkt)
+{
+    bool keyframe = false;
+    if (pkt->stream_index == video_stream_index) {
+        if (pkt->flags) {
+            keyframe = true;
+            
+            int number_of_frames_to_buffer = (int)(av_q2d(P->onvif_frame_rate) * P->buffer_size_in_seconds);
+            //int number_of_frames_to_buffer = (int)(av_q2d(frame_rate()) * P->buffer_size_in_seconds);
+
+            if (number_of_frames_to_buffer > 0) {
+                if (number_of_frames_to_buffer < num_video_pkts_in_cache() -1) {
+                    int video_frame_count = 0;
+                    bool trimming = false;
+                    int idx = pkts_cache.size();
+                    while (idx > 0) {
+                        idx--;
+                        AVPacket* tmp = pkts_cache[idx];
+
+                        if (trimming) {
+                            if (tmp->flags) {
+                                break;
+                            }
+                        }
+
+                        if (tmp->stream_index == video_stream_index) {
+                            video_frame_count++;
+                            if (video_frame_count == number_of_frames_to_buffer)
+                                trimming = true;
+                        }
+                    }
+
+                    for (int j = 0; j < idx; j++) {
+                        AVPacket* jnk = pkts_cache.front();
+                        pkts_cache.pop_front();
+                        av_packet_free(&jnk);
+                    }
+                }
+            }
+        }
+    }
+
+    AVPacket* tmp = av_packet_clone(pkt);
+    // for some reason, flags is corrupted by this point on Dahua style
+    tmp->flags = 0;
+    if (keyframe) {
+        tmp->flags = 1;
+        keyframe = false;
+    }
+    pkts_cache.push_back(tmp);
+}
+
+int Reader::num_video_pkts_in_cache()
+{
+    int result = 0;
+    for (int i = 0; i < pkts_cache.size(); i++) {
+        if (pkts_cache[i]->stream_index == video_stream_index)
+            result++;
+    }
+    return result;
+}
+
 void Reader::clear_pkts_cache(int mark)
 {
     while (pkts_cache.size() > mark) {
@@ -157,73 +316,6 @@ void Reader::clear_pkts_cache(int mark)
         pkts_cache.pop_front();
         av_packet_free(&jnk);
     }
-}
-
-void Reader::close_pipe()
-{
-    if (pipe) pipe->close();
-    pipe = nullptr;
-}
-
-void Reader::pipe_write(AVPacket* pkt)
-{
-    try {
-        if (!pipe) {
-            if (strcmp(str_audio_codec(), "aac")) {
-                std::stringstream str;
-                str << "Warning, " << str_audio_codec() 
-                << " audio codec is not supported for recording, only video packets will be recorded."
-                << "\nOnly aac codec is supported for this function";
-                if (infoCallback) infoCallback(str.str());
-                disable_audio = true;
-            }
-            pipe = new Pipe(fmt_ctx, (disable_video ? -1 : video_stream_index), (disable_audio ? -1 : audio_stream_index));
-            pipe->infoCallback = infoCallback;
-            pipe->errorCallback = errorCallback;
-            pipe->open(pipe_out_filename);
-            while (pkts_cache.size() > 0) {
-                AVPacket* tmp = pkts_cache.front();
-                pkts_cache.pop_front();
-                pipe->write(tmp);
-                av_packet_free(&tmp);
-            }
-        }
-
-        if (pipe) {
-            AVPacket* tmp = av_packet_clone(pkt);
-            pipe->write(tmp);
-            av_packet_free(&tmp);
-        }
-    }
-    catch (const Exception& e) {
-        if (pipe->opened)
-            close_pipe();
-        else {
-            if (pipe->fmt_ctx) avformat_free_context(pipe->fmt_ctx);
-        }
-        pipe = nullptr;
-        request_pipe_write = false;
-
-        std::stringstream str;
-        str << "Record function failure: " << e.what();
-        if (errorCallback) errorCallback(str.str());
-        else std::cout << str.str() << std::endl;
-    }
-}
-
-void Reader::fill_pkts_cache(AVPacket* pkt)
-{
-    if (pkt->stream_index == video_stream_index) {
-        if (pkt->flags) {
-            if (++keyframe_count >= keyframe_cache_size) {
-                clear_pkts_cache(keyframe_marker);
-                keyframe_count--;
-            }
-            keyframe_marker = pkts_cache.size();
-        }
-    }
-    AVPacket* tmp = av_packet_clone(pkt);
-    pkts_cache.push_back(tmp);
 }
 
 void Reader::start_from(int milliseconds)
@@ -438,32 +530,57 @@ AVRational Reader::audio_time_base()
     return result;
 }
 
-void Reader::showStreamParameters()
+const char* Reader::metadata(const std::string& key)
+{
+    const char* result = "";
+    AVDictionaryEntry* tag = nullptr;
+    tag = av_dict_get(fmt_ctx->metadata, (const char*)key.c_str(), tag, AV_DICT_IGNORE_SUFFIX);
+    if (tag) {
+        result = tag->value;
+    }
+    return result;
+}
+
+std::string Reader::getStreamInfo()
 {
     std::stringstream str;
-    str << "\n";
     if (has_video()) {
-        str << "\nVideo Stream Parameters"
-            << "\n  Video Codec:  " << str_video_codec()
-            << "\n  Pixel Format: " << str_pix_fmt()
-            << "\n  Resolution:   " << width() << " x " << height()
-            << "\n  Frame Rate:   " << av_q2d(frame_rate());
+        if (P->disable_video) {
+            str << "<center><h4>Video stream is disabled</h4></center>";
+        }
+        else {
+            str << "\n"
+                << "<table>"
+                << "<th colspan='2'>Video Stream Parameters</th>"
+                << "<tr><td>Video Codec:</td><td>" << str_video_codec() << "</td></tr>"
+                << "<tr><td>Pixel Format:</td><td>" << str_pix_fmt() << "</td></tr>"
+                << "<tr><td>Resolution:</td><td>" << width() << " x " << height() << "</td></tr>"
+                << "<tr><td>Frame Rate:</td><td>" << av_q2d(frame_rate()) << "</td></tr>"
+                << "</table>";
+        }
     }
     else {
-        str << "\nNo Video Stream Found";
+        str << "<center><h4>No Video Stream Found</h4></center>";
     }
     if (has_audio()) {
-        str << "\nAudio Stream Parameters"
-            << "\n  Audio Codec:   " << str_audio_codec()
-            << "\n  Sample Format: " << str_sample_format()
-            << "\n  Channels:      " << str_channel_layout()
-            << "\n  Sample Rate:   " << sample_rate();
+        if (P->disable_audio) {
+            str << "<center><h4>Audio stream is disabled</h4></center>";
+        }
+        else {
+            str << "\n"
+                << "<table>"
+                << "<th colspan='2'>Audio Stream Parameters</th>"
+                << "<tr><td>Audio Codec:</td><td>" << str_audio_codec() << "</td></tr>"
+                << "<tr><td>Sample Format:</td><td>" << str_sample_format() << "</td></tr>"
+                << "<tr><td>Channels:</td><td>" << str_channel_layout() << "</td></tr>"
+                << "<tr><td>Sample Rate:</td><td>" << sample_rate() << "</td></tr>"
+                << "</table>";
+        }
     }
     else {
-        str << "\nNo Audio Stream Found";
+        str << "<center><h4>No Audio Stream Found</h4></center>";
     }
-    
-    if (infoCallback) infoCallback(str.str());
+    return str.str();
 }
 
 }

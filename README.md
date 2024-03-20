@@ -1,40 +1,9 @@
 # avio
 
-Python library for processing media streams
+Python library for processing media streams designed for use in 
+[Onvif GUI](https://github.com/sr99622/libonvif).
 
-*Please Note*
-
-This python module has dependencies on development libraries which
-must be installed prior to installing.  This module is released as 
-a source distribution and is compiled on the host.
-
-**Debian or Ubuntu linux**, use the following command
-to install the dependencies.
-
-```
-sudo apt install cmake libavcodec-dev libavdevice-dev libsdl2-dev
-```
-
-**Windows**, please use Anaconda.  The dependencies may
-be installed using the following command under a conda prompt.  The 
-Visual Studio C++ compiler must be installed as well.
-
-```
-conda install cmake ffmpeg sdl2 -c conda-forge
-```
-
-If successful, install avio python module
-
-```
-pip install avio
-```
-To uninstall
-```
-pip uninstall avio
-```
-
-
-Copyright (c) 2022, 2023  Stephen Rhodes
+Copyright (c) 2022, 2023, 2024  Stephen Rhodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

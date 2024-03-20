@@ -117,11 +117,14 @@ public:
     ~Exception();
 
     const char* what() const throw () {
-        return buffer;
+        if (buffer)
+            return buffer;
+        else
+            return "Unknown exception";
     }
 
     char* tmp = nullptr;
-    const char* buffer;
+    const char* buffer = nullptr;
 };
 
 class ExceptionHandler

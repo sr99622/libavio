@@ -39,10 +39,10 @@
 namespace avio
 {
 
-enum class PlayState {
-    PLAY,
-    PAUSE,
-    QUIT
+enum AudioStatus {
+    UNINITIALIZED,
+    INIT_STARTED,
+    INITIALIZED
 };
 
 class Display
@@ -55,16 +55,10 @@ public:
     Reader* reader;
     void* player = nullptr;
     uint64_t hWnd = 0;
-  	std::function<void(const std::string&)> infoCallback = nullptr;
-	std::function<void(const std::string&)> errorCallback = nullptr;
 
     int initAudio(Filter* audioFilter);
-    int initVideo();
     static void AudioCallback(void* userdata, uint8_t* stream, int len);
-    void videoPresentation();
-    PlayState getEvents(std::vector<SDL_Event>* events);
-    void display();
-    void snapshot();
+    static void display(void* player);
     
     bool paused = false;
     Frame paused_frame;
@@ -79,10 +73,6 @@ public:
     std::string audioDeviceStatus() const;
     const char* sdlAudioFormatName(SDL_AudioFormat format) const;
 
-    SDL_Window* window = NULL;
-    SDL_Renderer* renderer = NULL;
-    SDL_Texture* texture = NULL;
-    SDL_Surface* screen = NULL;
     SDL_AudioSpec sdl = { 0 };
     SDL_AudioSpec have = { 0 };
 
@@ -90,8 +80,6 @@ public:
     Queue<Frame>* afq_in = nullptr;
     Queue<Frame>* vfq_out = nullptr;
     Queue<Frame>* afq_out = nullptr;
-
-    bool fullscreen = false;
 
     SDL_AudioDeviceID audioDeviceID;
     Clock rtClock;
@@ -102,18 +90,9 @@ public:
     uint8_t* swr_buffer = nullptr;
     int swr_buffer_size = 0;
     int audio_buffer_len = 0;
-    bool audio_eof = false;
     float volume = 1.0f;
     bool mute = false;
     int swr_ptr = 0;
-    bool first_pass = true;
-    int pass_count = 0;
-
-    int win_width = 0;
-    int win_height = 0;
-    int pix_width = 0;
-    int pix_height = 0;
-    AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 
     uint64_t start_time;
     uint64_t duration;

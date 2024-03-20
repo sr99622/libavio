@@ -28,7 +28,7 @@ Encoder::Encoder(Writer* writer, AVMediaType mediaType) : mediaType(mediaType), 
     if (mediaType == AVMEDIA_TYPE_AUDIO) this->writer->audioEncoder = this;
 }
 
-void Encoder::init()
+bool Encoder::init()
 {
     const char* str = av_get_media_type_string(mediaType);
     strMediaType = (str ? str : "UNKOWN MEDIA TYPE");
@@ -42,9 +42,10 @@ void Encoder::init()
         break;
     default:
         std::string msg = "Encoder constructor failed: unknown media type";
-        if (infoCallback) infoCallback(msg);
+        if (infoCallback) infoCallback(msg, writer->filename);
         else std::cout << msg << std::endl;
     }
+    return opened;
 }
 
 Encoder::~Encoder()
@@ -59,6 +60,8 @@ void Encoder::close()
     if (hw_frame)      av_frame_free(&hw_frame);
     if (hw_device_ctx) av_buffer_unref(&hw_device_ctx);
     if (cvt_frame)     av_frame_free(&cvt_frame);
+    if (swr_ctx)       swr_free(&swr_ctx);
+    if (sws_ctx)       sws_freeContext(sws_ctx);
     opened = false;
 }
 
@@ -85,7 +88,7 @@ void Encoder::openVideoStream()
         }
         else {
             codec = avcodec_find_encoder(fmt_ctx->oformat->video_codec);
-            if (!codec) throw Exception("avcodec_find_encoder");
+            if (!codec) throw Exception("Encoder avcodec_find_encoder");
         }
 
         ex.ck(stream = avformat_new_stream(fmt_ctx, NULL), ANS);
@@ -149,7 +152,7 @@ void Encoder::openVideoStream()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Encoder video stream constructor exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        if (infoCallback) infoCallback(str.str(), writer->filename);
         else std::cout << str.str() << std::endl;
         close();
     }
@@ -183,17 +186,9 @@ void Encoder::openAudioStream()
         enc_ctx->bit_rate = audio_bit_rate;
         enc_ctx->sample_rate = sample_rate;
         enc_ctx->channel_layout = channel_layout;
-        enc_ctx->channels = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
+        enc_ctx->channels = channels;
         enc_ctx->frame_size = nb_samples;
         stream->time_base = audio_time_base;
-
-        cvt_frame = av_frame_alloc();
-        cvt_frame->channels = enc_ctx->channels;
-        cvt_frame->channel_layout = enc_ctx->channel_layout;
-        cvt_frame->format = sample_fmt;
-        cvt_frame->nb_samples = nb_samples;
-        av_frame_get_buffer(cvt_frame, 0);
-        av_frame_make_writable(cvt_frame);
 
         if (fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
             enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -205,8 +200,8 @@ void Encoder::openAudioStream()
     }
     catch (const Exception& e) {
         std::stringstream str;
-        str << "AudioStream constructor exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
+        str << "Encoder audio stream constructor exception: " << e.what();
+        if (infoCallback) infoCallback(str.str(), writer->filename);
         else std::cout << str.str() << std::endl;
         close();
     }
@@ -228,11 +223,16 @@ int Encoder::encode(Frame& f)
     int ret = 0;
 
     try {
+        if (f.isValid()) {
+            f.set_pts(stream);
+            AVFrame* frame = f.m_frame;
 
-        f.set_pts(stream);
-        AVFrame* frame = f.m_frame;
+            if (first_pass) {
+                pts_offset = frame->pts;
+                first_pass = false;
+            }
+            frame->pts -= pts_offset;
 
-        if (frame) {
             if (mediaType == AVMEDIA_TYPE_VIDEO && !cmpFrame(frame)) {
                 if (!sws_ctx) {
                     ex.ck(sws_ctx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,
@@ -249,8 +249,6 @@ int Encoder::encode(Frame& f)
             if (mediaType == AVMEDIA_TYPE_AUDIO && !cmpFrame(frame)) {
                 if (!swr_ctx) {
                     ex.ck(swr_ctx = swr_alloc(), SA);
-                    av_opt_set_int(swr_ctx, "in_channel_count", frame->channels, 0);
-                    av_opt_set_int(swr_ctx, "out_channel_count", channels, 0);
                     av_opt_set_channel_layout(swr_ctx, "in_channel_layout", frame->channel_layout, 0);
                     av_opt_set_channel_layout(swr_ctx, "out_channel_layout", channel_layout, 0);
                     av_opt_set_int(swr_ctx, "in_sample_rate", frame->sample_rate, 0);
@@ -260,10 +258,19 @@ int Encoder::encode(Frame& f)
                     ex.ck(swr_init(swr_ctx), SI);
                 }
 
-                ex.ck(swr_convert(swr_ctx, cvt_frame->data, cvt_frame->nb_samples, (const uint8_t**)frame->data, frame->nb_samples), SC);
+                if (!cvt_frame) {
+                    cvt_frame = av_frame_alloc();
+                    cvt_frame->sample_rate = sample_rate;
+                    cvt_frame->channels = channels;
+                    cvt_frame->channel_layout = channel_layout;
+                    cvt_frame->format = sample_fmt;
+                    cvt_frame->nb_samples = nb_samples;
+                    av_frame_get_buffer(cvt_frame, 0);
+                    av_frame_make_writable(cvt_frame);
+                }
 
+                ex.ck(swr_convert(swr_ctx, cvt_frame->data, nb_samples, (const uint8_t**)frame->data, frame->nb_samples), SC);
                 cvt_frame->pts = av_rescale_q(total_samples, av_make_q(1, enc_ctx->sample_rate), enc_ctx->time_base);
-                cvt_frame->sample_rate = sample_rate;
                 total_samples += nb_samples;
                 frame = cvt_frame;
             }
@@ -278,13 +285,14 @@ int Encoder::encode(Frame& f)
             }
         }
         else {
-            ex.ck(ret = avcodec_send_frame(enc_ctx, NULL), "avcodec_send_frame");
+            ex.ck(ret = avcodec_send_frame(enc_ctx, NULL), "avcodec_send_frame null frame encountered");
         }
 
         while (ret >= 0) {
             ret = avcodec_receive_packet(enc_ctx, pkt);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                 break;
+            }
             else if (ret < 0) 
                 ex.ck(ret, CmdTag::ARP);
 
@@ -298,22 +306,23 @@ int Encoder::encode(Frame& f)
 
             tmp = av_packet_clone(pkt);
 
-            if (first_pass) {
-                pts_offset = tmp->pts;
-                first_pass = false;
+            if (output == EncoderOutput::FILE) {
+                writer->write(tmp);
+                av_packet_free(&tmp);
             }
-            tmp->pts -= pts_offset;
-            tmp->dts -= pts_offset;
+            else {
+                Packet p(tmp);
+                pkt_q->push_move(p);
+            }
 
-            writer->write(tmp);
 
         }
     }
     catch (const Exception& e) {
         if (strcmp(e.what(), "End of file")) {
             std::stringstream str;
-            str << strMediaType << " encode exception: " << e.what(); 
-            if (infoCallback) infoCallback(str.str());
+            str << strMediaType << " encode exception -- " << e.what(); 
+            if (infoCallback) infoCallback(str.str(), writer->filename);
             else std::cout << str.str() << std::endl;
         }
     }

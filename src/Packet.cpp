@@ -34,7 +34,6 @@ Packet::~Packet()
 Packet::Packet(AVPacket* src)
 {
     if (m_pkt) av_packet_free(&m_pkt);
-    //m_pkt = av_packet_clone(src);
     m_pkt = src;
 }
 
@@ -93,6 +92,12 @@ std::string Packet::description() const
     }
 
     return str.str();
+}
+
+void Packet::invalidate()
+{
+    if (m_pkt) av_packet_free(&m_pkt);
+    m_pkt = nullptr;
 }
 
 }

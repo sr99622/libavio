@@ -18,11 +18,24 @@
 *********************************************************************/
 
 #include <algorithm>
+#include <cmath>
 #include "Player.h"
 #include "avio.h"
 
 namespace avio
 {
+
+bool Player::operator==(const Player& other) const
+{
+    bool result = false;
+
+    if (!uri.empty() && !other.uri.empty()) {
+        if (uri == other.uri)
+            result = true;
+    }
+
+    return result;
+}
 
 bool Player::isPaused()
 {
@@ -37,10 +50,24 @@ void Player::setMute(bool arg)
     if (display) display->mute = arg;
 }
 
+bool Player::isMuted()
+{
+    bool result = mute;
+    if (display) result = display->mute;
+    return result;
+}
+
 void Player::setVolume(int arg)
 {
     volume = arg;
     if (display) display->volume = (float)arg / 100.0f;
+}
+
+int Player::getVolume()
+{
+    int result = volume;
+    if (display) result = display->volume * 100;
+    return result;
 }
 
 void Player::togglePaused()
@@ -51,6 +78,32 @@ void Player::togglePaused()
 void Player::seek(float arg)
 {
     if (reader) reader->request_seek(arg);
+}
+
+int64_t Player::pipeBytesWritten()
+{
+    int64_t result = 0;
+    if (reader) result = reader->pipe_bytes_written;
+    return result;
+}
+
+void Player::startFileBreakPipe(const std::string& filename)
+{
+    if (reader) reader->pipe_out_filename = filename;
+    std::thread thread([&]() { fileBreakPipe(); });
+    thread.detach();
+}
+
+void Player::fileBreakPipe()
+{
+    if (reader) {
+        if (reader->request_pipe_write) {
+            reader->request_pipe_write = false;
+            while (reader->pipe) 
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            reader->request_pipe_write = true;
+        }
+    }
 }
 
 void Player::togglePiping(const std::string& filename)
@@ -125,7 +178,7 @@ void Player::key_event(int keyCode)
     SDL_PushEvent(&event);
 }
 
-bool Player::checkForStreamHeader()
+bool Player::isCameraStream()
 {
     std::string tmp = uri;
 
@@ -145,6 +198,128 @@ bool Player::checkForStreamHeader()
     return false;
 }
 
+void Player::setMetaData(const std::string& key, const std::string& value)
+{
+    metadata[key] = value;
+}
+
+std::string Player::getVideoCodec() const {
+    std::string result = "Unknown codec";
+    if (reader)
+        result = reader->str_video_codec();
+    return result;
+}
+
+std::string Player::pipeOutFilename() const {
+    std::string result = "";
+    if (reader) {
+        result = reader->pipe_out_filename;
+    }
+    return result;
+}
+
+int Player::getVideoWidth() 
+{
+    int result = 0;
+    if (reader)
+        result = reader->width();
+    return result;
+}
+
+int Player::getVideoHeight() 
+{
+    int result = 0;
+    if (reader)
+        result = reader->height();
+    return result;
+}
+
+int Player::getVideoFrameRate() 
+{
+    int result = 0;
+    if (reader)
+        result = (int)av_q2d(reader->frame_rate());
+    return result;
+}
+
+int Player::getVideoBitrate() 
+{
+    int result = 0;
+    if (reader)
+        result = reader->video_bit_rate();
+    return result;
+}
+
+bool Player::hasAudio() 
+{
+    bool result = false;
+    if (reader)
+        result = reader->has_audio();
+    return result;
+}
+
+bool Player::hasVideo()
+{
+    bool result = false;
+    if (reader)
+        result = reader->has_video();
+    return result;
+}
+
+std::string Player::getAudioCodec() const {
+    std::string result = "unknown";
+    if (reader)
+        result = reader->str_audio_codec();
+    return result;
+}
+
+std::string Player::getAudioChannelLayout() const {
+    std::string result = "unknown";
+    if (reader)
+        result = reader->str_channel_layout();
+    return result;
+}
+
+int Player::getAudioBitrate() {
+    int result = 0;
+    if (reader)
+        result = reader->audio_bit_rate();
+    return result;
+}
+
+int Player::getAudioSampleRate() {
+    int result = 0;
+    if (reader)
+        result = reader->sample_rate();
+    return result;
+}
+
+int Player::getCacheSize() 
+{
+    int result = -1;
+    if (reader)
+        result = reader->vpq->size();
+    return result;
+}
+
+void Player::clearCache()
+{
+    if (reader) {
+        if (reader->vpq)
+            reader->vpq->clear();
+        if (reader->apq)
+            reader->apq->clear();
+    }
+}
+
+std::string Player::getStreamInfo() const
+{
+    std::string result("");
+    if (reader) 
+        result = reader->getStreamInfo();
+    return result;
+}
+
 void Player::start()
 {
     std::thread process_thread([&]() { run(); });
@@ -160,6 +335,7 @@ void Player::run()
     std::thread* audio_decoder_thread = nullptr;
     std::thread* audio_filter_thread  = nullptr;
     std::thread* audio_encoder_thread = nullptr;
+    std::thread* display_thread       = nullptr;
 
     try {
         running = true;
@@ -173,22 +349,16 @@ void Player::run()
         afq_filter  = new Queue<Frame>;
         afq_display = new Queue<Frame>;
 
-        reader = new Reader(uri.c_str());
-        reader->errorCallback = errorCallback;
-        reader->infoCallback = infoCallback;
-        reader->disable_video = disable_video;
-        reader->disable_audio = disable_audio;
-        reader->keyframe_cache_size = keyframe_cache_size;
+        reader = new Reader(uri.c_str(), this);
+        duration = reader->duration();
 
         if (disable_video) {
-            std::cout << "player video disabled" << std::endl;
+            infoCallback("player video disabled", uri);
         }
 
         if (disable_audio) {
-            std::cout << "player audio disabled" << std::endl;
+            infoCallback("player audio disabled", uri);
         }
-
-        reader->showStreamParameters();
 
         writer = new Writer("mp4");
         writer->infoCallback = infoCallback;
@@ -211,15 +381,17 @@ void Player::run()
             videoFilter->errorCallback = errorCallback;
             videoFilter->infoCallback = infoCallback;
 
-            bool video_encoder_enabled = true;
-            if (video_encoder_enabled) {
+            if (post_encode) {
                 
                 videoEncoder = new Encoder(writer, AVMEDIA_TYPE_VIDEO);
                 videoEncoder->frame_q = vfq_display;
                 videoEncoder->width = videoFilter->width();
                 videoEncoder->height = videoFilter->height();
                 videoEncoder->frame_rate = reader->frame_rate();
-                videoEncoder->video_time_base = reader->video_time_base();
+                if (adjust_time_base)
+                    videoEncoder->video_time_base = av_make_q(round(av_q2d(videoEncoder->frame_rate)), 1);
+                else
+                    videoEncoder->video_time_base = reader->video_time_base();
                 videoEncoder->video_bit_rate = reader->video_bit_rate();
 
                 videoEncoder->gop_size = 30;
@@ -252,8 +424,7 @@ void Player::run()
             audioFilter->errorCallback = errorCallback;
             audioFilter->infoCallback = infoCallback;
 
-            bool audio_encoder_enabled = true;
-            if (audio_encoder_enabled) {
+            if (post_encode) {
                 audioEncoder = new Encoder(writer, AVMEDIA_TYPE_AUDIO);
                 audioEncoder->frame_q = afq_display;
                 audioEncoder->sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -270,18 +441,10 @@ void Player::run()
             }
         }
 
-        if (checkForStreamHeader()) {
+        if (isCameraStream()) {
             if (vpq_size) reader->apq_max_size = vpq_size;
             if (apq_size) reader->vpq_max_size = vpq_size;
         }
-
-        reader_thread = new std::thread(read, reader, this);
-        if (videoDecoder) video_decoder_thread = new std::thread(decode, videoDecoder);
-        if (videoFilter)  video_filter_thread  = new std::thread(filter, videoFilter);
-        if (videoEncoder) video_encoder_thread = new std::thread(write, writer, videoEncoder);
-        if (audioDecoder) audio_decoder_thread = new std::thread(decode, audioDecoder);
-        if (audioFilter)  audio_filter_thread  = new std::thread(filter, audioFilter);
-        if (audioEncoder) audio_encoder_thread = new std::thread(write, writer, audioEncoder);
 
         display = new Display(reader, this);
         if (videoFilter) {
@@ -291,7 +454,10 @@ void Player::run()
         }
         if (audioFilter) {
             display->afq_in = audioFilter->frame_out_q;
-            display->initAudio(audioFilter);
+            if (!hidden) {
+                if (display->initAudio(audioFilter))
+                    disable_audio = true;
+            }
             if (audioEncoder)
                 display->afq_out = afq_display;
         }
@@ -299,63 +465,75 @@ void Player::run()
         display->volume = (float)volume / 100.0f;
         display->hWnd = hWnd;
 
-        if (cbMediaPlayingStarted) cbMediaPlayingStarted(reader->duration());
-        display->display();
+        reader_thread = new std::thread(read, reader);
+        if (videoDecoder) video_decoder_thread = new std::thread(decode, videoDecoder);
+        if (videoFilter)  video_filter_thread  = new std::thread(filter, videoFilter);
+        if (videoEncoder) video_encoder_thread = new std::thread(write, writer, videoEncoder);
+        if (audioDecoder) audio_decoder_thread = new std::thread(decode, audioDecoder);
+        if (audioFilter)  audio_filter_thread  = new std::thread(filter, audioFilter);
+        if (audioEncoder) audio_encoder_thread = new std::thread(write, writer, audioEncoder);
+
+        if (mediaPlayingStarted) mediaPlayingStarted(uri);
+
+        display_thread = new std::thread(Display::display, this);
+        display_thread->join();
 
         if (isRecording()) 
             toggleRecording("");
 
         running = false;
+
+        if (reader) {
+            if (reader->vpq) reader->vpq->close();
+            if (reader->apq) reader->apq->close();
+        }
+
+        if (reader_thread) reader_thread->join();
+        if (video_decoder_thread) video_decoder_thread->join();
+        if (video_filter_thread)  video_filter_thread->join();
+        if (video_encoder_thread) video_encoder_thread->join();
+        if (audio_decoder_thread) audio_decoder_thread->join();
+        if (audio_filter_thread)  audio_filter_thread->join();
+        if (audio_encoder_thread) audio_encoder_thread->join();
+
+        if (reader_thread) delete reader_thread;
+        if (video_decoder_thread) delete video_decoder_thread;
+        if (video_filter_thread)  delete video_filter_thread;
+        if (video_encoder_thread) delete video_encoder_thread;
+        if (audio_decoder_thread) delete audio_decoder_thread;
+        if (audio_filter_thread)  delete audio_filter_thread;
+        if (audio_encoder_thread) delete audio_encoder_thread;
+
+        if (reader)       delete reader;
+        if (writer)       delete writer;
+        if (videoFilter)  delete videoFilter;
+        if (videoDecoder) delete videoDecoder;
+        if (videoEncoder) delete videoEncoder;
+        if (audioFilter)  delete audioFilter;
+        if (audioDecoder) delete audioDecoder;
+        if (audioEncoder) delete audioEncoder;
+        if (display)      delete display;
+
+        if (vpq_reader)  delete  vpq_reader;  
+        if (vfq_decoder) delete  vfq_decoder;
+        if (vfq_filter)  delete  vfq_filter;
+        if (vfq_display) delete  vfq_display;
+        if (apq_reader)  delete  apq_reader;
+        if (afq_decoder) delete  afq_decoder;
+        if (afq_filter)  delete  afq_filter;
+        if (afq_display) delete  afq_display;
+
+        if (mediaPlayingStopped) mediaPlayingStopped(uri);
+
     }
     catch (const Exception& e) {
-        if (errorCallback)
-            errorCallback(e.what());
+        if (errorCallback) {
+            errorCallback(e.what(), uri, request_reconnect);
+        }
         else 
             std::cout << e.what() << std::endl;
         running = false;
     }
-    
-    if (reader) {
-        if (reader->vpq) reader->vpq->close();
-        if (reader->apq) reader->apq->close();
-    }
-
-    if (reader_thread) reader_thread->join();
-    if (video_decoder_thread) video_decoder_thread->join();
-    if (video_filter_thread)  video_filter_thread->join();
-    if (video_encoder_thread) video_encoder_thread->join();
-    if (audio_decoder_thread) audio_decoder_thread->join();
-    if (audio_filter_thread)  audio_filter_thread->join();
-    if (audio_encoder_thread) audio_encoder_thread->join();
-
-    if (reader_thread) delete reader_thread;
-    if (video_decoder_thread) delete video_decoder_thread;
-    if (video_filter_thread)  delete video_filter_thread;
-    if (video_encoder_thread) delete video_encoder_thread;
-    if (audio_decoder_thread) delete audio_decoder_thread;
-    if (audio_filter_thread)  delete audio_filter_thread;
-    if (audio_encoder_thread) delete audio_encoder_thread;
-
-    if (reader)       delete reader;
-    if (writer)       delete writer;
-    if (videoFilter)  delete videoFilter;
-    if (videoDecoder) delete videoDecoder;
-    if (videoEncoder) delete videoEncoder;
-    if (audioFilter)  delete audioFilter;
-    if (audioDecoder) delete audioDecoder;
-    if (audioEncoder) delete audioEncoder;
-    if (display)      delete display;
-
-    if (vpq_reader)  delete  vpq_reader;  
-    if (vfq_decoder) delete  vfq_decoder;
-    if (vfq_filter)  delete  vfq_filter;
-    if (vfq_display) delete  vfq_display;
-    if (apq_reader)  delete  apq_reader;
-    if (afq_decoder) delete  afq_decoder;
-    if (afq_filter)  delete  afq_filter;
-    if (afq_display) delete  afq_display;
-
-    if (cbMediaPlayingStopped) cbMediaPlayingStopped();
     
 }
 

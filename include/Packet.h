@@ -38,6 +38,7 @@ public:
     Packet& operator=(const Packet& other);
     Packet& operator=(Packet&& other) noexcept;
     bool isValid() const { return m_pkt ? true : false; }
+    void invalidate();
     std::string description() const;
 
     AVPacket* m_pkt = nullptr;

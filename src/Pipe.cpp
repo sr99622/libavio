@@ -19,14 +19,18 @@
 
 #include "Pipe.h"
 #include "Player.h"
+#include "Decoder.h"
+#include "Reader.h"
 
 namespace avio
 {
 
-Pipe::Pipe(AVFormatContext* reader_fmt_ctx, int video_stream_index, int audio_stream_index) : 
-    reader_fmt_ctx(reader_fmt_ctx),
+Pipe::Pipe(AVFormatContext* input_fmt_ctx, int video_stream_index, int audio_stream_index, void* decoder, void* encoder) : 
+    input_fmt_ctx(input_fmt_ctx),
     video_stream_index(video_stream_index), 
-    audio_stream_index(audio_stream_index)
+    audio_stream_index(audio_stream_index),
+    decoder(decoder),
+    encoder(encoder)
 {
 
 }
@@ -39,30 +43,37 @@ Pipe::~Pipe()
 AVCodecContext* Pipe::getContext(AVMediaType mediaType)
 {
     AVCodecContext* enc_ctx = nullptr;
-    std::string strMediaType = "unknown";
 
-    int stream_index = -1;
-
-    if (mediaType == AVMEDIA_TYPE_VIDEO) {
-        strMediaType = "video";
-        stream_index = video_stream_index;
+    if (mediaType == AVMEDIA_TYPE_VIDEO && video_stream_index > -1) {
+        AVStream* stream = nullptr;
+        stream = input_fmt_ctx->streams[video_stream_index];
+        if (stream->avg_frame_rate.den)
+            encoder_frame_rate = stream->avg_frame_rate;
+        else
+            encoder_frame_rate = stream->r_frame_rate;
+        const AVCodec* enc = avcodec_find_encoder(stream->codecpar->codec_id);
+        if (!enc) throw Exception("could not find encoder");
+        ex.ck(enc_ctx = avcodec_alloc_context3(enc), AAC3);
+        ex.ck(avcodec_parameters_to_context(enc_ctx, stream->codecpar), APTC);
     }
-    else if (mediaType == AVMEDIA_TYPE_AUDIO) {
-        strMediaType = "audio";
-        stream_index = audio_stream_index;
-    }
 
-    if (stream_index < 0) return nullptr;
-    AVStream* stream = reader_fmt_ctx->streams[stream_index];
-    const AVCodec* enc = avcodec_find_encoder(stream->codecpar->codec_id);
-    if (!enc) throw Exception("could not find encoder");
-    ex.ck(enc_ctx = avcodec_alloc_context3(enc), AAC3);
-    ex.ck(avcodec_parameters_to_context(enc_ctx, stream->codecpar), APTC);
+    if (mediaType == AVMEDIA_TYPE_AUDIO && audio_stream_index > -1) {
+        AVStream* stream = nullptr;
+        if (encoder)
+            stream = ((Encoder*)encoder)->writer->fmt_ctx->streams[0];
+        else
+            stream = input_fmt_ctx->streams[audio_stream_index];
+
+        const AVCodec* enc = avcodec_find_encoder(stream->codecpar->codec_id);
+        if (!enc) throw Exception("could not find encoder");
+        ex.ck(enc_ctx = avcodec_alloc_context3(enc), AAC3);
+        ex.ck(avcodec_parameters_to_context(enc_ctx, stream->codecpar), APTC);
+    }
 
     return enc_ctx;
 }
 
-void Pipe::open(const std::string& filename)
+void Pipe::open(const std::string& filename, std::map<std::string, std::string>& metadata)
 {
     opened = false;
     ex.ck(avformat_alloc_output_context2(&fmt_ctx, NULL, NULL, filename.c_str()), AAOC2);
@@ -72,7 +83,7 @@ void Pipe::open(const std::string& filename)
         ex.ck(video_stream = avformat_new_stream(fmt_ctx, NULL), ANS);
         if (video_ctx == NULL) throw Exception("no video reference context");
         ex.ck(avcodec_parameters_from_context(video_stream->codecpar, video_ctx), APFC);
-        video_stream->time_base = reader_fmt_ctx->streams[video_stream_index]->time_base;
+        video_stream->time_base = input_fmt_ctx->streams[video_stream_index]->time_base;
     }
 
     audio_ctx = getContext(AVMEDIA_TYPE_AUDIO);
@@ -80,19 +91,27 @@ void Pipe::open(const std::string& filename)
         ex.ck(audio_stream = avformat_new_stream(fmt_ctx, NULL), ANS);
         if (audio_ctx == NULL) throw Exception("no audio reference context");
         ex.ck(avcodec_parameters_from_context(audio_stream->codecpar, audio_ctx), APFC);
-        audio_stream->time_base = reader_fmt_ctx->streams[audio_stream_index]->time_base;
+        audio_stream->time_base = input_fmt_ctx->streams[audio_stream_index]->time_base;
     }
 
     ex.ck(avio_open(&fmt_ctx->pb, filename.c_str(), AVIO_FLAG_WRITE), AO);
     opened = true;
-    ex.ck(avformat_write_header(fmt_ctx, NULL), AWH);
+    m_filename = filename;
+
+    std::map<std::string, std::string>::iterator it;
+    for(it = metadata.begin(); it != metadata.end(); ++it)
+        av_dict_set(&fmt_ctx->metadata, (const char*)it->first.c_str(), (const char*)it->second.c_str(), 0);
+
+    AVDictionary* options = nullptr;
+    av_dict_set(&options, "movflags", "use_metadata_tags", 0);
+    ex.ck(avformat_write_header(fmt_ctx, &options), AWH);
 
     video_next_pts = 0;
     audio_next_pts = 0;
 
     std::stringstream str;
     str << "Pipe opened write file: " << filename.c_str();
-    if (infoCallback) infoCallback(str.str());
+    if (infoCallback) infoCallback(str.str(), filename);
     else std::cout << str.str() << std::endl;
 }
 
@@ -100,7 +119,11 @@ void Pipe::adjust_pts(AVPacket* pkt)
 {
     if (pkt->stream_index == video_stream_index) {
         pkt->stream_index = video_stream->index;
-        pkt->dts = pkt->pts = video_next_pts;
+        double factor = 1;
+        if (encoder_frame_rate.den && onvif_frame_rate.den && onvif_frame_rate.num)
+            factor = av_q2d(av_div_q(encoder_frame_rate, onvif_frame_rate));
+        pkt->pts = (int64_t)(video_next_pts * factor);
+        pkt->dts = pkt->pts;
         video_next_pts += pkt->duration;
     }
     else if (pkt->stream_index == audio_stream_index) {
@@ -110,24 +133,72 @@ void Pipe::adjust_pts(AVPacket* pkt)
     }
 }
 
+void Pipe::transcode(AVPacket* pkt)
+{
+    ((Decoder*)decoder)->decode(pkt);
+    while (((Decoder*)decoder)->frame_q->size() > 0) {
+        Frame f;
+        ((Decoder*)decoder)->frame_q->pop_move(f);
+        encode(f);
+    }
+}
+
+int Pipe::encode(Frame& f) {
+    int result = ((Encoder*)encoder)->encode(f);
+    while (((Encoder*)encoder)->pkt_q->size() > 0) {
+        Packet p;
+        ((Encoder*)encoder)->pkt_q->pop_move(p);
+        p.m_pkt->stream_index = audio_stream_index;
+        if (p.isValid()) {
+            adjust_pts(p.m_pkt);
+            try {
+                ex.ck(av_interleaved_write_frame(fmt_ctx, p.m_pkt), AIWF);
+            }
+            catch (const Exception& e) {
+                std::stringstream str;
+                str << "Pipe write audio transcode packet exception: " << e.what();
+                if (infoCallback) infoCallback(str.str(), m_filename);
+                else std::cout << str.str() << std::endl;
+            }
+        }
+    }
+    return result;
+}
+
 void Pipe::write(AVPacket* pkt)
 {
-    adjust_pts(pkt);
-
-    try {
-        ex.ck(av_interleaved_write_frame(fmt_ctx, pkt), AIWF);
+    std::string pkt_type = "Unkown Stream Type";
+    if (pkt->stream_index == video_stream_index) pkt_type = "Video";
+    if (pkt->stream_index == audio_stream_index) pkt_type = "Audio";
+    
+    if (pkt->stream_index == audio_stream_index && decoder && encoder) {
+        transcode(pkt);
     }
-    catch (const Exception& e) {
-        std::stringstream str;
-        str << "Pipe write packet exception: " << e.what();
-        if (infoCallback) infoCallback(str.str());
-        else std::cout << str.str() << std::endl;
+    else {
+        adjust_pts(pkt);
+
+        try {
+            if (pkt->stream_index == video_stream_index || pkt->stream_index == audio_stream_index) {
+                ex.ck(av_interleaved_write_frame(fmt_ctx, pkt), AIWF);
+            }
+        }
+        catch (const Exception& e) {
+            std::stringstream str;
+            str << "Pipe write " << pkt_type << " packet exception: " << e.what();
+            if (infoCallback) infoCallback(str.str(), m_filename);
+            else std::cout << str.str() << std::endl;
+        }
     }
 }
 
 void Pipe::close()
 {
     try {
+        if (decoder && encoder) {
+            transcode(NULL);
+            Frame f(nullptr);
+            encode(f);
+        }
 
         std::string url(fmt_ctx->url);
 
@@ -148,15 +219,21 @@ void Pipe::close()
             fmt_ctx = nullptr;
         }
 
+        if (decoder) delete (Decoder*)decoder;
+        if (encoder) {
+            delete ((Encoder*)encoder)->writer;
+            delete (Encoder*)encoder;
+        }
+
         std::stringstream str;
         str << "Pipe closed file: " << url;
-        if (infoCallback) infoCallback(str.str());
+        if (infoCallback) infoCallback(str.str(), m_filename);
         else std::cout << str.str() << std::endl;
     }
     catch (const Exception& e) {
         std::stringstream str;
         str << "Record to file close error: " << e.what();
-        if (errorCallback) errorCallback(str.str());
+        if (errorCallback) errorCallback(str.str(), m_filename, false);
         else std::cout << str.str() << std::endl;
     }
 }
