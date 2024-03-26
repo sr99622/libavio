@@ -249,13 +249,18 @@ void Reader::pipe_write(AVPacket* pkt)
 
 void Reader::fill_pkts_cache(AVPacket* pkt)
 {
+    int fps = 0;
+    int number_of_frames_to_buffer = 0;
     bool keyframe = false;
     if (pkt->stream_index == video_stream_index) {
         if (pkt->flags) {
             keyframe = true;
-            
-            int number_of_frames_to_buffer = (int)(av_q2d(P->onvif_frame_rate) * P->buffer_size_in_seconds);
-            //int number_of_frames_to_buffer = (int)(av_q2d(frame_rate()) * P->buffer_size_in_seconds);
+
+            // frame rate is often inaccurate in stream, prefer onvif
+            fps = (int)av_q2d(P->onvif_frame_rate);
+            if (!fps) fps = (int)av_q2d(frame_rate());
+            if (!fps) fps = 30;
+            number_of_frames_to_buffer = fps * P->buffer_size_in_seconds;
 
             if (number_of_frames_to_buffer > 0) {
                 if (number_of_frames_to_buffer < num_video_pkts_in_cache() -1) {
@@ -297,6 +302,14 @@ void Reader::fill_pkts_cache(AVPacket* pkt)
         keyframe = false;
     }
     pkts_cache.push_back(tmp);
+
+    // backstop to prevent unbounded cache growth
+    while (pkts_cache.size() > 200 * P->buffer_size_in_seconds) {
+        AVPacket* jnk = pkts_cache.front();
+        pkts_cache.pop_front();
+        av_packet_free(&jnk);
+    }
+
 }
 
 int Reader::num_video_pkts_in_cache()
