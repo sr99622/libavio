@@ -19,16 +19,23 @@
 
 cmake_minimum_required(VERSION 3.17)
 
-project(libavio VERSION 3.1.1)
+project(libavio VERSION 3.1.2)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 
-list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# pass current dir in from host when building in virtual env
+set (MY_CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+if (DEFINED ENV{CMAKE_CURRENT_SOURCE_DIR})
+    set(MY_CURRENT_DIR $ENV{CMAKE_CURRENT_SOURCE_DIR})
+endif()
+file(TO_CMAKE_PATH "${MY_CURRENT_DIR}" MY_DIR_VAR)
+
+list(PREPEND CMAKE_MODULE_PATH ${MY_DIR_VAR}/cmake)
 
 if(WIN32)
-    list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake-win)
+    list(PREPEND CMAKE_MODULE_PATH ${MY_DIR_VAR}/cmake-win)
     add_compile_options("/EHsc")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
     set(BUILD_SHARED_LIBS TRUE)
