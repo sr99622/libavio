@@ -147,6 +147,7 @@ public:
     int getCacheSize();
     void clearCache();
     std::string getStreamInfo() const;
+    std::string getFFMPEGVersions() const;
 
 };
 

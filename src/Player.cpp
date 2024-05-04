@@ -320,6 +320,17 @@ std::string Player::getStreamInfo() const
     return result;
 }
 
+std::string Player::getFFMPEGVersions() const
+{
+    std::stringstream str;
+    str << LIBAVCODEC_IDENT << " " 
+        << LIBAVFILTER_IDENT << " "
+        << LIBAVFORMAT_IDENT << " "
+        << LIBAVUTIL_IDENT << " "
+        << LIBSWSCALE_IDENT;
+    return str.str();
+}
+
 void Player::start()
 {
     std::thread process_thread([&]() { run(); });
