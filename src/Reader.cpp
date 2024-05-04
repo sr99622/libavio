@@ -51,11 +51,17 @@ Reader::Reader(const char* filename, void* player) : player(player)
 {
     try {
         AVDictionary* opts = nullptr;
+        int timeout_us = MAX_TIMEOUT * 1000000;
 
-        if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(59, 0, 0)) 
-            av_dict_set(&opts, "timeout", "5000000", 0);
-        else 
-            av_dict_set(&opts, "stimeout", "5000000", 0);
+        if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(60, 0, 0)) {
+            av_dict_set_int(&opts, "timeout", timeout_us, 0);
+        }
+        else {
+            if (LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(59, 0, 0))
+                av_dict_set(&opts, "timeout", "5000000", 0);
+            else 
+                av_dict_set(&opts, "stimeout", "5000000", 0);
+        }
 
         ex.ck(avformat_open_input(&fmt_ctx, filename, nullptr, &opts), CmdTag::AOI);
     
