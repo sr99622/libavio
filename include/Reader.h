@@ -60,12 +60,14 @@ public:
 	bool seeking();
 	void start_from(int milliseconds);
 	void end_at(int milliseconds);
-	//void showStreamParameters();
 	std::string getStreamInfo();
 
 	int64_t start_time();
 	int64_t duration();
 	int64_t bit_rate();
+
+	time_t timeout_start = time(nullptr);
+	std::string timeout_msg;
 
 	bool has_video();
 	int width();
@@ -84,7 +86,10 @@ public:
 	int sample_rate();
 	int frame_size();
 
+#if LIBAVCODEC_VERSION_MAJOR < 61
 	uint64_t channel_layout();
+#endif
+
 	std::string str_channel_layout();
 	AVSampleFormat sample_format();
 	const char* str_sample_format();

@@ -294,6 +294,13 @@ int Player::getAudioSampleRate() {
     return result;
 }
 
+int Player::getAudioFrameSize() {
+    int result = 0;
+    if (reader)
+        result = reader->frame_size();
+    return result;
+}
+
 int Player::getCacheSize() 
 {
     int result = -1;
@@ -364,11 +371,11 @@ void Player::run()
         duration = reader->duration();
 
         if (disable_video) {
-            infoCallback("player video disabled", uri);
+            if(infoCallback) infoCallback("player video disabled", uri);
         }
 
         if (disable_audio) {
-            infoCallback("player audio disabled", uri);
+            if (infoCallback) infoCallback("player audio disabled", uri);
         }
 
         writer = new Writer("mp4");
@@ -443,11 +450,18 @@ void Player::run()
                 audioEncoder->sample_rate = reader->sample_rate();
                 audioEncoder->audio_time_base = reader->audio_time_base();
                 audioEncoder->nb_samples = reader->frame_size();
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
                 audioEncoder->channels = reader->channels();
                 if (audioEncoder->channels = 1)
                     audioEncoder->set_channel_layout_mono();
                 else 
                     audioEncoder->set_channel_layout_stereo();
+#else
+                AVChannelLayout cl = reader->fmt_ctx->streams[reader->audio_stream_index]->codecpar->ch_layout;
+                av_channel_layout_copy(&audioEncoder->ch_layout, &cl);
+#endif
+                
                 audioEncoder->infoCallback = infoCallback;
             }
         }
@@ -514,6 +528,7 @@ void Player::run()
         if (audio_decoder_thread) delete audio_decoder_thread;
         if (audio_filter_thread)  delete audio_filter_thread;
         if (audio_encoder_thread) delete audio_encoder_thread;
+        delete display_thread;
 
         if (reader)       delete reader;
         if (writer)       delete writer;

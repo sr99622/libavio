@@ -123,12 +123,18 @@ AVFrame* Frame::copyFrame(AVFrame* src)
 
 	AVFrame* dst = av_frame_alloc();
 	dst->format = src->format;
-	dst->channel_layout = src->channel_layout;
 	dst->sample_rate = src->sample_rate;
 	dst->nb_samples = src->nb_samples;
-	dst->channels = src->channels;
 	dst->width = src->width;
 	dst->height = src->height;
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
+	dst->channels = src->channels;
+	dst->channel_layout = src->channel_layout;
+#else
+	av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
+#endif
+
 	av_frame_get_buffer(dst, 0);
 	av_frame_make_writable(dst);
 	av_frame_copy_props(dst, src);
@@ -163,8 +169,15 @@ std::string Frame::description() const
 		else if (mediaType() == AVMEDIA_TYPE_AUDIO) {
 			const char* sample_fmt_name = av_get_sample_fmt_name((AVSampleFormat)m_frame->format);
 			char buf[256];
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
 			av_get_channel_layout_string(buf, 256, m_frame->channels, m_frame->channel_layout);
 			str << "AUDIO FRAME, nb_samples: " << m_frame->nb_samples << ", channels: " << m_frame->channels
+#else
+			av_channel_layout_describe(&m_frame->ch_layout, buf, 256);
+			str << "AUDIO FRAME, nb_samples: " << m_frame->nb_samples << ", channels: " << m_frame->ch_layout.nb_channels
+#endif
+
 				<< ", format: " << (sample_fmt_name ? sample_fmt_name : "unknown sample format")
 				<< ", sample_rate: " << m_frame->sample_rate
 				<< ", channel_layout: " << buf 
@@ -253,7 +266,13 @@ int Frame::sample_rate()
 int64_t Frame::channels()
 {
 	int64_t result = 0;
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
 	if (m_frame) result = m_frame->channels;
+#else
+	if (m_frame) result = m_frame->ch_layout.nb_channels;
+#endif
+
 	return result;
 }
 

@@ -118,7 +118,12 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
     }
     catch (const Exception& e) {
         std::stringstream str;
-        str << "Decoder constructor exception: " << e.what();
+        std::string msg = e.what();
+        if (msg.find("av_hwdevice_ctx_create") != std::string::npos)
+            msg = "Hardware decoder not supported";
+        
+        str << "Decoder constructor exception: " << msg;
+        ((Player*)reader->player)->request_reconnect = false;
         throw Exception(str.str());
     }
 }
@@ -145,8 +150,7 @@ int Decoder::decode(AVPacket* pkt)
     if (!dec_ctx) throw Exception("dec_ctx null");
 
     if (dec_ctx->opaque && pkt) {
-        const char* status = (const char *)dec_ctx->opaque;
-        if (strcmp("good", status))
+        if (strcmp(good, (const char *)dec_ctx->opaque))
             throw Exception("incompatible hardware decoder");
     }
 

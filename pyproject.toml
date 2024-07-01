@@ -23,7 +23,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "avio"
-version = "3.1.2"
+version = "3.2.0"
 authors = [
     { name="Stephen Rhodes", email="sr99622@gmail.com" },
 ]

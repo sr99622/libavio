@@ -135,19 +135,25 @@ void Pipe::adjust_pts(AVPacket* pkt)
 
 void Pipe::transcode(AVPacket* pkt)
 {
-    ((Decoder*)decoder)->decode(pkt);
-    while (((Decoder*)decoder)->frame_q->size() > 0) {
-        Frame f;
-        ((Decoder*)decoder)->frame_q->pop_move(f);
-        encode(f);
+    try {
+        ((Decoder*)decoder)->decode(pkt);
+        while (((Decoder*)decoder)->frame_q->size() > 0) {
+            Frame f;
+            ((Decoder*)decoder)->frame_q->pop_move(f);
+            encode(f);
+        }
     }
+    catch (const QueueClosedException& e) {}
 }
 
 int Pipe::encode(Frame& f) {
     int result = ((Encoder*)encoder)->encode(f);
     while (((Encoder*)encoder)->pkt_q->size() > 0) {
         Packet p;
-        ((Encoder*)encoder)->pkt_q->pop_move(p);
+        try {
+            ((Encoder*)encoder)->pkt_q->pop_move(p);
+        }
+        catch (const QueueClosedException& e) {}
         p.m_pkt->stream_index = audio_stream_index;
         if (p.isValid()) {
             adjust_pts(p.m_pkt);
@@ -233,7 +239,7 @@ void Pipe::close()
     catch (const Exception& e) {
         std::stringstream str;
         str << "Record to file close error: " << e.what();
-        if (errorCallback) errorCallback(str.str(), m_filename, false);
+        if (infoCallback) infoCallback(str.str(), m_filename);
         else std::cout << str.str() << std::endl;
     }
 }

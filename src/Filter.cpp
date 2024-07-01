@@ -91,11 +91,18 @@ void Filter::initAudio()
     const AVFilter* buf_src = avfilter_get_by_name("abuffer");
     const AVFilter* buf_sink = avfilter_get_by_name("abuffersink");
 
+    AVRational time_base = decoder->reader->fmt_ctx->streams[decoder->reader->audio_stream_index]->time_base;
+
     //static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_U8, AV_SAMPLE_FMT_NONE };
     //static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE };
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_NONE };
 
     try {
+
+        ex.ck(frame = av_frame_alloc(), AFA);
+        ex.ck(graph = avfilter_graph_alloc(), AGA);
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
         if (decoder->dec_ctx->channel_layout && av_get_channel_layout_nb_channels(decoder->dec_ctx->channel_layout) == decoder->dec_ctx->channels)
             m_channel_layout = decoder->dec_ctx->channel_layout;
 
@@ -108,12 +115,32 @@ void Filter::initAudio()
         if (m_channel_layout)
             str << ":channel_layout=0x" << std::hex << m_channel_layout;
 
-        ex.ck(frame = av_frame_alloc(), AFA);
-        ex.ck(graph = avfilter_graph_alloc(), AGA);
         ex.ck(avfilter_graph_create_filter(&src_ctx, buf_src, "buf_src", str.str().c_str(), nullptr, graph), AGCF);
         ex.ck(avfilter_graph_create_filter(&sink_ctx, buf_sink, "buf_sink", nullptr, nullptr, graph), AGCF);
         ex.ck(av_opt_set_int_list(sink_ctx, "sample_fmts", sample_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN), AOSIL);
         ex.ck(av_opt_set_int(sink_ctx, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN), AOSI);
+#else
+        if (decoder->dec_ctx->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+            av_channel_layout_default(&decoder->dec_ctx->ch_layout, decoder->dec_ctx->ch_layout.nb_channels);
+
+        char args[512];
+        int ret = 0;
+
+        ret = snprintf(args, sizeof(args),
+            "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=",
+             time_base.num, time_base.den, decoder->dec_ctx->sample_rate,
+             av_get_sample_fmt_name(decoder->dec_ctx->sample_fmt));
+        av_channel_layout_describe(&decoder->dec_ctx->ch_layout, args + ret, sizeof(args) - ret);
+
+        ex.ck(frame = av_frame_alloc(), AFA);
+        ex.ck(graph = avfilter_graph_alloc(), AGA);
+        ex.ck(avfilter_graph_create_filter(&src_ctx, buf_src, "in", args, nullptr, graph), AGCF);
+        ex.ck(avfilter_graph_create_filter(&sink_ctx, buf_sink, "out", nullptr, nullptr, graph), AGCF);
+        ex.ck(av_opt_set_int_list(sink_ctx, "sample_fmts", sample_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN), AOSIL);
+        ex.ck(av_opt_set_int(sink_ctx, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN), AOSI);
+
+#endif
+
 
         if (desc.c_str()) {
             if (!outputs || !inputs) throw Exception("avfilter_inout_alloc");

@@ -47,7 +47,7 @@ public:
 	bool isValid() const { return m_frame ? true : false; }
 	void invalidate();
 	AVMediaType mediaType() const;
-	uint64_t pts() { return m_frame ? m_frame->pts : AV_NOPTS_VALUE; }
+	int64_t pts() { return m_frame ? m_frame->pts : AV_NOPTS_VALUE; }
 	void set_rts(AVStream* stream);  // called from Decoder::decode
 	void set_pts(AVStream* stream);  // called from Encoder::encode
 	std::string description() const;
@@ -62,7 +62,7 @@ public:
 	bool isPlanar();
 
 	AVFrame* m_frame = nullptr;
-	uint64_t m_rts;
+	int64_t m_rts;
 
 };
 

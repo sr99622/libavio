@@ -74,15 +74,22 @@ public:
     AVDictionary* opts = NULL;
 
     AVSampleFormat sample_fmt = AV_SAMPLE_FMT_NONE;
-    uint64_t channel_layout = 0;
     int audio_bit_rate = 0;
     int sample_rate = 0;
     int nb_samples = 0;
-    int channels = 0;
+    int64_t total_samples = 0;
     AVRational audio_time_base = av_make_q(0, 0);
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
+    uint64_t channel_layout = 0;
+    int channels = 0;
     void set_channel_layout_mono() { channel_layout = AV_CH_LAYOUT_MONO; }
     void set_channel_layout_stereo() { channel_layout = AV_CH_LAYOUT_STEREO; }
-    int64_t total_samples = 0;
+#else
+    AVChannelLayout ch_layout;
+    void set_channel_layout_mono() { ch_layout = AV_CHANNEL_LAYOUT_MONO; }
+    void set_channel_layout_stereo() { ch_layout = AV_CHANNEL_LAYOUT_STEREO; }
+#endif
 
     bool show_frames = false;
 

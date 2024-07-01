@@ -30,16 +30,12 @@ extern "C"
 
 #define MAX_TIMEOUT 5
 
-time_t timeout_start = time(nullptr);
-std::string timeout_msg;
-
 static int interrupt_callback(void *ctx)
 {
     avio::Reader* reader = (avio::Reader*)ctx;
-    time_t diff = time(nullptr) - timeout_start;
-
+    time_t diff = time(nullptr) - reader->timeout_start;
     if (diff > MAX_TIMEOUT) {
-        timeout_msg = "camera timeout";
+        reader->timeout_msg = "camera timeout";
         return 1;
     }
     return 0;
@@ -169,7 +165,7 @@ void Reader::close_pipe()
 
 Pipe* Reader::createPipe()
 {
-    Pipe* result = nullptr;
+    Pipe* pipe = nullptr;
     try {
         AudioEncoding audio_encoding = AudioEncoding::NONE;
         if (!strcmp(str_audio_codec(), "aac")) audio_encoding = AudioEncoding::AAC;
@@ -188,19 +184,23 @@ Pipe* Reader::createPipe()
             sample_rate() < 32000 ? encoder->sample_rate = 32000 : encoder->sample_rate = sample_rate();
             encoder->audio_time_base = av_make_q(1, encoder->sample_rate);
             encoder->audio_bit_rate = audio_bit_rate();
+#if LIBAVCODEC_VERSION_MAJOR < 61
             encoder->channels = channels();
             encoder->channel_layout = channel_layout();
+#else
+            av_channel_layout_copy(&encoder->ch_layout, &fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout);
+#endif
             encoder->infoCallback = P->infoCallback;
 
             if (encoder->init())  {
-                result = new Pipe(fmt_ctx, video_stream_index, audio_stream_index, decoder, encoder);
+                pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index, decoder, encoder);
             }
             else {
-                result = new Pipe(fmt_ctx, video_stream_index, -1);
+                pipe = new Pipe(fmt_ctx, video_stream_index, -1);
             }
         }
         else {
-            result = new Pipe(fmt_ctx, video_stream_index, P->disable_audio || (audio_encoding == AudioEncoding::NONE) ? -1 : audio_stream_index);
+            pipe = new Pipe(fmt_ctx, video_stream_index, P->disable_audio || (audio_encoding == AudioEncoding::NONE) ? -1 : audio_stream_index);
         }
 
         if (audio_encoding == AudioEncoding::NONE) {
@@ -209,26 +209,26 @@ Pipe* Reader::createPipe()
             if (P->infoCallback) P->infoCallback(str.str(), P->uri);
         }
 
-        result->infoCallback = P->infoCallback;
-        result->errorCallback = P->errorCallback;
-        result->onvif_frame_rate = P->onvif_frame_rate;
-        result->open(pipe_out_filename, P->metadata);
+        pipe->infoCallback = P->infoCallback;
+        pipe->errorCallback = P->errorCallback;
+        pipe->onvif_frame_rate = P->onvif_frame_rate;
+        pipe->open(pipe_out_filename, P->metadata);
     }
     catch (const Exception& e) {
-        if (result->opened)
+        if (pipe->opened)
             close_pipe();
         else {
-            if (result->fmt_ctx) avformat_free_context(result->fmt_ctx);
+            if (pipe->fmt_ctx) avformat_free_context(pipe->fmt_ctx);
         }
-        result = nullptr;
+        pipe = nullptr;
         request_pipe_write = false;
 
         std::stringstream str;
-        str << "Record function failure: " << e.what();
-        if (P->errorCallback) P->errorCallback(str.str(), P->uri, false);
+        str << "Output file creation failure: " << e.what();
+        if (P->infoCallback) P->infoCallback(str.str(), P->uri);
         else std::cout << str.str() << std::endl;
     }
-    return result;
+    return pipe;
 }
 
 void Reader::pipe_write(AVPacket* pkt)
@@ -458,7 +458,11 @@ int Reader::channels()
 {
     int result = -1;
     if (audio_stream_index >= 0)
+#if LIBAVCODEC_VERSION_MAJOR < 61
         result = fmt_ctx->streams[audio_stream_index]->codecpar->channels;
+#else
+        result = fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout.nb_channels;
+#endif
     return result;
 }
 
@@ -478,6 +482,7 @@ int Reader::frame_size()
     return result;
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 61
 uint64_t Reader::channel_layout()
 {
     uint64_t result = 0;
@@ -485,13 +490,21 @@ uint64_t Reader::channel_layout()
         result = fmt_ctx->streams[audio_stream_index]->codecpar->channel_layout;
     return result;
 }
+#endif
 
 std::string Reader::str_channel_layout()
 {
     char result[256] = { 0 };
     if (audio_stream_index >= 0) {
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
         uint64_t cl = fmt_ctx->streams[audio_stream_index]->codecpar->channel_layout;
         av_get_channel_layout_string(result, 256, channels(), cl);
+#else
+        AVChannelLayout cl = fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout;
+        av_channel_layout_describe(&cl, result, 256);
+#endif
+
     }
 
     return std::string(result);

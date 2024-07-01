@@ -185,10 +185,15 @@ void Encoder::openAudioStream()
         enc_ctx->sample_fmt = sample_fmt;
         enc_ctx->bit_rate = audio_bit_rate;
         enc_ctx->sample_rate = sample_rate;
-        enc_ctx->channel_layout = channel_layout;
-        enc_ctx->channels = channels;
         enc_ctx->frame_size = nb_samples;
         stream->time_base = audio_time_base;
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
+        enc_ctx->channel_layout = channel_layout;
+        enc_ctx->channels = channels;
+#else
+        av_channel_layout_copy(&enc_ctx->ch_layout, &ch_layout);
+#endif
 
         if (fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
             enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -211,9 +216,16 @@ bool Encoder::cmpFrame(AVFrame* frame)
 {
     if (mediaType == AVMEDIA_TYPE_VIDEO)
         return (frame->width == width && frame->height == height && frame->format == pix_fmt);
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
     if (mediaType == AVMEDIA_TYPE_AUDIO)
         return (frame->channels == channels && frame->channel_layout == channel_layout &&
             frame->nb_samples == nb_samples && frame->format == sample_fmt);
+#else
+        return (frame->ch_layout.nb_channels == ch_layout.nb_channels &&
+            frame->ch_layout.u.mask == ch_layout.u.mask &&
+            frame->nb_samples == nb_samples && frame->format == sample_fmt);
+#endif
 
     return false;
 }
@@ -249,8 +261,15 @@ int Encoder::encode(Frame& f)
             if (mediaType == AVMEDIA_TYPE_AUDIO && !cmpFrame(frame)) {
                 if (!swr_ctx) {
                     ex.ck(swr_ctx = swr_alloc(), SA);
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
                     av_opt_set_channel_layout(swr_ctx, "in_channel_layout", frame->channel_layout, 0);
                     av_opt_set_channel_layout(swr_ctx, "out_channel_layout", channel_layout, 0);
+#else
+                    av_opt_set_chlayout(swr_ctx, "in_chlayout", &frame->ch_layout, 0);
+                    av_opt_set_chlayout(swr_ctx, "out_chlayout", &ch_layout, 0);
+#endif
+                    
                     av_opt_set_int(swr_ctx, "in_sample_rate", frame->sample_rate, 0);
                     av_opt_set_int(swr_ctx, "out_sample_rate", sample_rate, 0);
                     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", (AVSampleFormat)frame->format, 0);
@@ -261,10 +280,16 @@ int Encoder::encode(Frame& f)
                 if (!cvt_frame) {
                     cvt_frame = av_frame_alloc();
                     cvt_frame->sample_rate = sample_rate;
-                    cvt_frame->channels = channels;
-                    cvt_frame->channel_layout = channel_layout;
                     cvt_frame->format = sample_fmt;
                     cvt_frame->nb_samples = nb_samples;
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
+                    cvt_frame->channels = channels;
+                    cvt_frame->channel_layout = channel_layout;
+#else
+                    av_channel_layout_copy(&cvt_frame->ch_layout, &ch_layout);
+#endif
+
                     av_frame_get_buffer(cvt_frame, 0);
                     av_frame_make_writable(cvt_frame);
                 }
