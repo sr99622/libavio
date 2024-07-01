@@ -36,7 +36,7 @@ list(PREPEND CMAKE_MODULE_PATH ${MY_DIR_VAR}/cmake)
 
 if(WIN32)
     list(PREPEND CMAKE_MODULE_PATH ${MY_DIR_VAR}/cmake-win)
-    add_compile_options("/EHsc")
+    add_compile_options(/EHsc /MT)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
     set(BUILD_SHARED_LIBS TRUE)
 endif()
@@ -113,4 +113,19 @@ if (NOT WITHOUT_PYTHON)
     target_include_directories(avio SYSTEM PUBLIC
         include
     )
+endif()
+
+IF (BUILD_TEST)
+    add_executable(avio-test
+        test/avio-test.cpp
+    )
+
+    target_link_libraries(avio-test PRIVATE
+        libavio
+    )
+
+    target_include_directories(avio-test PUBLIC
+        include
+    )
+
 endif()

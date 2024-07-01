@@ -39,9 +39,7 @@ public:
 	void flush();
 
 	int sample_rate() { return dec_ctx->sample_rate; }
-	int channels() { return dec_ctx->channels; }
 	int frame_size() { return reader->fmt_ctx->streams[stream_index]->codecpar->frame_size; }
-	uint64_t channel_layout() { return dec_ctx->channel_layout; }
 	AVSampleFormat sample_format() { return dec_ctx->sample_fmt; }
 	int bit_rate() { return dec_ctx->bit_rate; }
 	int width() { return dec_ctx->width; }

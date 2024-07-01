@@ -59,7 +59,10 @@ public:
 	Frame tmp;
 	std::string desc;
 
+#if LIBAVCODEC_VERSION_MAJOR < 61
 	uint64_t m_channel_layout = 0;
+	int64_t channel_layout() { return av_buffersink_get_channel_layout(sink_ctx); }
+#endif
 
 	int width() { return av_buffersink_get_w(sink_ctx); }
 	int height() { return av_buffersink_get_h(sink_ctx); }
@@ -68,7 +71,6 @@ public:
 	AVRational frame_rate() { return av_buffersink_get_frame_rate(sink_ctx); }
 	int sample_rate() { return av_buffersink_get_sample_rate(sink_ctx); }
 	int channels() { return av_buffersink_get_channels(sink_ctx); }
-	int64_t channel_layout() { return av_buffersink_get_channel_layout(sink_ctx); }
 	AVSampleFormat sample_format() { return (AVSampleFormat)av_buffersink_get_format(sink_ctx); }
 	int frame_size() { return decoder->frame_size(); }
 

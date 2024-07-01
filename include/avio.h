@@ -56,7 +56,7 @@ static void read(Reader* reader)
             }
 
             if (reader->vpq) {
-                if (player->isCameraStream() && (reader->vpq->size() == reader->vpq->max_size())) {
+                if (player->isCameraStream() && (reader->vpq->size() == reader->vpq->max_size()) && !pkt->flags) {
                     av_packet_free(&pkt);
                     player->infoCallback("dropping frames due to buffer overflow", player->uri);
                     if (player->packetDrop) player->packetDrop(player->uri);
@@ -97,13 +97,6 @@ static void read(Reader* reader)
                 reader->fill_pkts_cache(pkt);
             }
 
-            if (reader->stop_play_at_pts != AV_NOPTS_VALUE && pkt->stream_index == reader->seek_stream_index()) {
-                if (pkt->pts > reader->stop_play_at_pts) {
-                    av_packet_free(&pkt);
-                    break;
-                }
-            }
-
             Packet p(pkt);
             if (!player->hidden) {
                 if (pkt->stream_index == reader->video_stream_index) {
@@ -122,20 +115,20 @@ static void read(Reader* reader)
         }
     }
     catch (const QueueClosedException& e) {}
-    catch (const Exception& e) { 
-        reader->close_pipe();
-        reader->clear_pkts_cache(0);
+    catch (const Exception& e) {
         std::string msg(e.what());
         std::string mark("-138");
         if (msg.find(mark) != std::string::npos)
             msg = "No connection to server";
         std::stringstream str;
-        std::cout << str.str() << std::endl;
+        str << "read error: " << msg;
         if (player->errorCallback) player->errorCallback(str.str(), player->uri, true);
         else std::cout << str.str() << std::endl;
     }
 
     try {
+        reader->close_pipe();
+        reader->clear_pkts_cache(0);
         if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
         if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
@@ -162,7 +155,10 @@ static void decode(Decoder* decoder)
         if (decoder->errorCallback) decoder->errorCallback(str.str(), "", false);
     }
 
-    decoder->frame_q->push_move(Frame(nullptr));
+    try {
+        decoder->frame_q->push_move(Frame(nullptr));
+    }
+    catch (const QueueClosedException& e) {}
 }
 
 static void filter(Filter* filter)
@@ -183,8 +179,10 @@ static void filter(Filter* filter)
         str << "filter loop exception: " << e.what();
         if (filter->errorCallback) filter->errorCallback(str.str(), "", false);
     }
-
-    filter->frame_out_q->push_move(Frame(nullptr));
+    try {
+        filter->frame_out_q->push_move(Frame(nullptr));
+    }
+    catch (const QueueClosedException& e) {}
 }
 
 static void write(Writer* writer, Encoder* encoder)

@@ -144,10 +144,12 @@ public:
     std::string getAudioChannelLayout() const;
     int getAudioBitrate();
     int getAudioSampleRate();
+    int getAudioFrameSize();
     int getCacheSize();
     void clearCache();
     std::string getStreamInfo() const;
     std::string getFFMPEGVersions() const;
+    bool sync_audio = false;
 
 };
 

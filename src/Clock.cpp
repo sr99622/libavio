@@ -25,7 +25,7 @@ constexpr auto MAX_CLOCK_DIFF = 1000;
 namespace avio
 {
 
-	uint64_t Clock::milliseconds()
+int64_t Clock::milliseconds()
 {
 	if (!started) {
 		play_start = clock.now();
@@ -35,7 +35,7 @@ namespace avio
 	return std::chrono::duration_cast<std::chrono::milliseconds>(current - play_start).count();
 }
 
-uint64_t Clock::stream_time()
+int64_t Clock::stream_time()
 {
 	if (!started) {
 		play_start = clock.now();
@@ -45,43 +45,30 @@ uint64_t Clock::stream_time()
 	return milliseconds() - correction;
 }
 
-uint64_t Clock::update(uint64_t rts)
+int64_t Clock::update(int64_t rts)
 {
 	if (!started) {
 		play_start = clock.now();
 		started = true;
 	}
 
-	uint64_t current = milliseconds() - correction;
+	int64_t current = milliseconds() - correction;
 
 	if (current > rts) {
-		uint64_t diff = current - rts;
+		int64_t diff = current - rts;
 		if (diff > MAX_CLOCK_DIFF) {
 			correction -= (rts - current);
 		}
 		return 0;
 	}
 	else {
-		uint64_t diff = rts - current;
+		int64_t diff = rts - current;
 		if (diff > MAX_CLOCK_DIFF) {
 			correction += (current - rts);
 			diff = 0;
 		}
 		return diff;
 	}
-}
-
-int Clock::sync(uint64_t rts)
-{
-	if (!started) {
-		play_start = clock.now();
-		started = true;
-	}
-
-	uint64_t current = milliseconds() - correction;
-	int diff = rts - current;
-	correction -= diff;
-	return diff;
 }
 
 void Clock::pause(bool paused)

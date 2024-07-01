@@ -88,10 +88,11 @@ void Display::display(void* player)
                     break;
             }
 
-            P->display->paused_frame = P->display->f;
-
-            int delay = P->display->rtClock.update(P->display->f.m_rts - P->reader->start_time());
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+            int64_t delay = P->display->rtClock.update(P->display->f.m_rts - P->reader->start_time());
+            if (!P->isCameraStream() || P->sync_audio) {
+                P->display->paused_frame = P->display->f;
+                std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+            }
 
             if (P->renderCallback) P->renderCallback(P->display->f, *P);
             P->reader->last_video_pts = P->display->f.m_frame->pts;
@@ -121,9 +122,12 @@ void Display::display(void* player)
         }
     }
 
-    P->display->f.invalidate();
-    if (P->display->vfq_out)
-        P->display->vfq_out->push_move(P->display->f);
+    try {
+        P->display->f.invalidate();
+        if (P->display->vfq_out)
+            P->display->vfq_out->push_move(P->display->f);
+    }
+    catch (const QueueClosedException& e) {}
 }
 
 int Display::initAudio(Filter* audioFilter)
@@ -131,9 +135,12 @@ int Display::initAudio(Filter* audioFilter)
     int stream_sample_rate = audioFilter->sample_rate();
     AVSampleFormat stream_sample_format = audioFilter->sample_format();
     int stream_channels = audioFilter->channels();
-    uint64_t stream_channel_layout = audioFilter->channel_layout();
     int stream_nb_samples = audioFilter->frame_size();
     int ret = 0;
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
+    uint64_t stream_channel_layout = audioFilter->channel_layout();
+#endif
 
     try {
 
@@ -143,11 +150,13 @@ int Display::initAudio(Filter* audioFilter)
             stream_nb_samples = bytes_per_second * 0.02f / audio_frame_size;
         }
 
+#if LIBAVCODEC_VERSION_MAJOR < 61
         if (!stream_channel_layout || stream_channels != av_get_channel_layout_nb_channels(stream_channel_layout)) {
             stream_channel_layout = av_get_default_channel_layout(stream_channels);
             stream_channel_layout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
         }
         stream_channels = av_get_channel_layout_nb_channels(stream_channel_layout);
+#endif
 
         sdl.channels = stream_channels;
         sdl.freq = stream_sample_rate;
@@ -178,8 +187,17 @@ int Display::initAudio(Filter* audioFilter)
 
         audio_buffer_len = av_samples_get_buffer_size(NULL, sdl.channels, sdl.samples, sdl_sample_format, 1);
 
+#if LIBAVCODEC_VERSION_MAJOR < 61
         ex.ck(swr_ctx = swr_alloc_set_opts(NULL, stream_channel_layout, sdl_sample_format, stream_sample_rate,
             stream_channel_layout, stream_sample_format, stream_sample_rate, 0, NULL), SASO);
+#else
+        AVChannelLayout stream_channel_layout;
+        av_buffersink_get_ch_layout(audioFilter->sink_ctx, &stream_channel_layout);
+        ex.ck(swr_alloc_set_opts2(&swr_ctx, &stream_channel_layout, sdl_sample_format, stream_sample_rate,
+            &stream_channel_layout, stream_sample_format, stream_sample_rate, 0, NULL), SASO);
+        av_channel_layout_uninit(&stream_channel_layout);
+#endif
+
         ex.ck(swr_init(swr_ctx), SI);
 
         if (P->getAudioStatus && P->setAudioStatus) {
@@ -262,7 +280,13 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                 if (player->pyAudioCallback) f = player->pyAudioCallback(f, *player);
 
                 if (f.isValid()) {
+
+#if LIBAVCODEC_VERSION_MAJOR < 61
                     uint64_t channels = f.m_frame->channels;
+#else
+                    uint64_t channels = f.m_frame->ch_layout.nb_channels;
+#endif
+
                     int nb_samples = f.m_frame->nb_samples;
                     int format = f.m_frame->format;
                     const uint8_t** data = (const uint8_t**)&f.m_frame->data[0];
@@ -276,7 +300,16 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
                     swr_convert(d->swr_ctx, &d->swr_buffer, nb_samples, data, nb_samples);
 
-                    d->rtClock.sync(f.m_rts); 
+                    if (player->isCameraStream()) {
+                        int64_t delay = f.m_rts - d->rtClock.stream_time();
+                        if (delay > 0 && player->sync_audio) {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+                        }
+                    }
+                    else {
+                        d->rtClock.update(f.m_rts - player->reader->start_time());
+                    }
+
                     d->reader->seek_found_pts = AV_NOPTS_VALUE;
 
                     if (player->progressCallback) {
@@ -320,7 +353,6 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
 
         if (!d->mute)
             SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
-
     }
     catch (const Exception& e) { 
         std::stringstream str;

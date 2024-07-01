@@ -28,13 +28,12 @@ namespace avio
 class Clock
 {
 public:
-	uint64_t milliseconds();
-	uint64_t update(uint64_t rts);
-	uint64_t stream_time();
-	int sync(uint64_t rts);
+	int64_t milliseconds();
+	int64_t update(int64_t rts);
+	int64_t stream_time();
 	void pause(bool paused);
 
-	long long correction = 0;
+	int64_t correction = 0;
 
 private:
 	std::chrono::steady_clock clock;
