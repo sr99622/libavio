@@ -114,6 +114,7 @@ void Display::display(void* player)
                 P->display->f.invalidate();
 
         }
+        catch (const QueueClosedException& e) {}
         catch (const Exception& e) {
             std::stringstream str;
             str << "Display exception: " << e.what();
@@ -207,6 +208,7 @@ int Display::initAudio(Filter* audioFilter)
                 case AudioStatus::UNINITIALIZED:
                     P->setAudioStatus(AudioStatus::INIT_STARTED);
                     if (!SDL_WasInit(SDL_INIT_AUDIO)) {
+                        SDL_SetHint("SDL_AUDIODRIVER", SDL_GetAudioDriver(P->audio_driver_index));
                         if (SDL_Init(SDL_INIT_AUDIO)) {
                             std::stringstream str;
                             str << "SDL audio init error: " << SDL_GetError();
@@ -214,6 +216,9 @@ int Display::initAudio(Filter* audioFilter)
                         }
                         else {
                             P->setAudioStatus(AudioStatus::INITIALIZED);
+                            std::stringstream str;
+                            str << "Using SDL audio driver " << SDL_GetCurrentAudioDriver();
+                            if (P->infoCallback) P->infoCallback(str.str(), P->uri);
                         }
                     }
                 break;
@@ -231,10 +236,16 @@ int Display::initAudio(Filter* audioFilter)
             if (P->infoCallback) P->infoCallback("getAudioStatus callback function not set", P->uri);
             else std::cout << "getAudioStatus callback function not set" << std::endl;
             if (!SDL_WasInit(SDL_INIT_AUDIO)) {
+                SDL_SetHint("SDL_AUDIODRIVER", SDL_GetAudioDriver(P->audio_driver_index));
                 if (SDL_Init(SDL_INIT_AUDIO)) {
                     std::stringstream str;
                     str << "SDL audio init error: " << SDL_GetError();
                     throw Exception(str.str());
+                }
+                else {
+                    std::stringstream str;
+                    str << "Using SDL audio driver " << SDL_GetCurrentAudioDriver();
+                    if (P->infoCallback) P->infoCallback(str.str(), P->uri);
                 }
             }
         }
@@ -242,8 +253,12 @@ int Display::initAudio(Filter* audioFilter)
         audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &sdl, &have, 0);
         if (audioDeviceID == 0) {
             std::stringstream str;
-            str << "SDL_OpenAudioDevice exception: " << SDL_GetError();
-            throw Exception(str.str());
+            str << "SDL_OpenAudioDevice exception: " << SDL_GetError() << " audio will be disabled";
+            if (P->infoCallback) P->infoCallback(str.str(), P->uri);
+            else std::cout << str.str() << std::endl;
+            P->disable_audio = true;
+            return 0;
+            //throw Exception(str.str());
         }
 
         SDL_PauseAudioDevice(audioDeviceID, 0);
@@ -354,6 +369,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
         if (!d->mute)
             SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
     }
+    catch (const QueueClosedException& e) {}
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Audio callback exception: " << e.what();

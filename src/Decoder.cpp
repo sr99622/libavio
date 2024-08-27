@@ -101,8 +101,13 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
             ex.ck(av_hwdevice_ctx_create(&hw_device_ctx, hw_device_type, NULL, NULL, 0), AHCC);
             dec_ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
             dec_ctx->get_format = get_hw_format;
-            const char* hw_pix_fmt_name;
-            hw_pix_fmt_name = av_get_pix_fmt_name(hw_pix_fmt);
+            hwPixFmtName = av_get_pix_fmt_name(hw_pix_fmt);
+
+            if (hw_pix_fmt == AV_PIX_FMT_VAAPI && dec_ctx->codec_id != AV_CODEC_ID_H264) {
+                std::stringstream str;
+                str << "Hardware decoder VAAPI incompatible with codec " << dec_ctx->codec->long_name;
+                throw Exception(str.str());
+            }
 
             ex.ck(sws_ctx = sws_getContext(dec_ctx->width, dec_ctx->height, AV_PIX_FMT_NV12,
                 dec_ctx->width, dec_ctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL), SGC);
@@ -150,8 +155,12 @@ int Decoder::decode(AVPacket* pkt)
     if (!dec_ctx) throw Exception("dec_ctx null");
 
     if (dec_ctx->opaque && pkt) {
-        if (strcmp(good, (const char *)dec_ctx->opaque))
-            throw Exception("incompatible hardware decoder");
+        if (strcmp(good, (const char *)dec_ctx->opaque)) {
+            std::stringstream str;
+            str << "hardware decoder failed to initialize: " << hwPixFmtName;
+            std::cout << str.str() << std::endl;
+            errorCallback(str.str(), ((Player*)reader->player)->uri, false);
+        }
     }
 
     int ret = 0;
@@ -216,6 +225,7 @@ int Decoder::decode(AVPacket* pkt)
             frame_q->push_move(f);
         }
     }
+    catch (const QueueClosedException& e) {}
     catch (const Exception& e) {
         std::stringstream str;
         str << strMediaType << " Decoder::decode exception: " << e.what();

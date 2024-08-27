@@ -26,7 +26,7 @@ from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 PKG_NAME = "avio"
-VERSION = "3.2.0"
+VERSION = "3.2.1"
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):

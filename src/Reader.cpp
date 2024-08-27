@@ -28,6 +28,8 @@ extern "C"
 #include "Decoder.h"
 #include "avio.h"
 
+//test comment for git check
+
 #define MAX_TIMEOUT 5
 
 static int interrupt_callback(void *ctx)
