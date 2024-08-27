@@ -72,6 +72,8 @@ PYBIND11_MODULE(avio, m)
         .def("clearCache", &Player::clearCache)
         .def("getStreamInfo", &Player::getStreamInfo)
         .def("getFFMPEGVersions", &Player::getFFMPEGVersions)
+        .def("getAudioDrivers", &Player::getAudioDrivers)
+        .def("getVideoDrivers", &Player::getVideoDrivers)
         .def_readwrite("uri", &Player::uri)
         .def_readwrite("running", &Player::running)
         .def_readwrite("request_reconnect", &Player::request_reconnect)
@@ -95,6 +97,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("apq_size", &Player::apq_size)
         .def_readwrite("video_filter", &Player::video_filter)
         .def_readwrite("audio_filter", &Player::audio_filter)
+        .def_readwrite("audio_driver_index", &Player::audio_driver_index)
         .def_readwrite("process_pause", &Player::process_pause)
         .def_readwrite("post_encode", &Player::post_encode)
         .def_readwrite("hw_encoding", &Player::hw_encoding)
@@ -234,7 +237,7 @@ PYBIND11_MODULE(avio, m)
         .value("AV_SAMPLE_FMT_NB", AVSampleFormat::AV_SAMPLE_FMT_NB)
         .export_values();
 
-    m.attr("__version__") = "2.1.8";
+    m.attr("__version__") = "3.2.1";
 
 }
 

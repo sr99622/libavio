@@ -343,6 +343,7 @@ int Encoder::encode(Frame& f)
 
         }
     }
+    catch (const QueueClosedException& e) {}
     catch (const Exception& e) {
         if (strcmp(e.what(), "End of file")) {
             std::stringstream str;

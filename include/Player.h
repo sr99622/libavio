@@ -96,6 +96,7 @@ public:
     int vpq_size = 0;
     int apq_size = 0;
 
+    int audio_driver_index = 0;
     bool disable_video = false;
     bool disable_audio = false;
     bool hidden = false;
@@ -149,6 +150,8 @@ public:
     void clearCache();
     std::string getStreamInfo() const;
     std::string getFFMPEGVersions() const;
+    std::vector<std::string> getAudioDrivers() const;
+    std::vector<std::string> getVideoDrivers() const;
     bool sync_audio = false;
 
 };

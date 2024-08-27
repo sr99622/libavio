@@ -338,6 +338,26 @@ std::string Player::getFFMPEGVersions() const
     return str.str();
 }
 
+std::vector<std::string> Player::getAudioDrivers() const
+{
+    std::vector<std::string> result;
+    int numDrivers = SDL_GetNumAudioDrivers();
+    for (int i = 0; i < numDrivers; i++) {
+        result.push_back(SDL_GetAudioDriver(i));
+    }
+    return result;
+}
+
+std::vector<std::string> Player::getVideoDrivers() const
+{
+    std::vector<std::string> result;
+    int numDrivers = SDL_GetNumVideoDrivers();
+    for (int i = 0; i < numDrivers; i++) {
+        result.push_back(SDL_GetVideoDriver(i));
+    }
+    return result;
+}
+
 void Player::start()
 {
     std::thread process_thread([&]() { run(); });

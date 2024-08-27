@@ -64,6 +64,7 @@ public:
 	SwsContext* sws_ctx = NULL;
 
 	AVHWDeviceType hw_device_type;
+	std::string hwPixFmtName;
 
 	int stream_index;
 	Reader* reader;
