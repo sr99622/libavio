@@ -28,8 +28,6 @@ extern "C"
 #include "Decoder.h"
 #include "avio.h"
 
-//test comment for git check
-
 #define MAX_TIMEOUT 5
 
 static int interrupt_callback(void *ctx)
@@ -62,7 +60,7 @@ Reader::Reader(const char* filename, void* player) : player(player)
         }
 
         ex.ck(avformat_open_input(&fmt_ctx, filename, nullptr, &opts), CmdTag::AOI);
-    
+
         av_dict_free(&opts);
         timeout_start = time(nullptr);
         AVIOInterruptCB cb = { interrupt_callback, this };
@@ -89,7 +87,9 @@ Reader::Reader(const char* filename, void* player) : player(player)
 
 Reader::~Reader()
 {
-    if (fmt_ctx) avformat_close_input(&fmt_ctx);
+    if (fmt_ctx) {
+        avformat_close_input(&fmt_ctx);
+    }
 }
 
 AVPacket* Reader::read()

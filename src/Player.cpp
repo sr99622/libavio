@@ -25,6 +25,11 @@
 namespace avio
 {
 
+Player::~Player()
+{
+    if (reader) delete reader;
+}
+
 bool Player::operator==(const Player& other) const
 {
     bool result = false;
@@ -114,6 +119,7 @@ void Player::togglePiping(const std::string& filename)
     }
 }
 
+/*
 void Player::toggleEncoding(const std::string& filename)
 {
     if (writer) {
@@ -121,15 +127,19 @@ void Player::toggleEncoding(const std::string& filename)
         writer->enabled = !writer->enabled;
     }
 }
+*/
 
 void Player::toggleRecording(const std::string& filename)
 {
+    togglePiping(filename);
+    /*
     if (post_encode) {
         toggleEncoding(filename);
     }
     else {
         togglePiping(filename);
     }
+    */
 }
 
 bool Player::isPiping()
@@ -139,19 +149,29 @@ bool Player::isPiping()
     return result;
 }
 
+/*
 bool Player::isEncoding()
 {
     bool result = false;
     if (writer) result = writer->enabled;
     return result;
 }
+*/
 
 bool Player::isRecording()
 {
-    if (post_encode)
-        return isEncoding();
-    else
+    //if (post_encode)
+    //    return isEncoding();
+    //else
         return isPiping();
+}
+
+void Player::closeReader()
+{
+    if (reader) {
+        if (reader->fmt_ctx)
+            avformat_close_input(&reader->fmt_ctx);
+    }
 }
 
 void Player::clear_queues()
@@ -358,6 +378,21 @@ std::vector<std::string> Player::getVideoDrivers() const
     return result;
 }
 
+void Player::doit()
+{
+    std::cout << "doit" << std::endl;
+    try {
+        reader = new Reader(uri.c_str(), this);
+        reader->show_video_pkts = true;
+        read(reader);
+        delete reader;
+        reader = nullptr;
+    }
+    catch (const std::exception& ex) {
+        std::cout << "exception: " << ex.what() << std::endl;
+    }
+}
+
 void Player::start()
 {
     std::thread process_thread([&]() { run(); });
@@ -366,17 +401,9 @@ void Player::start()
 
 void Player::run()
 {
-    std::thread* reader_thread        = nullptr;
-    std::thread* video_decoder_thread = nullptr;
-    std::thread* video_filter_thread  = nullptr;
-    std::thread* video_encoder_thread = nullptr;
-    std::thread* audio_decoder_thread = nullptr;
-    std::thread* audio_filter_thread  = nullptr;
-    std::thread* audio_encoder_thread = nullptr;
-    std::thread* display_thread       = nullptr;
-
     try {
         running = true;
+        stopped = false;
 
         vpq_reader  = new Queue<Packet>;
         vfq_decoder = new Queue<Frame>;
@@ -398,8 +425,8 @@ void Player::run()
             if (infoCallback) infoCallback("player audio disabled", uri);
         }
 
-        writer = new Writer("mp4");
-        writer->infoCallback = infoCallback;
+        //writer = new Writer("mp4");
+        //writer->infoCallback = infoCallback;
 
         if (reader->has_video() && !disable_video) {
             const AVPixFmtDescriptor* desc = av_pix_fmt_desc_get(reader->pix_fmt());
@@ -419,6 +446,7 @@ void Player::run()
             videoFilter->errorCallback = errorCallback;
             videoFilter->infoCallback = infoCallback;
 
+            /*
             if (post_encode) {
                 
                 videoEncoder = new Encoder(writer, AVMEDIA_TYPE_VIDEO);
@@ -445,6 +473,7 @@ void Player::run()
 
                 videoEncoder->infoCallback = infoCallback;
             }
+            */
         }
 
         if (reader->has_audio() && !disable_audio) {
@@ -462,6 +491,7 @@ void Player::run()
             audioFilter->errorCallback = errorCallback;
             audioFilter->infoCallback = infoCallback;
 
+            /*
             if (post_encode) {
                 audioEncoder = new Encoder(writer, AVMEDIA_TYPE_AUDIO);
                 audioEncoder->frame_q = afq_display;
@@ -484,7 +514,8 @@ void Player::run()
                 
                 audioEncoder->infoCallback = infoCallback;
             }
-        }
+           */
+         }
 
         if (isCameraStream()) {
             if (vpq_size) reader->apq_max_size = vpq_size;
@@ -513,63 +544,14 @@ void Player::run()
         reader_thread = new std::thread(read, reader);
         if (videoDecoder) video_decoder_thread = new std::thread(decode, videoDecoder);
         if (videoFilter)  video_filter_thread  = new std::thread(filter, videoFilter);
-        if (videoEncoder) video_encoder_thread = new std::thread(write, writer, videoEncoder);
+        //if (videoEncoder) video_encoder_thread = new std::thread(write, writer, videoEncoder);
         if (audioDecoder) audio_decoder_thread = new std::thread(decode, audioDecoder);
         if (audioFilter)  audio_filter_thread  = new std::thread(filter, audioFilter);
-        if (audioEncoder) audio_encoder_thread = new std::thread(write, writer, audioEncoder);
+        //if (audioEncoder) audio_encoder_thread = new std::thread(write, writer, audioEncoder);
 
         if (mediaPlayingStarted) mediaPlayingStarted(uri);
 
         display_thread = new std::thread(Display::display, this);
-        display_thread->join();
-
-        if (isRecording()) 
-            toggleRecording("");
-
-        running = false;
-
-        if (reader) {
-            if (reader->vpq) reader->vpq->close();
-            if (reader->apq) reader->apq->close();
-        }
-
-        if (reader_thread) reader_thread->join();
-        if (video_decoder_thread) video_decoder_thread->join();
-        if (video_filter_thread)  video_filter_thread->join();
-        if (video_encoder_thread) video_encoder_thread->join();
-        if (audio_decoder_thread) audio_decoder_thread->join();
-        if (audio_filter_thread)  audio_filter_thread->join();
-        if (audio_encoder_thread) audio_encoder_thread->join();
-
-        if (reader_thread) delete reader_thread;
-        if (video_decoder_thread) delete video_decoder_thread;
-        if (video_filter_thread)  delete video_filter_thread;
-        if (video_encoder_thread) delete video_encoder_thread;
-        if (audio_decoder_thread) delete audio_decoder_thread;
-        if (audio_filter_thread)  delete audio_filter_thread;
-        if (audio_encoder_thread) delete audio_encoder_thread;
-        delete display_thread;
-
-        if (reader)       delete reader;
-        if (writer)       delete writer;
-        if (videoFilter)  delete videoFilter;
-        if (videoDecoder) delete videoDecoder;
-        if (videoEncoder) delete videoEncoder;
-        if (audioFilter)  delete audioFilter;
-        if (audioDecoder) delete audioDecoder;
-        if (audioEncoder) delete audioEncoder;
-        if (display)      delete display;
-
-        if (vpq_reader)  delete  vpq_reader;  
-        if (vfq_decoder) delete  vfq_decoder;
-        if (vfq_filter)  delete  vfq_filter;
-        if (vfq_display) delete  vfq_display;
-        if (apq_reader)  delete  apq_reader;
-        if (afq_decoder) delete  afq_decoder;
-        if (afq_filter)  delete  afq_filter;
-        if (afq_display) delete  afq_display;
-
-        if (mediaPlayingStopped) mediaPlayingStopped(uri);
 
     }
     catch (const Exception& e) {
@@ -578,9 +560,63 @@ void Player::run()
         }
         else 
             std::cout << e.what() << std::endl;
-        running = false;
     }
+
+    if (display_thread) display_thread->join();
+
+    if (isRecording()) 
+        toggleRecording("");
+
+    running = false;
+
+    if (reader) {
+        if (reader->vpq) reader->vpq->close();
+        if (reader->apq) reader->apq->close();
+    }
+
+    if (reader_thread)        reader_thread->join();
+    if (video_decoder_thread) video_decoder_thread->join();
+    if (video_filter_thread)  video_filter_thread->join();
+    //if (video_encoder_thread) video_encoder_thread->join();
+    if (audio_decoder_thread) audio_decoder_thread->join();
+    if (audio_filter_thread)  audio_filter_thread->join();
+    //if (audio_encoder_thread) audio_encoder_thread->join();
+
+    //if (writer)       delete writer;
+    if (videoFilter)  delete videoFilter;
+    if (videoDecoder) delete videoDecoder;
+    //if (videoEncoder) delete videoEncoder;
+    if (audioFilter)  delete audioFilter;
+    if (audioDecoder) delete audioDecoder;
+    //if (audioEncoder) delete audioEncoder;
+    if (display)      delete display;
+
+    if (reader_thread)        delete reader_thread;
+    if (video_decoder_thread) delete video_decoder_thread;
+    if (video_filter_thread)  delete video_filter_thread;
+    //if (video_encoder_thread) delete video_encoder_thread;
+    if (audio_decoder_thread) delete audio_decoder_thread;
+    if (audio_filter_thread)  delete audio_filter_thread;
+    //if (audio_encoder_thread) delete audio_encoder_thread;
+    if (display_thread)       delete display_thread;
+
+    if (vpq_reader)  delete  vpq_reader;  
+    if (vfq_decoder) delete  vfq_decoder;
+    if (vfq_filter)  delete  vfq_filter;
+    if (vfq_display) delete  vfq_display;
+    if (apq_reader)  delete  apq_reader;
+    if (afq_decoder) delete  afq_decoder;
+    if (afq_filter)  delete  afq_filter;
+    if (afq_display) delete  afq_display;
     
+    std::thread thread([&]() { signalStopped(); });
+    thread.detach();
+    stopped = true;
+}
+
+void Player::signalStopped()
+{
+    if (mediaPlayingStopped) mediaPlayingStopped(uri);
 }
 
 }

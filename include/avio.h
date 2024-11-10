@@ -55,6 +55,11 @@ static void read(Reader* reader)
                 break;
             }
 
+            if (!player->running) {
+                av_packet_free(&pkt);
+                break;
+            }
+
             if (reader->vpq) {
                 if (player->isCameraStream() && (reader->vpq->size() == reader->vpq->max_size()) && !pkt->flags) {
                     av_packet_free(&pkt);
@@ -62,14 +67,6 @@ static void read(Reader* reader)
                     if (player->packetDrop) player->packetDrop(player->uri);
                     continue;
                 }
-            }
-
-            if (!player->running) {
-                if (reader->pipe) reader->close_pipe();
-                reader->clear_pkts_cache(0);
-                player->clear_queues();
-                av_packet_free(&pkt);
-                break;
             }
 
             if (reader->seek_target_pts != AV_NOPTS_VALUE) {
@@ -114,7 +111,7 @@ static void read(Reader* reader)
             }
         }
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "read queue closed exception 1" << std::endl; }
     catch (const Exception& e) {
         std::string msg(e.what());
         std::string mark("-138");
@@ -129,10 +126,11 @@ static void read(Reader* reader)
     try {
         reader->close_pipe();
         reader->clear_pkts_cache(0);
+        player->clear_queues();
         if (reader->vpq) reader->vpq->push_move(Packet(nullptr));
         if (reader->apq) reader->apq->push_move(Packet(nullptr));
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "read queue closed exception 2" << std::endl; }
 }
 
 static void decode(Decoder* decoder) 
@@ -148,7 +146,7 @@ static void decode(Decoder* decoder)
             decoder->decode(p.m_pkt);
         }
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "decoder queue closed exception 1" << std::endl; }
     catch (const Exception& e) { 
         std::stringstream str;
         str << decoder->strMediaType << " decoder failed: " << e.what();
@@ -158,7 +156,7 @@ static void decode(Decoder* decoder)
     try {
         decoder->frame_q->push_move(Frame(nullptr));
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "decoder queue closed exception 2" << std::endl; }
 }
 
 static void filter(Filter* filter)
@@ -174,6 +172,7 @@ static void filter(Filter* filter)
             filter->filter(f);
         }
     }
+    catch (const QueueClosedException& e) { std::cout << "filter queue closed exception 1" << std::endl; }
     catch (const Exception& e) {
         std::stringstream str;
         str << "filter loop exception: " << e.what();
@@ -182,9 +181,10 @@ static void filter(Filter* filter)
     try {
         filter->frame_out_q->push_move(Frame(nullptr));
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "filter queue closed exception 2" << std::endl; }
 }
 
+/*
 static void write(Writer* writer, Encoder* encoder)
 {
     Frame f;
@@ -231,6 +231,7 @@ static void write(Writer* writer, Encoder* encoder)
     }
     
 }
+*/
 
 }
 

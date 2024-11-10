@@ -74,6 +74,7 @@ void Filter::initVideo()
 
         avfilter_inout_free(&inputs);
         avfilter_inout_free(&outputs);
+
     }
     catch (const Exception& e) {
         avfilter_inout_free(&inputs);
@@ -178,10 +179,18 @@ void Filter::initAudio()
 
 Filter::~Filter()
 {
-    if (sink_ctx) avfilter_free(sink_ctx);
-    if (src_ctx) avfilter_free(src_ctx);
-    if (graph) avfilter_graph_free(&graph);
-    if (frame) av_frame_free(&frame);
+    if (sink_ctx) {
+        avfilter_free(sink_ctx);
+    }
+    if (src_ctx) {
+        avfilter_free(src_ctx);
+    }
+    if (graph) {
+        avfilter_graph_free(&graph);
+    }
+    if (frame) {
+        av_frame_free(&frame);
+    }
 }
 
 void Filter::filter(Frame& f)

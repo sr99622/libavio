@@ -38,6 +38,7 @@ Pipe::Pipe(AVFormatContext* input_fmt_ctx, int video_stream_index, int audio_str
 Pipe::~Pipe()
 {
     close();
+    std::cout << "pipe destructor called" << std::endl;
 }
 
 AVCodecContext* Pipe::getContext(AVMediaType mediaType)
@@ -143,7 +144,7 @@ void Pipe::transcode(AVPacket* pkt)
             encode(f);
         }
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) {  std::cout << "Pipe transcode closed queue exception 1" << std::endl; }
 }
 
 int Pipe::encode(Frame& f) {
@@ -153,7 +154,7 @@ int Pipe::encode(Frame& f) {
         try {
             ((Encoder*)encoder)->pkt_q->pop_move(p);
         }
-        catch (const QueueClosedException& e) {}
+        catch (const QueueClosedException& e) { std::cout << "Pipe encode closed queue exception 1" << std::endl; }
         p.m_pkt->stream_index = audio_stream_index;
         if (p.isValid()) {
             adjust_pts(p.m_pkt);

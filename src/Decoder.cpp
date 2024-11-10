@@ -135,12 +135,25 @@ Decoder::Decoder(Reader* reader, AVMediaType mediaType, AVHWDeviceType hw_device
 
 Decoder::~Decoder()
 {
-    if (frame) av_frame_free(&frame);
-    if (sw_frame) av_frame_free(&sw_frame);
-    if (cvt_frame) av_frame_free(&cvt_frame);
-    if (dec_ctx) avcodec_free_context(&dec_ctx);
-    if (hw_device_ctx) av_buffer_unref(&hw_device_ctx);
-    if (sws_ctx) sws_freeContext(sws_ctx);
+    if (frame) {
+        av_frame_free(&frame);
+    }
+    if (sw_frame) {
+        av_frame_free(&sw_frame);
+    }
+    if (cvt_frame) {
+        av_frame_free(&cvt_frame);
+    }
+    if (dec_ctx) {
+        flush();
+        avcodec_free_context(&dec_ctx);
+    }
+    if (hw_device_ctx) {
+        av_buffer_unref(&hw_device_ctx);
+    }
+    if (sws_ctx) {
+        sws_freeContext(sws_ctx);
+    }
 }
 
 void Decoder::flush()
@@ -225,7 +238,7 @@ int Decoder::decode(AVPacket* pkt)
             frame_q->push_move(f);
         }
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "in process decoder closed queue exception" << std::endl; }
     catch (const Exception& e) {
         std::stringstream str;
         str << strMediaType << " Decoder::decode exception: " << e.what();

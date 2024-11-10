@@ -50,7 +50,16 @@ public:
     Display*  display      = nullptr;
     Encoder*  videoEncoder = nullptr;
     Encoder*  audioEncoder = nullptr;
-    Writer*   writer       = nullptr;
+    //Writer*   writer       = nullptr;
+
+    std::thread* reader_thread        = nullptr;
+    std::thread* video_decoder_thread = nullptr;
+    std::thread* video_filter_thread  = nullptr;
+    //std::thread* video_encoder_thread = nullptr;
+    std::thread* audio_decoder_thread = nullptr;
+    std::thread* audio_filter_thread  = nullptr;
+    //std::thread* audio_encoder_thread = nullptr;
+    std::thread* display_thread       = nullptr;
 
     Queue<Packet>* vpq_reader;
     Queue<Frame>*  vfq_decoder;
@@ -82,6 +91,7 @@ public:
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 
     bool running = false;
+    bool stopped = false;
     bool request_reconnect = true;
     bool mute = false;
     int volume = 100;
@@ -106,13 +116,13 @@ public:
     std::map<std::string, std::string> metadata;
 
     Player(const std::string& uri) : uri(uri) { av_log_set_level(AV_LOG_PANIC); }
-    ~Player() { }
+    ~Player();
     bool operator==(const Player& other) const;
     std::string toString() const { return uri; };
 
     bool isPaused();
     bool isPiping();
-    bool isEncoding();
+    //bool isEncoding();
     bool isRecording();
     bool isMuted();
     void togglePaused();
@@ -120,13 +130,14 @@ public:
     void fileBreakPipe();
     int64_t pipeBytesWritten();
     void togglePiping(const std::string& filename);
-    void toggleEncoding(const std::string& filename);
+    //void toggleEncoding(const std::string& filename);
     void toggleRecording(const std::string& filename);
     std::string pipeOutFilename() const;
     void key_event(int keyCode);
     void clear_queues();
     void clear_decoders();
     void run();
+    void doit();
     void start();
     void seek(float arg);
     void setMute(bool arg);
@@ -148,6 +159,8 @@ public:
     int getAudioFrameSize();
     int getCacheSize();
     void clearCache();
+    void signalStopped();
+    void closeReader();
     std::string getStreamInfo() const;
     std::string getFFMPEGVersions() const;
     std::vector<std::string> getAudioDrivers() const;

@@ -114,7 +114,7 @@ void Display::display(void* player)
                 P->display->f.invalidate();
 
         }
-        catch (const QueueClosedException& e) {}
+        catch (const QueueClosedException& e) { std::cout << "Display closed queue exception 1" << std::endl; }
         catch (const Exception& e) {
             std::stringstream str;
             str << "Display exception: " << e.what();
@@ -128,7 +128,7 @@ void Display::display(void* player)
         if (P->display->vfq_out)
             P->display->vfq_out->push_move(P->display->f);
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "Display closed queue exception 2" << std::endl; }
 }
 
 int Display::initAudio(Filter* audioFilter)
@@ -258,7 +258,6 @@ int Display::initAudio(Filter* audioFilter)
             else std::cout << str.str() << std::endl;
             P->disable_audio = true;
             return 0;
-            //throw Exception(str.str());
         }
 
         SDL_PauseAudioDevice(audioDeviceID, 0);
@@ -369,7 +368,7 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
         if (!d->mute)
             SDL_MixAudioFormat(audio_buffer, temp, d->sdl.format, d->audio_buffer_len, SDL_MIX_MAXVOLUME * d->volume);
     }
-    catch (const QueueClosedException& e) {}
+    catch (const QueueClosedException& e) { std::cout << "Display audio callback closed queue exception 1" << std::endl; }
     catch (const Exception& e) { 
         std::stringstream str;
         str << "Audio callback exception: " << e.what();

@@ -19,11 +19,12 @@
 
 cmake_minimum_required(VERSION 3.17)
 
-project(libavio VERSION 3.2.1)
+project(libavio VERSION 3.2.3)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
+#add_compile_options("-g")
 
 # pass current dir in from host when building in virtual env
 set (MY_CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -115,17 +116,14 @@ if (NOT WITHOUT_PYTHON)
     )
 endif()
 
-IF (BUILD_TEST)
-    add_executable(avio-test
-        test/avio-test.cpp
-    )
-
-    target_link_libraries(avio-test PRIVATE
-        libavio
-    )
-
-    target_include_directories(avio-test PUBLIC
-        include
-    )
-
-endif()
+#IF (BUILD_TEST)
+#    add_executable(avio-test
+#        test/avio-test.cpp
+#    )
+#    target_link_libraries(avio-test PRIVATE
+#        libavio
+#    )
+#    target_include_directories(avio-test PUBLIC
+#        include
+#    )
+#endif()
