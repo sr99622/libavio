@@ -103,6 +103,8 @@ public:
     bool adjust_time_base = false;
     int buffer_size_in_seconds = 1;
 
+    float file_start_from_seek = -1.0;
+
     int vpq_size = 0;
     int apq_size = 0;
 

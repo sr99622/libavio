@@ -75,6 +75,7 @@ Reader::Reader(const char* filename, void* player) : player(player)
         }
     }
     catch (const Exception& e) {
+        P->stopped = true;
         std::string msg(e.what());
         std::string mark("-138");
         if (msg.find(mark) != std::string::npos)
