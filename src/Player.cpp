@@ -414,8 +414,12 @@ void Player::run()
         afq_filter  = new Queue<Frame>;
         afq_display = new Queue<Frame>;
 
+
         reader = new Reader(uri.c_str(), this);
         duration = reader->duration();
+
+        if (file_start_from_seek > 0.0) 
+            reader->request_seek(file_start_from_seek);
 
         if (disable_video) {
             if(infoCallback) infoCallback("player video disabled", uri);
@@ -555,9 +559,8 @@ void Player::run()
 
     }
     catch (const Exception& e) {
-        if (errorCallback) {
+        if (errorCallback)
             errorCallback(e.what(), uri, request_reconnect);
-        }
         else 
             std::cout << e.what() << std::endl;
     }

@@ -110,6 +110,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("duration", &Player::duration)
         .def_readwrite("onvif_frame_rate", &Player::onvif_frame_rate)
         .def_readwrite("buffer_size_in_seconds", &Player::buffer_size_in_seconds)
+        .def_readwrite("file_start_from_seek", &Player::file_start_from_seek)
         .def_readwrite("sync_audio", &Player::sync_audio);
     py::class_<Reader>(m, "Reader")
         .def(py::init<const char*, void*>())
@@ -240,7 +241,7 @@ PYBIND11_MODULE(avio, m)
         .value("AV_SAMPLE_FMT_NB", AVSampleFormat::AV_SAMPLE_FMT_NB)
         .export_values();
 
-    m.attr("__version__") = "3.2.4";
+    m.attr("__version__") = "3.2.5";
 
 }
 
