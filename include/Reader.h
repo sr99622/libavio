@@ -109,7 +109,7 @@ public:
 	std::string pipe_out_filename;
     std::deque<AVPacket*> pkts_cache;
 	int last_pkts_cache_size = 0;
-	std::chrono::time_point<std::chrono::high_resolution_clock> frame_rate_measure_start;
+	std::chrono::time_point<std::chrono::steady_clock> frame_rate_measure_start;
 	Pipe* createPipe();
 
 	AVFormatContext* fmt_ctx = nullptr;

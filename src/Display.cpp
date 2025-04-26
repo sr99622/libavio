@@ -37,8 +37,15 @@ void Display::display(void* player)
 {
     while (true)
     {
+        if (!P->hasVideo()){
+            if (!P->running)
+                return;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+        
         try {
-            if (P->display->paused) 
+            if (P->display->paused && !P->reader->seeking()) 
             {
                 if (!P->running) {
                     P->display->togglePause();
@@ -46,45 +53,22 @@ void Display::display(void* player)
                 }
 
                 P->display->f = P->display->paused_frame;
-                bool found = false;
                 
-                while (P->reader->seeking()) {
-                    if (P->display->afq_in) P->display->afq_in->clear();
-                    if (P->display->vfq_in->size() > 0) P->display->vfq_in->pop_move(P->display->f);
-                    if (P->display->f.isValid()) {
-                        if (P->display->f.m_frame->pts == P->reader->seek_found_pts) {
-                            P->reader->seek_found_pts = AV_NOPTS_VALUE;
-                            found = true;
-                        }
-                    }
-                    else {
-                        break;
-                    }
-                }
-
                 if (P->renderCallback)
                     P->renderCallback(P->display->f, *P);
 
                 if (!P->process_pause)
                     std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
-                if (!found)
-                    continue;
-
+                continue;
             }
 
             if (P->display->vfq_in) {
                 P->display->vfq_in->pop_move(P->display->f);
+                if (P->display->f.pts() == P->reader->seek_found_pts) {
+                    P->reader->seek_found_pts = AV_NOPTS_VALUE;
+                }
                 if (!P->display->f.isValid())
-                    break;
-            }
-            else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(SDL_EVENT_LOOP_WAIT));
-                P->display->f = Frame(640, 480, AV_PIX_FMT_YUV420P);
-                P->display->f.m_rts = P->display->rtClock.stream_time();
-                if (P->running)
-                    continue;
-                else
                     break;
             }
 
@@ -112,7 +96,6 @@ void Display::display(void* player)
                 P->display->vfq_out->push_move(P->display->f);
             else
                 P->display->f.invalidate();
-
         }
         catch (const QueueClosedException& e) { std::cout << "Display closed queue exception 1" << std::endl; }
         catch (const Exception& e) {
@@ -256,8 +239,7 @@ int Display::initAudio(Filter* audioFilter)
             str << "SDL_OpenAudioDevice exception: " << SDL_GetError() << " audio will be disabled";
             if (P->infoCallback) P->infoCallback(str.str(), P->uri);
             else std::cout << str.str() << std::endl;
-            P->disable_audio = true;
-            return 0;
+            return 1;
         }
 
         SDL_PauseAudioDevice(audioDeviceID, 0);
@@ -323,8 +305,6 @@ void Display::AudioCallback(void* userdata, uint8_t* audio_buffer, int len)
                     else {
                         d->rtClock.update(f.m_rts - player->reader->start_time());
                     }
-
-                    d->reader->seek_found_pts = AV_NOPTS_VALUE;
 
                     if (player->progressCallback) {
                         if (!d->reader->has_video()) {

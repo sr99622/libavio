@@ -138,6 +138,7 @@ public:
     void key_event(int keyCode);
     void clear_queues();
     void clear_decoders();
+    void unblock_filters();
     void run();
     void doit();
     void start();
@@ -154,6 +155,7 @@ public:
     int getVideoBitrate();
     bool hasAudio();
     bool hasVideo();
+    AudioEncoding getAudioEncoding() const;
     std::string getAudioCodec() const;
     std::string getAudioChannelLayout() const;
     int getAudioBitrate();

@@ -65,6 +65,7 @@ PYBIND11_MODULE(avio, m)
         .def("getVideoFrameRate", &Player::getVideoFrameRate)
         .def("getVideoBitrate", &Player::getVideoBitrate)
         .def("getAudioCodec", &Player::getAudioCodec)
+        .def("getAudioEncoding", &Player::getAudioEncoding)
         .def("getAudioBitrate", &Player::getAudioBitrate)
         .def("getAudioSampleRate", &Player::getAudioSampleRate)
         .def("getAudioFrameSize", &Player::getAudioFrameSize)
@@ -193,6 +194,12 @@ PYBIND11_MODULE(avio, m)
         .value("AVMEDIA_TYPE_VIDEO", AVMediaType::AVMEDIA_TYPE_VIDEO)
         .value("AVMEDIA_TYPE_AUDIO", AVMediaType::AVMEDIA_TYPE_AUDIO)
         .export_values();
+    py::enum_<AudioEncoding>(m, "AudioEncoding")
+        .value("AAC", AudioEncoding::AAC)
+        .value("G711", AudioEncoding::G711)
+        .value("G726", AudioEncoding::G726)
+        .value("NONE", AudioEncoding::NONE)
+        .export_values();
     py::enum_<AVPixelFormat>(m, "AVPixelFormat")
         .value("AV_PIX_FMT_NONE", AVPixelFormat::AV_PIX_FMT_NONE)
         .value("AV_PIX_FMT_YUV420P", AVPixelFormat::AV_PIX_FMT_YUV420P)
@@ -241,7 +248,7 @@ PYBIND11_MODULE(avio, m)
         .value("AV_SAMPLE_FMT_NB", AVSampleFormat::AV_SAMPLE_FMT_NB)
         .export_values();
 
-    m.attr("__version__") = "3.2.5";
+    m.attr("__version__") = "3.2.6";
 
 }
 

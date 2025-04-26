@@ -75,14 +75,14 @@ Reader::Reader(const char* filename, void* player) : player(player)
         }
     }
     catch (const Exception& e) {
-        P->stopped = true;
+        if (P) P->stopped = true;
         std::string msg(e.what());
         std::string mark("-138");
         if (msg.find(mark) != std::string::npos)
             msg = "No connection to server";
         std::stringstream str;
         str << "Reader constructor exception: " << msg;
-        throw Exception(str.str());
+        throw std::runtime_error(str.str());
     }
 }
 
@@ -153,6 +153,10 @@ AVPacket* Reader::seek()
 void Reader::request_seek(float pct)
 {
     seek_target_pts = (start_time() + (pct * duration()) / av_q2d(fmt_ctx->streams[seek_stream_index()]->time_base)) / 1000;
+    seek_found_pts = seek_target_pts;
+    //clear_pkts_cache(0);
+    //P->clear_queues();
+    //seek();
 }
 
 bool Reader::seeking() 
@@ -172,45 +176,18 @@ Pipe* Reader::createPipe()
     try {
         AudioEncoding audio_encoding = AudioEncoding::NONE;
         if (!strcmp(str_audio_codec(), "aac")) audio_encoding = AudioEncoding::AAC;
-        if (!strcmp(str_audio_codec(), "pcm_mulaw")) audio_encoding = AudioEncoding::G711;
-        if (!strcmp(str_audio_codec(), "adpcm_g726le")) audio_encoding = AudioEncoding::G726;
+        if (!strcmp(str_audio_codec(), "pcm_mulaw") || !strcmp(str_audio_codec(), "pcm_alaw")) audio_encoding = AudioEncoding::G711;
+        //if (!strcmp(str_audio_codec(), "adpcm_g726le")) audio_encoding = AudioEncoding::G726;
+        // G726 IS NOT SUPPORTED
 
-        if (has_audio() && (audio_encoding != AudioEncoding::AAC) && (audio_encoding != AudioEncoding::NONE) && !P->disable_audio) {
-            Decoder* decoder = new Decoder(this, AVMEDIA_TYPE_AUDIO);
-            decoder->frame_q = new Queue<Frame>;            
-
-            Encoder* encoder = new Encoder(new Writer("mp4"), AVMEDIA_TYPE_AUDIO);
-            encoder->output = EncoderOutput::PACKET;
-            encoder->pkt_q = new Queue<Packet>(100);
-            encoder->sample_fmt = AV_SAMPLE_FMT_FLTP;
-            encoder->nb_samples = 1024;
-            sample_rate() < 32000 ? encoder->sample_rate = 32000 : encoder->sample_rate = sample_rate();
-            encoder->audio_time_base = av_make_q(1, encoder->sample_rate);
-            encoder->audio_bit_rate = audio_bit_rate();
-#if LIBAVCODEC_VERSION_MAJOR < 61
-            encoder->channels = channels();
-            encoder->channel_layout = channel_layout();
-#else
-            av_channel_layout_copy(&encoder->ch_layout, &fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout);
-#endif
-            encoder->infoCallback = P->infoCallback;
-
-            if (encoder->init())  {
-                pipe = new Pipe(fmt_ctx, video_stream_index, audio_stream_index, decoder, encoder);
-            }
-            else {
-                pipe = new Pipe(fmt_ctx, video_stream_index, -1);
-            }
-        }
-        else {
-            pipe = new Pipe(fmt_ctx, video_stream_index, P->disable_audio || (audio_encoding == AudioEncoding::NONE) ? -1 : audio_stream_index);
-        }
-
-        if (audio_encoding == AudioEncoding::NONE) {
+        if (audio_encoding == AudioEncoding::NONE && !P->disable_audio) {
             std::stringstream str;
             str << "Audio format incompatible: (" << str_audio_codec() << ") only video packets will be written to file";
             if (P->infoCallback) P->infoCallback(str.str(), P->uri);
+            P->disable_audio = true;
         }
+
+        pipe = new Pipe(fmt_ctx, video_stream_index, P->disable_audio || (audio_encoding == AudioEncoding::NONE) ? -1 : audio_stream_index);
 
         pipe->infoCallback = P->infoCallback;
         pipe->errorCallback = P->errorCallback;
