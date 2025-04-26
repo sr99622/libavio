@@ -26,7 +26,7 @@ from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 PKG_NAME = "avio"
-VERSION = "3.2.5"
+VERSION = "3.2.6"
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -40,19 +40,11 @@ class CMakeBuild(build_ext):
 
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
-            f"-DWITHOUT_LIBS=1",
+            f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             f"-Wno-dev",]
         
         if sys.platform == "win32":
             cmake_args.append(f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE={extdir}")
-        
-        # set environment variables for local cmake scripts, allow user override
-        if 'FFMPEG_INSTALL_DIR' not in os.environ:
-            ffmpeg_dir = os.path.join(Path(__file__).parent.absolute(), "ffmpeg")
-            os.environ['FFMPEG_INSTALL_DIR'] = ffmpeg_dir
-        if 'SDL2_INSTALL_DIR' not in os.environ:
-            sdl_dir = os.path.join(Path(__file__).parent.absolute(), "sdl")
-            os.environ['SDL2_INSTALL_DIR'] = sdl_dir
 
         build_temp = os.path.join(self.build_temp, ext.name)
         if not os.path.exists(build_temp):
@@ -63,10 +55,8 @@ class CMakeBuild(build_ext):
 
 def get_package_data():
     data = []
-    shared_lib_extension = distutils.ccompiler.new_compiler().shared_lib_extension
     for f in os.listdir(PKG_NAME):
-        _, extension = os.path.splitext(f)
-        if extension == shared_lib_extension:
+        if f != "__init__.py":
             data.append(f)
     return data
 

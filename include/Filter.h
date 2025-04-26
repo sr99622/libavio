@@ -21,7 +21,7 @@
 #define FILTER_H
 
 extern "C" {
-#include "libavcodec/avfft.h"
+//#include "libavcodec/avfft.h"
 #include "libavfilter/avfilter.h"
 #include "libswresample/swresample.h"
 #include "libavutil/avstring.h"

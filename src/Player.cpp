@@ -77,6 +77,8 @@ int Player::getVolume()
 
 void Player::togglePaused()
 {
+    //std::cout << "---------------------toggle pause---------------";
+    //if (isPaused()) std::cout << "PAUSED" << std::endl; else std::cout << " not paused " << std::endl;
     if (display) display->togglePause();
 }
 
@@ -291,6 +293,16 @@ std::string Player::getAudioCodec() const {
     if (reader)
         result = reader->str_audio_codec();
     return result;
+}
+
+AudioEncoding Player::getAudioEncoding() const {
+    AudioEncoding audio_encoding = AudioEncoding::NONE;
+    if (reader) {
+        if (!strcmp(reader->str_audio_codec(), "aac")) audio_encoding = AudioEncoding::AAC;
+        if (!strcmp(reader->str_audio_codec(), "pcm_mulaw") || !strcmp(reader->str_audio_codec(), "pcm_alaw")) audio_encoding = AudioEncoding::G711;
+        if (!strcmp(reader->str_audio_codec(), "adpcm_g726le")) audio_encoding = AudioEncoding::G726;
+    }
+    return audio_encoding;
 }
 
 std::string Player::getAudioChannelLayout() const {
@@ -519,7 +531,7 @@ void Player::run()
                 audioEncoder->infoCallback = infoCallback;
             }
            */
-         }
+        }
 
         if (isCameraStream()) {
             if (vpq_size) reader->apq_max_size = vpq_size;
@@ -535,8 +547,13 @@ void Player::run()
         if (audioFilter) {
             display->afq_in = audioFilter->frame_out_q;
             if (!hidden) {
-                if (display->initAudio(audioFilter))
+                if (display->initAudio(audioFilter)) {
                     disable_audio = true;
+                    delete audioDecoder;
+                    delete audioFilter;
+                    audioDecoder = nullptr;
+                    audioFilter = nullptr;
+                }
             }
             if (audioEncoder)
                 display->afq_out = afq_display;
@@ -558,7 +575,7 @@ void Player::run()
         display_thread = new std::thread(Display::display, this);
 
     }
-    catch (const Exception& e) {
+    catch (const std::exception& e) {
         if (errorCallback)
             errorCallback(e.what(), uri, request_reconnect);
         else 

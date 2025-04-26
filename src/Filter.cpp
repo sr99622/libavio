@@ -137,8 +137,11 @@ void Filter::initAudio()
         ex.ck(graph = avfilter_graph_alloc(), AGA);
         ex.ck(avfilter_graph_create_filter(&src_ctx, buf_src, "in", args, nullptr, graph), AGCF);
         ex.ck(avfilter_graph_create_filter(&sink_ctx, buf_sink, "out", nullptr, nullptr, graph), AGCF);
-        ex.ck(av_opt_set_int_list(sink_ctx, "sample_fmts", sample_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN), AOSIL);
-        ex.ck(av_opt_set_int(sink_ctx, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN), AOSI);
+        
+        // these commands started failing after switch from system ffmpeg to portable, they don't seem to be relavant
+        // std::cout << "THIS IS THE PATH BETTER LEFT UNTAKEN" << std::endl;
+        // ex.ck(av_opt_set_int_list(sink_ctx, "sample_fmts", sample_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN), AOSIL);
+        // ex.ck(av_opt_set_int(sink_ctx, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN), AOSI);
 
 #endif
 
@@ -203,8 +206,13 @@ void Filter::filter(Frame& f)
             ret = av_buffersink_get_frame(sink_ctx, frame);
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                 break;
-            if (ret < 0)
-                throw Exception("av_buffersink_get_frame");
+            if (ret < 0) {
+                std::stringstream str;
+                char av_str[256];
+                av_strerror(ret, av_str, 256);
+                str << "av_buffersink_get_frame: " << av_str;
+                throw Exception(str.str());
+            }
 
             f.invalidate();
             f = Frame(frame);
@@ -215,6 +223,14 @@ void Filter::filter(Frame& f)
     }
     catch (const Exception& e) {
         std::stringstream str;
+        switch (decoder->mediaType) {
+            case AVMEDIA_TYPE_VIDEO:
+                str << "Video ";
+                break;
+            case AVMEDIA_TYPE_AUDIO:
+                str << "Audio ";
+                break;
+            }
         str << "Filter exception: " << e.what();
         if (infoCallback) infoCallback(str.str(), ((Player*)decoder->reader->player)->uri);
         else std::cout << str.str() << std::endl;
