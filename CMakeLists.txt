@@ -19,7 +19,7 @@
 
 cmake_minimum_required(VERSION 3.17)
 
-project(libavio VERSION 3.2.6)
+project(libavio VERSION 3.2.7)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -42,18 +42,6 @@ add_subdirectory(pybind11)
 
 pybind11_add_module(avio 
     src/avio.cpp
-    src/Clock.cpp
-    src/Decoder.cpp
-    src/Display.cpp
-    src/Encoder.cpp
-    src/Exception.cpp
-    src/Filter.cpp
-    src/Frame.cpp
-    src/Packet.cpp
-    src/Pipe.cpp
-    src/Player.cpp
-    src/Reader.cpp
-    src/Writer.cpp
 )
 
 target_link_libraries(avio PRIVATE 

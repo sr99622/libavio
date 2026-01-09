@@ -33,17 +33,7 @@ macro(find_component_include_dir var header_name)
     )
 endmacro()
 
-find_package(PkgConfig QUIET)
-if (PKG_CONFIG_FOUND)
-    pkg_check_modules(FFMPEG 
-        libavcodec 
-        libavfilter 
-        libavformat 
-        libavutil 
-        libswscale 
-        libswresample
-    )
-else()
+if (DEFINED ENV{FFMPEG_INSTALL_DIR})
     find_component_library(LIBAVCODEC_LIBRARY avcodec)
     find_component_include_dir(LIBAVCODEC_INCLUDE_DIR libavcodec/avcodec.h)
 
@@ -80,19 +70,30 @@ else()
         ${LIBAVDEVICE_INCLUDE_DIR}
         ${LIBAVFILTER_INCLUDE_DIR}
         ${LIBAVFORMAT_INCLUDE_DIR}
-        ${LIBVUTIL_INCLUDE_DIRS}
+        ${LIBAVUTIL_INCLUDE_DIR}
         ${LIBSWRESAMPLE_INCLUDE_DIR}
         ${LIBSWSCALE_INCLUDE_DIR}
     )
 
+    include(FindPackageHandleStandardArgs)
+
+    FIND_PACKAGE_HANDLE_STANDARD_ARGS(FFmpeg
+        REQUIRED_VARS FFMPEG_INCLUDE_DIRS FFMPEG_LINK_LIBRARIES
+        VERSION_VAR FFMPEG_VERSION_STRING
+    )
+else()
+    find_package(PkgConfig QUIET)
+    if (PKG_CONFIG_FOUND)
+        pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+            libavcodec 
+            libavfilter 
+            libavformat 
+            libavutil 
+            libswscale 
+            libswresample
+        )
+    endif()
 endif()
-
-include(FindPackageHandleStandardArgs)
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(FFmpeg
-    REQUIRED_VARS FFMPEG_INCLUDE_DIRS FFMPEG_LINK_LIBRARIES
-    VERSION_VAR FFMPEG_VERSION_STRING
-)
 
 if (FFMPEG_FOUND)
     add_library(FFmpeg::FFmpeg INTERFACE IMPORTED)
