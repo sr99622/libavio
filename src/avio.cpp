@@ -1,7 +1,7 @@
 /********************************************************************
 * libavio/src/avio.cpp
 *
-* Copyright (c) 2023  Stephen Rhodes
+* Copyright (c) 2023, 2025  Stephen Rhodes
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
-#include "avio.h"
-#include "Display.h"
-#include "Frame.h"
+#include "Player.hpp"
+#include "Reader.hpp"
+#include "Frame.hpp"
+#include "Audio.hpp"
 
 namespace py = pybind11;
 
-namespace avio
-{
+namespace avio {
 
 PYBIND11_MODULE(avio, m)
 {
@@ -36,14 +36,13 @@ PYBIND11_MODULE(avio, m)
         .def(py::init<const std::string&>())
         .def("__eq__", &Player::operator==)
         .def("__str__", &Player::toString)
-        .def("run", &Player::run)
-        .def("doit", &Player::doit)
+        .def("play", &Player::play)
         .def("start", &Player::start)
         .def("seek", &Player::seek)
+        .def("width", &Player::width)
+        .def("height", &Player::height)
         .def("isPaused", &Player::isPaused)
-        .def("isPiping", &Player::isPiping)
         .def("isRecording", &Player::isRecording)
-        //.def("isEncoding", &Player::isEncoding)
         .def("isMuted", &Player::isMuted)
         .def("isCameraStream", &Player::isCameraStream)
         .def("setVolume", &Player::setVolume)
@@ -53,36 +52,20 @@ PYBIND11_MODULE(avio, m)
         .def("hasVideo", &Player::hasVideo)
         .def("setMetaData", &Player::setMetaData)
         .def("togglePaused", &Player::togglePaused)
-        .def("togglePiping", &Player::togglePiping)
-        //.def("toggleEncoding", &Player::toggleEncoding)
         .def("toggleRecording", &Player::toggleRecording)
-        .def("pipeOutFilename", &Player::pipeOutFilename)
-        .def("startFileBreakPipe", &Player::startFileBreakPipe)
-        .def("pipeBytesWritten", &Player::pipeBytesWritten)
-        .def("getVideoCodec", &Player::getVideoCodec)
-        .def("getVideoWidth", &Player::getVideoWidth)
-        .def("getVideoHeight", &Player::getVideoHeight)
-        .def("getVideoFrameRate", &Player::getVideoFrameRate)
-        .def("getVideoBitrate", &Player::getVideoBitrate)
+        .def("startFileBreak", &Player::startFileBreak)
         .def("getAudioCodec", &Player::getAudioCodec)
-        .def("getAudioEncoding", &Player::getAudioEncoding)
-        .def("getAudioBitrate", &Player::getAudioBitrate)
-        .def("getAudioSampleRate", &Player::getAudioSampleRate)
-        .def("getAudioFrameSize", &Player::getAudioFrameSize)
-        .def("getAudioChannelLayout", &Player::getAudioChannelLayout)
-        .def("getCacheSize", &Player::getCacheSize)
-        .def("clearCache", &Player::clearCache)
-        .def("closeReader", &Player::closeReader)
+        .def("clearBuffer", &Player::clearBuffer)
         .def("getStreamInfo", &Player::getStreamInfo)
         .def("getFFMPEGVersions", &Player::getFFMPEGVersions)
         .def("getAudioDrivers", &Player::getAudioDrivers)
-        .def("getVideoDrivers", &Player::getVideoDrivers)
+        .def("getHardwareDecoders", &Player::getHardwareDecoders)
+        .def("duration", &Player::duration)
+        .def("terminate", &Player::terminate)
         .def_readwrite("uri", &Player::uri)
-        .def_readwrite("running", &Player::running)
-        .def_readwrite("stopped", &Player::stopped)
         .def_readwrite("request_reconnect", &Player::request_reconnect)
-        .def_readwrite("width", &Player::width)
-        .def_readwrite("height", &Player::height)
+        .def_readwrite("live_stream", &Player::live_stream)
+        .def_readwrite("headless", &Player::headless)
         .def_readwrite("disable_video", &Player::disable_video)
         .def_readwrite("disable_audio", &Player::disable_audio)
         .def_readwrite("hidden", &Player::hidden)
@@ -94,30 +77,18 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("mediaPlayingStarted", &Player::mediaPlayingStarted)
         .def_readwrite("mediaPlayingStopped", &Player::mediaPlayingStopped)
         .def_readwrite("packetDrop", &Player::packetDrop)
-        .def_readwrite("getAudioStatus", &Player::getAudioStatus)
-        .def_readwrite("setAudioStatus", &Player::setAudioStatus)
-        .def_readwrite("hWnd", &Player::hWnd)
-        .def_readwrite("vpq_size", &Player::vpq_size)
-        .def_readwrite("apq_size", &Player::apq_size)
-        .def_readwrite("video_filter", &Player::video_filter)
-        .def_readwrite("audio_filter", &Player::audio_filter)
+        .def_readwrite("str_video_filter", &Player::str_video_filter)
+        .def_readwrite("str_audio_filter", &Player::str_audio_filter)
         .def_readwrite("audio_driver_index", &Player::audio_driver_index)
-        .def_readwrite("process_pause", &Player::process_pause)
-        .def_readwrite("post_encode", &Player::post_encode)
-        .def_readwrite("hw_encoding", &Player::hw_encoding)
-        .def_readwrite("hw_device_type", &Player::hw_device_type)
-        .def_readwrite("adjust_time_base", &Player::adjust_time_base)
-        .def_readwrite("last_progress", &Player::last_progress)
-        .def_readwrite("duration", &Player::duration)
+        .def_readwrite("str_hw_device_type", &Player::str_hw_device_type)
         .def_readwrite("onvif_frame_rate", &Player::onvif_frame_rate)
         .def_readwrite("buffer_size_in_seconds", &Player::buffer_size_in_seconds)
-        .def_readwrite("file_start_from_seek", &Player::file_start_from_seek)
-        .def_readwrite("sync_audio", &Player::sync_audio);
+        .def_readwrite("file_start_from_seek", &Player::file_start_from_seek);
+
     py::class_<Reader>(m, "Reader")
-        .def(py::init<const char*, void*>())
+        .def(py::init<const std::string&>())
         .def("start_time", &Reader::start_time)
         .def("duration", &Reader::duration)
-        .def("bit_rate", &Reader::bit_rate)
         .def("has_video", &Reader::has_video)
         .def("width", &Reader::width)
         .def("height", &Reader::height)
@@ -138,28 +109,17 @@ PYBIND11_MODULE(avio, m)
         .def("audio_codec", &Reader::audio_codec)
         .def("str_audio_codec", &Reader::str_audio_codec)
         .def("audio_bit_rate", &Reader::audio_bit_rate)
-        .def("audio_time_base", &Reader::audio_time_base)
-        .def("request_seek", &Reader::request_seek)
-        .def("start_from", &Reader::start_from)
-        .def("end_at", &Reader::end_at)
-        .def("metadata", &Reader::metadata)
-        .def_readwrite("pipe_out_filename", &Reader::pipe_out_filename)
-        .def_readwrite("vpq_max_size", &Reader::vpq_max_size)
-        .def_readwrite("apq_max_size", &Reader::apq_max_size)
-        .def_readwrite("show_video_pkts", &Reader::show_video_pkts)
-        .def_readwrite("show_audio_pkts", &Reader::show_audio_pkts);
+        .def("audio_time_base", &Reader::audio_time_base);
+
     py::class_<Frame>(m, "Frame", py::buffer_protocol())
         .def(py::init<>())
         .def(py::init<const Frame&>())
-        .def("isValid", &Frame::isValid)
-        .def("invalidate", &Frame::invalidate)
+        .def("pts", &Frame::pts)
         .def("width", &Frame::width)
         .def("height", &Frame::height)
         .def("stride", &Frame::stride)
-        .def("nb_samples", &Frame::nb_samples)
-        .def("sample_rate", &Frame::sample_rate)
         .def("channels", &Frame::channels)
-        .def_readwrite("m_rts", &Frame::m_rts)
+        .def("mb_samples", &Frame::nb_samples)
         .def_buffer([](Frame &m) -> py::buffer_info {
             if (m.height() == 0 && m.width() == 0) {
                 return py::buffer_info(
@@ -180,75 +140,13 @@ PYBIND11_MODULE(avio, m)
                 return py::buffer_info(m.data(), element_size, fmt_desc, ndim, dims, strides);
             }
         });
+
     py::class_<AVRational>(m, "AVRational")
         .def(py::init<>())
         .def_readwrite("num", &AVRational::num)
         .def_readwrite("den", &AVRational::den);
-    py::enum_<AudioStatus>(m, "AudioStatus")
-        .value("UNINITIALIZED", AudioStatus::UNINITIALIZED)
-        .value("INIT_STARTED", AudioStatus::INIT_STARTED)
-        .value("INITIALIZED", AudioStatus::INITIALIZED)
-        .export_values();
-    py::enum_<AVMediaType>(m, "AVMediaType")
-        .value("AVMEDIA_TYPE_UNKNOWN", AVMediaType::AVMEDIA_TYPE_UNKNOWN)
-        .value("AVMEDIA_TYPE_VIDEO", AVMediaType::AVMEDIA_TYPE_VIDEO)
-        .value("AVMEDIA_TYPE_AUDIO", AVMediaType::AVMEDIA_TYPE_AUDIO)
-        .export_values();
-    py::enum_<AudioEncoding>(m, "AudioEncoding")
-        .value("AAC", AudioEncoding::AAC)
-        .value("G711", AudioEncoding::G711)
-        .value("G726", AudioEncoding::G726)
-        .value("NONE", AudioEncoding::NONE)
-        .export_values();
-    py::enum_<AVPixelFormat>(m, "AVPixelFormat")
-        .value("AV_PIX_FMT_NONE", AVPixelFormat::AV_PIX_FMT_NONE)
-        .value("AV_PIX_FMT_YUV420P", AVPixelFormat::AV_PIX_FMT_YUV420P)
-        .value("AV_PIX_FMT_RGB24", AVPixelFormat::AV_PIX_FMT_RGB24)
-        .value("AV_PIX_FMT_BGR24", AVPixelFormat::AV_PIX_FMT_BGR24)
-        .value("AV_PIX_FMT_NV12", AVPixelFormat::AV_PIX_FMT_NV12)
-        .value("AV_PIX_FMT_NV21", AVPixelFormat::AV_PIX_FMT_NV21)
-        .value("AV_PIX_FMT_RGBA", AVPixelFormat::AV_PIX_FMT_RGBA)
-        .value("AV_PIX_FMT_BGRA", AVPixelFormat::AV_PIX_FMT_BGRA)
-        .value("AV_PIX_FMT_VAAPI", AVPixelFormat::AV_PIX_FMT_VAAPI)
-        .value("AV_PIX_FMT_CUDA", AVPixelFormat::AV_PIX_FMT_CUDA)
-        .value("AV_PIX_FMT_QSV", AVPixelFormat::AV_PIX_FMT_QSV)
-        .value("AV_PIX_FMT_D3D11VA_VLD", AVPixelFormat::AV_PIX_FMT_D3D11VA_VLD)
-        .value("AV_PIX_FMT_VDPAU", AVPixelFormat::AV_PIX_FMT_VDPAU)
-        .value("AV_PIX_FMT_D3D11", AVPixelFormat::AV_PIX_FMT_D3D11)
-        .value("AV_PIX_FMT_OPENCL", AVPixelFormat::AV_PIX_FMT_OPENCL)
-        .value("AV_PIX_FMT_GRAY8", AVPixelFormat::AV_PIX_FMT_GRAY8)
-        .export_values();
-    py::enum_<AVHWDeviceType>(m, "AVHWDeviceType")
-        .value("AV_HWDEVICE_TYPE_NONE", AVHWDeviceType::AV_HWDEVICE_TYPE_NONE)
-        .value("AV_HWDEVICE_TYPE_VDPAU", AVHWDeviceType::AV_HWDEVICE_TYPE_VDPAU)
-        .value("AV_HWDEVICE_TYPE_CUDA", AVHWDeviceType::AV_HWDEVICE_TYPE_CUDA)
-        .value("AV_HWDEVICE_TYPE_VAAPI", AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI)
-        .value("AV_HWDEVICE_TYPE_DXVA2", AVHWDeviceType::AV_HWDEVICE_TYPE_DXVA2)
-        .value("AV_HWDEVICE_TYPE_QSV", AVHWDeviceType::AV_HWDEVICE_TYPE_QSV)
-        .value("AV_HWDEVICE_TYPE_VIDEOTOOLBOX", AVHWDeviceType::AV_HWDEVICE_TYPE_VIDEOTOOLBOX)
-        .value("AV_HWDEVICE_TYPE_D3D11VA", AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA)
-        .value("AV_HWDEVICE_TYPE_DRM", AVHWDeviceType::AV_HWDEVICE_TYPE_DRM)
-        .value("AV_HWDEVICE_TYPE_OPENCL", AVHWDeviceType::AV_HWDEVICE_TYPE_OPENCL)
-        .value("AV_HWDEVICE_TYPE_MEDIACODEC", AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC)
-        .export_values();
-    py::enum_<AVSampleFormat>(m, "AVSampleFormat")
-        .value("AV_SAMPLE_FMT_NONE", AVSampleFormat::AV_SAMPLE_FMT_NONE)
-        .value("AV_SAMPLE_FMT_U8", AVSampleFormat::AV_SAMPLE_FMT_U8)
-        .value("AV_SAMPLE_FMT_S16", AVSampleFormat::AV_SAMPLE_FMT_S16)
-        .value("AV_SAMPLE_FMT_S32", AVSampleFormat::AV_SAMPLE_FMT_S32)
-        .value("AV_SAMPLE_FMT_FLT", AVSampleFormat::AV_SAMPLE_FMT_FLT)
-        .value("AV_SAMPLE_FMT_DBL", AVSampleFormat::AV_SAMPLE_FMT_DBL)
-        .value("AV_SAMPLE_FMT_U8P", AVSampleFormat::AV_SAMPLE_FMT_U8P)
-        .value("AV_SAMPLE_FMT_S16P", AVSampleFormat::AV_SAMPLE_FMT_S16P)
-        .value("AV_SAMPLE_FMT_S32P", AVSampleFormat::AV_SAMPLE_FMT_S32P)
-        .value("AV_SAMPLE_FMT_FLTP", AVSampleFormat::AV_SAMPLE_FMT_FLTP)
-        .value("AV_SAMPLE_FMT_DBLP", AVSampleFormat::AV_SAMPLE_FMT_DBLP)
-        .value("AV_SAMPLE_FMT_S64", AVSampleFormat::AV_SAMPLE_FMT_S64)
-        .value("AV_SAMPLE_FMT_S64P", AVSampleFormat::AV_SAMPLE_FMT_S64P)
-        .value("AV_SAMPLE_FMT_NB", AVSampleFormat::AV_SAMPLE_FMT_NB)
-        .export_values();
 
-    m.attr("__version__") = "3.2.6";
+    m.attr("__version__") = "3.2.7";
 
 }
 
