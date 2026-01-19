@@ -3,6 +3,12 @@
 Python library for processing media streams designed for use in 
 [Onvif GUI](https://github.com/sr99622/libonvif).
 
+To compile on windows, clone https://github.com/sr99622/onvif-gui-win-libs into the local directory, then
+
+```
+scripts\windows\compile
+```
+
 Copyright (c) 2022, 2023, 2024  Stephen Rhodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
