@@ -10,3 +10,4 @@ avio/*.so
 .DS_Store
 onvif-gui-win-libs/
 avio.egg-info/
+*.plist

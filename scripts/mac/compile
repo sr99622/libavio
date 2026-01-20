@@ -1,5 +1,18 @@
 #!/bin/bash
 
+cd libonvif
+
+FILE=build
+if [ -d "$FILE" ]; then
+    rm -R build
+fi
+FILE=libonvif.egg-info
+if [ -d "$FILE" ]; then
+    rm -R libonvif.egg-info
+fi
+pip install -v .
+
+cd ../libavio
 FILE=build
 if [ -d "$FILE" ]; then
     rm -R build
@@ -10,3 +23,25 @@ if [ -d "$FILE" ]; then
 fi
 pip install -v .
 
+cd ../kankakee
+FILE=build
+if [ -d "$FILE" ]; then
+    rm -R build
+fi
+FILE=kankakee.egg-info
+if [ -d "$FILE" ]; then
+    rm -R kankakee.egg-info
+fi
+pip install -v .
+
+cd ../onvif-gui
+FILE=build
+if [ -d "$FILE" ]; then
+    rm -R build
+fi
+FILE=onvif_gui.egg-info
+if [ -d "$FILE" ]; then
+    rm -R onvif_gui.egg-info
+fi
+pip install -v .
+cd ..
