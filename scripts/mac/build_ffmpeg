@@ -2,7 +2,7 @@
 
 cd $HOME/ffmpeg_sources && \
 if [[ ! -d "ffmpeg" ]]; then
-  curl -LO ffmpeg-snapshot.tar.bz2 ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
+  wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
   tar xjvf ffmpeg-snapshot.tar.bz2
 fi
 cd ffmpeg && \

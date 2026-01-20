@@ -6,7 +6,7 @@ cd $HOME/ffmpeg_sources && \
 #cd multicoreware*/build/linux && \
 #cd multicoreware-x265_git-ef83e1285847/build/linux
 if [ ! -d "x265_4.1" ]; then
-    curl -LO http://ftp.videolan.org/pub/videolan/x265/x265_4.1.tar.gz && \
+    wget http://ftp.videolan.org/pub/videolan/x265/x265_4.1.tar.gz && \
     tar xzvf x265_4.1.tar.gz
 fi && \
 cd x265_4.1/build/linux && \

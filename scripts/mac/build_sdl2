@@ -2,7 +2,7 @@
 
 cd $HOME/ffmpeg_sources && \
 if [ ! -d "SDL-release-2.32.0" ]; then
-    curl -LO release-2.32.0.tar.gz https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.32.0.tar.gz && \
+    wget -O release-2.32.0.tar.gz https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.32.0.tar.gz && \
     tar xzvf release-2.32.0.tar.gz
 fi && \
 cd SDL-release-2.32.0 && \
