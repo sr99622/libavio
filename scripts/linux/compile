@@ -1,0 +1,11 @@
+#!/bin/bash
+
+FILE=build
+if [ -d "$FILE" ]; then
+    rm -R build
+fi
+FILE=avio.egg-info
+if [ -d "$FILE" ]; then
+    rm -R avio.egg-info
+fi
+pip install -v .

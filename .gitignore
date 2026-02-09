@@ -3,6 +3,7 @@ dist/
 *.egg-info
 .vscode/
 __pycache__/
+vm/
 avio/*.dll
 avio/*.dylib
 avio/*.so.*
