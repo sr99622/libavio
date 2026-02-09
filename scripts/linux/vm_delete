@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+virsh destroy libavio-vm
+virsh undefine libavio-vm --remove-all-storage
