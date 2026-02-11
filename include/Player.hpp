@@ -247,12 +247,9 @@ public:
         if (video_decoder)        { delete video_decoder;        video_decoder        = nullptr; }
         if (audio_filter)         { delete audio_filter;         audio_filter         = nullptr; }
         if (audio_decoder)        { delete audio_decoder;        audio_decoder        = nullptr; }
-
-        // not clear that this is actually useful
         if (audio) {
             int count = 0;
             while (!audio->closed) {
-                std::cout << "waiting for audio to close" << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 count++;
                 if (count > 200) {
@@ -263,7 +260,6 @@ public:
             delete audio;
             audio = nullptr;
         }
-        //////////////////////////////////////////
         if (reader)               { delete reader;               reader               = nullptr; }
 
         if (mediaPlayingStopped) {
