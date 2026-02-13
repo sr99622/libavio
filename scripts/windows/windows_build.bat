@@ -36,11 +36,11 @@ for %%v in %list% do (
     cd %HOMEPATH%
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
     call py%%v\Scripts\activate
-rem    python.exe -m pip install --upgrade pip
-rem    cd libavio
+    python.exe -m pip install --upgrade pip
+    cd libavio
     pip install build
-rem    rmdir /q /s build
-rem    set SOURCE_DIR=%CD%
-rem    python -m build
+    rmdir /q /s build
+    set SOURCE_DIR=%CD%
+    python -m build
     call deactivate
 )
