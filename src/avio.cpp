@@ -146,7 +146,7 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("num", &AVRational::num)
         .def_readwrite("den", &AVRational::den);
 
-    m.attr("__version__") = "3.2.7";
+    m.attr("__version__") = "3.2.8";
 
 }
 
