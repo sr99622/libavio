@@ -17,30 +17,30 @@ cd %HOMEPATH%
 if not exist onvif-gui-win-libs\ (
     git clone https://github.com/sr99622/onvif-gui-win-libs
 )
-cd %HOMEPATH%\onvif-gui-win-libs
-git pull
 
-cd %HOMEPATH%\libonvif
+cd %HOMEPATH%\libavio
 
 if exist dist\ (
     del /q dist\*
 )
 
-call assets\scripts\components\windows\python\install
-call assets\scripts\components\windows\env_variables
-call assets\scripts\components\windows\copy_libs
+call scripts\windows\python\install
+
+set FFMPEG_INSTALL_DIR=%HOMEPATH%\onvif-gui-win-libs\ffmpeg
+set SDL2_INSTALL_DIR=%HOMEPATH%\onvif-gui-win-libs\sdl
+copy %HOMEPATH%\onvif-gui-win-libs\ffmpeg\bin\* avio
+copy %HOMEPATH%\onvif-gui-win-libs\sdl\bin\* avio
 
 set list=(310 311 312 313 314)
 for %%v in %list% do (
     cd %HOMEPATH%
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
     call py%%v\Scripts\activate
-    python.exe -m pip install --upgrade pip
-    pip uninstall -y libonvif
-    pip uninstall -y avio
-    pip uninstall -y kankakee
-    pip uninstall -y onvif-gui
-    cd libonvif
-    call assets\scripts\build_pkgs
+rem    python.exe -m pip install --upgrade pip
+rem    cd libavio
+    pip install build
+rem    rmdir /q /s build
+rem    set SOURCE_DIR=%CD%
+rem    python -m build
     call deactivate
 )
