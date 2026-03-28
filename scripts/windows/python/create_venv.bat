@@ -1,0 +1,1 @@
+%LOCALAPPDATA%\Programs\Python\Python%1\python -m venv py%1
