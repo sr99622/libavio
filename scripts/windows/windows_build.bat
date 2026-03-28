@@ -1,3 +1,5 @@
+rem Run this script inside a virtual machine, otherwise the compiler will link to the system python and only produce pyd for that version
+
 @echo off
 
 if not exist "%ALLUSERSPROFILE%\chocolatey\bin\" (
