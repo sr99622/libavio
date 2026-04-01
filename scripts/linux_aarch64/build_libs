@@ -1,8 +1,0 @@
-#!/bin/bash
-
-./build_nasm &&
-./build_h264 &&
-#./build_h265 &&
-./build_aac &&
-./build_sdl2 &&
-./build_ffmpeg
