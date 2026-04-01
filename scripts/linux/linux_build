@@ -1,53 +1,81 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-#sudo apt install -y git
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <project directory>" >&2
+  exit 1
+fi
+if [ ! -d "$1" ]; then
+  echo "Project directory $1 does not exist, please enter a valid directory" >&2
+  exit 1
+fi
+if [[ ! -f "$1/pyproject.toml" && ! -f "$1/setup.py" ]]; then 
+  echo "Invalid Python project directory, did not find either pyproject.toml or setup.py in $1" >&2
+  exit 1
+fi
 
-cd $HOME/libavio/scripts/linux
+PROJECT_DIR="$1"
+echo "Project Directory: $PROJECT_DIR" >&2
 
-versions=("3.10" "3.11" "3.12" "3.13" "3.14")
-for version in "${versions[@]}"; do
-    ./install_python $version
-done
+dnf install -y wget nasm
 
-mkdir -p $HOME/ffmpeg_sources
-source ./env_variables
-../make_build_dirs
-./prerequisites
-./build_libs
+BASE=$PWD
 
-cd $HOME/libavio
+export SOURCE=$PWD/source
+export BUILD=$PWD/build
+export BIN=$PWD/bin
+
+export DIR_NAME=$(dirname "$PWD/$0")
+export LD_RUN_PATH='$ORIGIN'
+export ACLOCAL_PATH=/usr/share/aclocal
+export PKG_CONFIG_PATH=$BUILD/lib/pkgconfig
+export SDL2_DIR=$BUILD
+
+$DIR_NAME/build_libs
+
 first_pass=1
-venvs=("py310" "py311" "py312" "py313" "py314")
+#venvs=("py310" "py311" "py312" "py313" "py314")
+venvs=("py313")
 for venv in "${venvs[@]}"; do
-  echo "venv: $venv"
-  if [ ! -d "$HOME/$venv" ]; then
-    echo "did not find venv $venv"
+  echo "Python venv: $venv" >&2
+  if [ ! -d "$BASE/$venv" ]; then
     version="${venv:2}"
     version="${version:0:1}.${version:1}"
     echo "version $version"
-    python${version} -m venv $HOME/$venv
-    . $HOME/$venv/bin/activate
+    python${version} -m venv $BASE/$venv
+    . $BASE/$venv/bin/activate
     pip install --upgrade pip
     deactivate
-  else
-    echo "FOUND VENV $venv"
   fi
-  source "$HOME/$venv/bin/activate"
+  source "$BASE/$venv/bin/activate"
   python --version
   if [ $first_pass == 1 ]; then
-    echo "first pass"
-    scripts/linux/compile
-    pyname=$(ls $HOME/$venv/lib | awk '{print $1}')
-    pydir=$HOME/$venv/lib/$pyname/site-packages
+    echo "first pass" >&2
+
+    cd $PROJECT_DIR
+    rm $PROJECT_DIR/avio/*so*
+    if [ -d "build" ]; then
+        rm -R build
+    fi
+    if [ -d "avio.egg-info" ]; then
+        rm -R avio.egg-info
+    fi
+    pip install -v .
+
+    pyname=$(ls $BASE/$venv/lib | awk '{print $1}')
+    pydir=$BASE/$venv/lib/$pyname/site-packages
     modname=$(ls $pydir/avio/avio*.so | awk '{print $1}')
     export executable=$modname
-    export sourcedir=$HOME/libavio/avio
-    scripts/linux/copy_libs
+    export sourcedir=$PROJECT_DIR/avio
+    $DIR_NAME/copy_libs
+
     pip uninstall -y avio
-    rm -rf dist
   fi
   first_pass=0
-  #assets/scripts/compile
-  scripts/linux/linux_pkgs
+
+  pip install build auditwheel patchelf
+  cd $PROJECT_DIR
+  python -m build
+  auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
+
   deactivate
 done
