@@ -75,7 +75,7 @@ for venv in "${venvs[@]}"; do
   pip install build auditwheel patchelf
   cd $PROJECT_DIR
   python -m build
-  auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
+  auditwheel repair "dist/*$venv*.whl" --plat manylinux_2_28_x86_64
 
   deactivate
 done
