@@ -39,5 +39,19 @@ for %%v in %list% do (
     python.exe -m pip install --upgrade pip
     pip uninstall -y avio
     call %HOMEPATH%\libavio\scripts\windows\build_pkgs
+
+    pip install build
+    if not exist dist/ (
+        mkdir dist
+    )
+    cd libavio
+    rmdir /q /s build
+    set SOURCE_DIR=%CD%
+    python -m build
+    for /f %%F in ('dir /b /a-d dist\*whl') do (
+        pip install dist\%%F
+    )
+    move dist\* ..\dist
+
     call deactivate
 )
