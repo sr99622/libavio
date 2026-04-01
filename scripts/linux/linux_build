@@ -20,6 +20,19 @@ dnf install -y wget nasm
 
 BASE=$PWD
 
+TMP=$(uname -m)
+if [[ "$TMP" == "x86_64" ]] || [[ "$TMP" == "amd64" ]] || [[ "$TMP" == "i386" ]] || [[ "$TMP" == "i686" ]]; then
+  echo "processor architecture is x86"
+  ARCHITECTURE="x86_64"
+elif [[ "$TMP" == "aarch64" ]] || [[ "$TMP" == "arm64" ]] || [[ "$TMP" == "arm"* ]]; then
+  echo "proocessor architecture is aarch64"
+  ARCHITECTURE="aarch64"
+else
+  echo "Unknown processor architecture: $TMP"
+  ARCHITECTURE="UNKNOWN"
+fi
+export ARCH=$ARCHITECTURE
+
 export SOURCE=$PWD/source
 export BUILD=$PWD/build
 export BIN=$PWD/bin
@@ -77,15 +90,14 @@ for venv in "${venvs[@]}"; do
   python -m build
 
 
-  ARCH=$(uname -m)
-  if [[ "$ARCH" == "x86_64" ]] || [[ "$ARCH" == "amd64" ]] || [[ "$ARCH" == "i386" ]] || [[ "$ARCH" == "i686" ]]; then
+  if [[ "$ARCH" == "x86_64" ]] ; then
     echo "processor architecture is x86"
     auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
-  elif [[ "$ARCH" == "aarch64" ]] || [[ "$ARCH" == "arm64" ]] || [[ "$ARCH" == "arm"* ]]; then
+  elif [[ "$ARCH" == "aarch64" ]]; then
     echo "aarch64"
     auditwheel repair dist/*.whl --plat manylinux_2_28_aarch64
   else
-    echo "ERROR: UNABLE TO BUILD WHEEL - Unknown architecture: $ARCH"
+    echo "ERROR: UNABLE TO BUILD WHEEL - Unknown architecture"
   fi
 
 
