@@ -18,13 +18,15 @@ if not exist onvif-gui-win-libs\ (
     git clone https://github.com/sr99622/onvif-gui-win-libs
 )
 cd %HOMEPATH%\onvif-gui-win-libs
-git pull
+rem git pull
 
 cd %HOMEPATH%\libavio
 
 if exist dist\ (
     del /q dist\*
 )
+
+echo "WHAT THE ACTUAL FUCK"
 
 call %HOMEPATH%\libavio\scripts\windows\python\install
 call %HOMEPATH%\libavio\scripts\windows\env_variables
