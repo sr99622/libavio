@@ -26,8 +26,6 @@ if exist dist\ (
     del /q dist\*
 )
 
-echo "WHAT THE ACTUAL FUCK"
-
 call %HOMEPATH%\libavio\scripts\windows\python\install
 call %HOMEPATH%\libavio\scripts\windows\env_variables
 call %HOMEPATH%\libavio\scripts\windows\copy_libs
