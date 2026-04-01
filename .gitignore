@@ -13,3 +13,4 @@ onvif-gui-win-libs/
 avio.egg-info/
 *.plist
 python*amd64.exe
+wheelhouse/

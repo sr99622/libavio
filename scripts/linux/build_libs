@@ -15,11 +15,13 @@ else
   echo "Found existing x264" >&2
 fi
 
-echo "Starting LIB_X265 build" >&2
-if [ ! -f "$BUILD/lib/libx265.so" ]; then
-  $DIR_NAME/build_h265
-else
-  echo "Found existing x265" >&2
+if [[ $ARCH == "x86_64" ]]; then
+  echo "Starting LIB_X265 build" >&2
+  if [ ! -f "$BUILD/lib/libx265.so" ]; then
+    $DIR_NAME/build_h265
+  else
+    echo "Found existing x265" >&2
+  fi
 fi
 
 echo "Starting FDK_AAC build" >&2
