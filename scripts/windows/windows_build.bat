@@ -1,5 +1,3 @@
-rem Run this script inside a virtual machine, otherwise the compiler will link to the system python and only produce pyd for that version
-
 @echo off
 
 if not exist "%ALLUSERSPROFILE%\chocolatey\bin\" (
@@ -19,30 +17,31 @@ cd %HOMEPATH%
 if not exist onvif-gui-win-libs\ (
     git clone https://github.com/sr99622/onvif-gui-win-libs
 )
+cd %HOMEPATH%\onvif-gui-win-libs
+git pull
 
-cd %HOMEPATH%\libavio
+cd %HOMEPATH%\libonvif
 
 if exist dist\ (
     del /q dist\*
 )
 
-call scripts\windows\python\install
+call %HOMEPATH%\libonvif\libavio\scripts\windows\python\install
+call %HOMEPATH%\libonvif\libavio\scripts\windows\env_variables
+call %HOMEPATH%\libonvif\libavio\scripts\windows\copy_libs
 
-set FFMPEG_INSTALL_DIR=%HOMEPATH%\onvif-gui-win-libs\ffmpeg
-set SDL2_INSTALL_DIR=%HOMEPATH%\onvif-gui-win-libs\sdl
-copy %HOMEPATH%\onvif-gui-win-libs\ffmpeg\bin\* avio
-copy %HOMEPATH%\onvif-gui-win-libs\sdl\bin\* avio
-
-set list=(310 311 312 313 314)
+rem set list=(310 311 312 313 314)
+set list=(313)
 for %%v in %list% do (
     cd %HOMEPATH%
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
     call py%%v\Scripts\activate
     python.exe -m pip install --upgrade pip
-    cd libavio
-    pip install build
-    rmdir /q /s build
-    set SOURCE_DIR=%CD%
-    python -m build
+    pip uninstall -y libonvif
+    pip uninstall -y avio
+    pip uninstall -y kankakee
+    pip uninstall -y onvif-gui
+    cd libonvif
+    call %HOMEPATH%\libonvif\libavio\scripts\windows\build_pkgs
     call deactivate
 )
