@@ -20,15 +20,15 @@ if not exist onvif-gui-win-libs\ (
 cd %HOMEPATH%\onvif-gui-win-libs
 git pull
 
-cd %HOMEPATH%\libonvif
+cd %HOMEPATH%\libavio
 
 if exist dist\ (
     del /q dist\*
 )
 
-call %HOMEPATH%\libonvif\libavio\scripts\windows\python\install
-call %HOMEPATH%\libonvif\libavio\scripts\windows\env_variables
-call %HOMEPATH%\libonvif\libavio\scripts\windows\copy_libs
+call %HOMEPATH%\libavio\scripts\windows\python\install
+call %HOMEPATH%\libavio\scripts\windows\env_variables
+call %HOMEPATH%\libavio\scripts\windows\copy_libs
 
 rem set list=(310 311 312 313 314)
 set list=(313)
@@ -37,11 +37,7 @@ for %%v in %list% do (
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
     call py%%v\Scripts\activate
     python.exe -m pip install --upgrade pip
-    pip uninstall -y libonvif
     pip uninstall -y avio
-    pip uninstall -y kankakee
-    pip uninstall -y onvif-gui
-    cd libonvif
-    call %HOMEPATH%\libonvif\libavio\scripts\windows\build_pkgs
+    call %HOMEPATH%\libavio\scripts\windows\build_pkgs
     call deactivate
 )

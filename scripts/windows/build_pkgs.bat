@@ -1,5 +1,5 @@
 pip install build
-call %HOMEPATH%\libonvif\libavio\scripts\windows\env_variables
+call %HOMEPATH%\libavio\scripts\windows\env_variables
 if not exist dist/ (
     mkdir dist
 )
