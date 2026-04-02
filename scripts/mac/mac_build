@@ -16,6 +16,8 @@ export SDL2_DIR=$HOME/ffmpeg_build
 export LIBXML2_INCLUDE_DIRS=$HOME/libxml2_build/include/libxml2
 export LIBXML2_LIBRARIES=$HOME/libxml2_build/lib/libxml2.dylib
 
+export PATH=/usr/local/bin:$PATH
+
 cd scripts/mac
 
 ./build_cmake_mac
