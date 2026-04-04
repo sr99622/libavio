@@ -3,10 +3,23 @@
 Python library for processing media streams designed for use in 
 [Onvif GUI](https://github.com/sr99622/libonvif).
 
-To compile on windows, clone https://github.com/sr99622/onvif-gui-win-libs into the local directory, then
+
+to build package on mac, build out a virtual machine
 
 ```
-scripts\windows\compile
+cd $HOME
+git clone --recursive https://github.com/sr99622/libavio
+cd libavio/scripts/mac
+./mac_build
+```
+
+to test
+```
+. $HOME/py313/bin/activate
+pip install ../../*313*
+python
+>> import avio
+>> avio.__version__ 
 ```
 
 Copyright (c) 2022, 2023, 2024  Stephen Rhodes
