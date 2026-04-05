@@ -8,7 +8,7 @@ if [ ! -d "$1" ]; then
   echo "Project directory $1 does not exist, please enter a valid directory" >&2
   exit 1
 fi
-if [[ ! -f "$1/pyproject.toml" && ! -f "$1/setup.py" ]]; then 
+if [[ ! -f "$1/pyproject.toml" && ! -f "$1/setup.py" ]]; then
   echo "Invalid Python project directory, did not find either pyproject.toml or setup.py in $1" >&2
   exit 1
 fi
@@ -46,8 +46,7 @@ export SDL2_DIR=$BUILD
 $DIR_NAME/build_libs
 
 first_pass=1
-#venvs=("py310" "py311" "py312" "py313" "py314")
-venvs=("py313")
+venvs=("py310" "py311" "py312" "py313" "py314")
 for venv in "${venvs[@]}"; do
   echo "Python venv: $venv" >&2
   if [ ! -d "$BASE/$venv" ]; then
@@ -67,10 +66,10 @@ for venv in "${venvs[@]}"; do
     cd $PROJECT_DIR
     rm $PROJECT_DIR/avio/*so*
     if [ -d "build" ]; then
-        rm -R build
+      rm -R build
     fi
     if [ -d "avio.egg-info" ]; then
-        rm -R avio.egg-info
+      rm -R avio.egg-info
     fi
     pip install -v .
 
@@ -89,8 +88,7 @@ for venv in "${venvs[@]}"; do
   cd $PROJECT_DIR
   python -m build
 
-
-  if [[ "$ARCH" == "x86_64" ]] ; then
+  if [[ "$ARCH" == "x86_64" ]]; then
     echo "processor architecture is x86"
     auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
   elif [[ "$ARCH" == "aarch64" ]]; then
@@ -99,9 +97,6 @@ for venv in "${venvs[@]}"; do
   else
     echo "ERROR: UNABLE TO BUILD WHEEL - Unknown architecture"
   fi
-
-
-  #auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
 
   deactivate
 done
