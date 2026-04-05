@@ -4,7 +4,56 @@ Python library for processing media streams designed for use in
 [Onvif GUI](https://github.com/sr99622/libonvif).
 
 
-to build package on mac, build out a virtual machine
+<h3>Linux</h3>
+
+Use for both x86_64 and aarch64. Start the docker container and cd to $HOME, it won't work from /. The command line requires the location of the project directory. Substitute the `<arch>` tag for your platform.
+
+Docker configuration
+
+```
+sudo snap install docker
+sudo groupadd docker
+sudo usermod -aG docker $USER
+sudo reboot now
+```
+
+Start the container. Substitute your architecture for `<arch>`, either `x86_64` or `aarch64`
+
+```
+docker run -it quay.io/pypa/manylinux_2_28_<arch> /bin/bash
+```
+
+From inside the container, run the build
+
+```
+cd $HOME
+git clone --recursive https://github.com/sr99622/libavio
+libavio/scripts/linux/linux_build libavio
+```
+
+The package installers will be found in the libavio/wheelhouse directory. For a quick test:
+
+```
+. $HOME/py313/bin/activate
+pip install $HOME/libavio/wheelhouse/*313*
+python
+>> import libavio
+>> libavio.__version__
+>> libavio.Player("") 
+```
+
+---
+
+
+<h3>Mac</h3>
+
+to build package on mac, build out a virtual machine, then from terminal
+
+```
+git
+```
+
+This will start the XCode tools installation. Once complete:
 
 ```
 cd $HOME
@@ -21,6 +70,8 @@ python
 >> import avio
 >> avio.__version__ 
 ```
+
+---
 
 Copyright (c) 2022, 2023, 2024  Stephen Rhodes
 
