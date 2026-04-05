@@ -33,9 +33,9 @@ else
 fi
 export ARCH=$ARCHITECTURE
 
-export SOURCE=$PWD/source
-export BUILD=$PWD/build
-export BIN=$PWD/bin
+export SOURCE=$BASE/source
+export BUILD=$BASE/build
+export BIN=$BASE/usr/local/bin
 
 export DIR_NAME=$(dirname "$PWD/$0")
 export LD_RUN_PATH='$ORIGIN'
