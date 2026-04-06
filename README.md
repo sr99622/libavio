@@ -17,10 +17,18 @@ sudo usermod -aG docker $USER
 sudo reboot now
 ```
 
-Start the container. Substitute your architecture for `<arch>`, either `x86_64` or `aarch64`
+Start the container. Select your architecture.
+
+   * x86_64
 
 ```
-docker run -it quay.io/pypa/manylinux_2_28_<arch> /bin/bash
+   docker run -it quay.io/pypa/manylinux_2_28_x86_64 /bin/bash
+```
+
+   * aarch64
+
+```
+   docker run -it quay.io/pypa/manylinux_2_28_aarch64 /bin/bash
 ```
 
 From inside the container, run the build
