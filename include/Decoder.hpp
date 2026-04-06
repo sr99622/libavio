@@ -70,7 +70,8 @@ public:
 
         const char* str = av_get_media_type_string(media_type);
         str_media_type = (str ? str : "unknown media type");
-        ex.ck((stream_index = av_find_best_stream(reader->fmt_ctx, media_type, -1, -1, &decoder, 0)), AFBS);
+        //ex.ck((stream_index = av_find_best_stream(reader->fmt_ctx, media_type, -1, -1, &decoder, 0)), AFBS);
+        ex.ck((stream_index = find_best_stream_compat(reader->fmt_ctx, media_type, -1, -1, &decoder, 0)), AFBS);
         AVStream* stream = reader->fmt_ctx->streams[stream_index];
 
         if (hw_type != AV_HWDEVICE_TYPE_NONE) {
