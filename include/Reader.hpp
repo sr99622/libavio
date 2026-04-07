@@ -280,7 +280,7 @@ int channels() const {
     //int            channels()           const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout.nb_channels : -1; }
     int            sample_rate()        const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->sample_rate : -1; }
     int            frame_size()         const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->frame_size : -1; }
-    AVSampleFormat sample_format()      const { return has_audio() ? (AVSampleFormat)fmt_ctx->streams[video_stream_index]->codecpar->format : AV_SAMPLE_FMT_NONE; }
+    AVSampleFormat sample_format()      const { return has_audio() ? (AVSampleFormat)fmt_ctx->streams[audio_stream_index]->codecpar->format : AV_SAMPLE_FMT_NONE; }
     std::string    str_sample_format()  const { return has_audio() ? get_string(av_get_sample_fmt_name((AVSampleFormat)fmt_ctx->streams[audio_stream_index]->codecpar->format)) : "invalid"; }
     AVCodecID      audio_codec()        const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->codec_id : AV_CODEC_ID_NONE; }
     std::string    str_audio_codec()    const { return has_audio() ? avcodec_get_name(fmt_ctx->streams[audio_stream_index]->codecpar->codec_id) : "invalid"; }
