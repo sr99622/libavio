@@ -65,10 +65,20 @@ inline int channel_count_from_codecctx(const AVCodecContext* codec_ctx) {
 
 inline uint64_t channel_mask_from_codecpar(const AVCodecParameters* codecpar) {
     if (!codecpar) return 0;
+
 #if AVIO_HAS_CH_LAYOUT
     if (codecpar->ch_layout.order == AV_CHANNEL_ORDER_NATIVE)
         return codecpar->ch_layout.u.mask;
-    return av_get_default_channel_layout(codecpar->ch_layout.nb_channels);
+
+    AVChannelLayout tmp = {};
+    av_channel_layout_default(&tmp, codecpar->ch_layout.nb_channels);
+
+    uint64_t mask = 0;
+    if (tmp.order == AV_CHANNEL_ORDER_NATIVE)
+        mask = tmp.u.mask;
+
+    av_channel_layout_uninit(&tmp);
+    return mask;
 #else
     if (codecpar->channel_layout)
         return codecpar->channel_layout;
@@ -78,10 +88,20 @@ inline uint64_t channel_mask_from_codecpar(const AVCodecParameters* codecpar) {
 
 inline uint64_t channel_mask_from_codecctx(const AVCodecContext* codec_ctx) {
     if (!codec_ctx) return 0;
+
 #if AVIO_HAS_CH_LAYOUT
     if (codec_ctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE)
         return codec_ctx->ch_layout.u.mask;
-    return av_get_default_channel_layout(codec_ctx->ch_layout.nb_channels);
+
+    AVChannelLayout tmp = {};
+    av_channel_layout_default(&tmp, codec_ctx->ch_layout.nb_channels);
+
+    uint64_t mask = 0;
+    if (tmp.order == AV_CHANNEL_ORDER_NATIVE)
+        mask = tmp.u.mask;
+
+    av_channel_layout_uninit(&tmp);
+    return mask;
 #else
     if (codec_ctx->channel_layout)
         return codec_ctx->channel_layout;
