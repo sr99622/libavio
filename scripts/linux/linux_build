@@ -33,20 +33,21 @@ else
 fi
 export ARCH=$ARCHITECTURE
 
-export SOURCE=$BASE/source
-export BUILD=$BASE/build
-export BIN=$BASE/usr/local/bin
+#export SOURCE=$BASE/source
+#export BUILD=$BASE/build
+#export BIN=$BASE/usr/local/bin
 
 export DIR_NAME=$(dirname "$PWD/$0")
 export LD_RUN_PATH='$ORIGIN'
-export ACLOCAL_PATH=/usr/share/aclocal
-export PKG_CONFIG_PATH=$BUILD/lib/pkgconfig
-export SDL2_DIR=$BUILD
+#export ACLOCAL_PATH=/usr/share/aclocal
+#export PKG_CONFIG_PATH=$BUILD/lib/pkgconfig
+#export SDL2_DIR=$BUILD
 
-$DIR_NAME/build_libs
+#$DIR_NAME/build_libs
 
 first_pass=1
-venvs=("py310" "py311" "py312" "py313" "py314")
+venvs=("py314")
+#venvs=("py310" "py311" "py312" "py313" "py314")
 for venv in "${venvs[@]}"; do
   echo "Python venv: $venv" >&2
   if [ ! -d "$BASE/$venv" ]; then
@@ -60,28 +61,6 @@ for venv in "${venvs[@]}"; do
   fi
   source "$BASE/$venv/bin/activate"
   python --version
-  if [ $first_pass == 1 ]; then
-    echo "first pass" >&2
-
-    cd $PROJECT_DIR
-    rm $PROJECT_DIR/avio/*so*
-    if [ -d "build" ]; then
-      rm -R build
-    fi
-    if [ -d "avio.egg-info" ]; then
-      rm -R avio.egg-info
-    fi
-    pip install -v .
-
-    pyname=$(ls $BASE/$venv/lib | awk '{print $1}')
-    pydir=$BASE/$venv/lib/$pyname/site-packages
-    modname=$(ls $pydir/avio/avio*.so | awk '{print $1}')
-    export executable=$modname
-    export sourcedir=$PROJECT_DIR/avio
-    $DIR_NAME/copy_libs
-
-    pip uninstall -y avio
-  fi
   first_pass=0
 
   pip install build auditwheel patchelf
@@ -90,7 +69,7 @@ for venv in "${venvs[@]}"; do
 
   if [[ "$ARCH" == "x86_64" ]]; then
     echo "processor architecture is x86"
-    auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
+    auditwheel repair dist/*.whl --plat manylinux_2_35_x86_64
   elif [[ "$ARCH" == "aarch64" ]]; then
     echo "aarch64"
     auditwheel repair dist/*.whl --plat manylinux_2_28_aarch64
