@@ -84,6 +84,34 @@ public:
     void* player = nullptr;
     int64_t seek_pts = AV_NOPTS_VALUE;
 
+
+    Reader(const std::string& uri) : uri(uri) {
+        AVDictionary* opts = nullptr;
+        int timeout_us = MAX_TIMEOUT * 1000000;
+
+        AVIOInterruptCB cb = { interrupt_callback, &callback_params };
+
+        fmt_ctx = avformat_alloc_context();
+        ex.ck(fmt_ctx ? 0 : AVERROR(ENOMEM), AFC);
+        fmt_ctx->interrupt_callback = cb;
+
+        if (uri.rfind("rtsp://", 0) == 0 || uri.rfind("rtsps://", 0) == 0) {
+            av_dict_set_int(&opts, "stimeout", timeout_us, 0);
+            av_dict_set(&opts, "rtsp_transport", "tcp", 0);
+        } else {
+            av_dict_set_int(&opts, "rw_timeout", timeout_us, 0);
+        }
+
+        ex.ck(avformat_open_input(&fmt_ctx, uri.c_str(), nullptr, &opts), AOI);
+        av_dict_free(&opts);
+
+        ex.ck(avformat_find_stream_info(fmt_ctx, nullptr), AFSI);
+        video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+        audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+        ex.ck((pkt = av_packet_alloc()), APA);
+    }
+
+    /*
     Reader(const std::string& uri) : uri(uri) {
         AVDictionary* opts = nullptr;
         int timeout_us = MAX_TIMEOUT * 1000000;
@@ -97,6 +125,7 @@ public:
         audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
         ex.ck((pkt = av_packet_alloc()), APA);
     }
+    */
 
     ~Reader() {
         if (fmt_ctx) {
