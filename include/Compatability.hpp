@@ -195,6 +195,49 @@ inline int swr_alloc_set_opts_compat(
     int out_rate
 ) {
 #if AVIO_HAS_SWR_ALLOC_SET_OPTS2
+    AVChannelLayout in_ch_layout  = {};
+    AVChannelLayout out_ch_layout = {};
+
+    int ret = av_channel_layout_copy(&in_ch_layout, &codecpar->ch_layout);
+    if (ret < 0)
+        return ret;
+
+    ret = av_channel_layout_copy(&out_ch_layout, &codecpar->ch_layout);
+    if (ret < 0) {
+        av_channel_layout_uninit(&in_ch_layout);
+        return ret;
+    }
+
+    ret = swr_alloc_set_opts2(
+        swr_ctx,
+        &out_ch_layout, out_fmt, out_rate,
+        &in_ch_layout, static_cast<AVSampleFormat>(codecpar->format), codecpar->sample_rate,
+        0, nullptr
+    );
+
+    av_channel_layout_uninit(&out_ch_layout);
+    av_channel_layout_uninit(&in_ch_layout);
+    return ret;
+#else
+    uint64_t mask = channel_mask_from_codecpar(codecpar);
+    *swr_ctx = swr_alloc_set_opts(
+        *swr_ctx,
+        static_cast<int64_t>(mask), out_fmt, out_rate,
+        static_cast<int64_t>(mask), static_cast<AVSampleFormat>(codecpar->format), codecpar->sample_rate,
+        0, nullptr
+    );
+    return (*swr_ctx) ? 0 : AVERROR(ENOMEM);
+#endif
+}
+
+/*
+inline int swr_alloc_set_opts_compat(
+    SwrContext** swr_ctx,
+    const AVCodecParameters* codecpar,
+    AVSampleFormat out_fmt,
+    int out_rate
+) {
+#if AVIO_HAS_SWR_ALLOC_SET_OPTS2
     return swr_alloc_set_opts2(
         swr_ctx,
         &codecpar->ch_layout, out_fmt, out_rate,
@@ -212,6 +255,7 @@ inline int swr_alloc_set_opts_compat(
     return (*swr_ctx) ? 0 : AVERROR(ENOMEM);
 #endif
 }
+*/
 
 inline int find_best_stream_compat(
     AVFormatContext* fmt_ctx,
