@@ -148,30 +148,16 @@ public:
                 decoder->codec_ctx->sample_aspect_ratio.num, decoder->codec_ctx->sample_aspect_ratio.den);
         }
 
-else if (decoder->media_type == AVMEDIA_TYPE_AUDIO) {
-    char ch_layout[128] = {0};
-    describe_codecctx_channel_layout(decoder->codec_ctx, ch_layout, sizeof(ch_layout));
-    snprintf(args, sizeof(args),
-        "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=%s",
-        time_base.num, time_base.den,
-        decoder->codec_ctx->sample_rate,
-        sample_fmt_name(decoder->codec_ctx->sample_fmt),
-        ch_layout);
-}
-
-
-        /*
         else if (decoder->media_type == AVMEDIA_TYPE_AUDIO) {
-            if (decoder->codec_ctx->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
-                av_channel_layout_default(&decoder->codec_ctx->ch_layout, decoder->codec_ctx->ch_layout.nb_channels);
-            int ret = 0;
-            ret = snprintf(args, sizeof(args),
-                "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=",
-                time_base.num, time_base.den, decoder->codec_ctx->sample_rate,
-                av_get_sample_fmt_name(decoder->codec_ctx->sample_fmt));
-            av_channel_layout_describe(&decoder->codec_ctx->ch_layout, args + ret, sizeof(args) - ret);
+            char ch_layout[128] = {0};
+            describe_codecctx_channel_layout(decoder->codec_ctx, ch_layout, sizeof(ch_layout));
+            snprintf(args, sizeof(args),
+                "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=%s",
+                time_base.num, time_base.den,
+                decoder->codec_ctx->sample_rate,
+                sample_fmt_name(decoder->codec_ctx->sample_fmt),
+                ch_layout);
         }
-        */
         else {
             throw std::runtime_error("get_input_config error: unknown media type");
         }

@@ -272,12 +272,7 @@ public:
     AVRational    video_time_base() const { return has_video() ? fmt_ctx->streams[video_stream_index]->time_base : av_make_q(0, 0); }
 
     bool has_audio() const { return ((audio_stream_index >= 0)); }
-
-int channels() const {
-    return has_audio() ? channel_count_from_codecpar(fmt_ctx->streams[audio_stream_index]->codecpar) : -1;
-}
-
-    //int            channels()           const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout.nb_channels : -1; }
+    int            channels()           const { return has_audio() ? channel_count_from_codecpar(fmt_ctx->streams[audio_stream_index]->codecpar) : -1; }
     int            sample_rate()        const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->sample_rate : -1; }
     int            frame_size()         const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->frame_size : -1; }
     AVSampleFormat sample_format()      const { return has_audio() ? (AVSampleFormat)fmt_ctx->streams[audio_stream_index]->codecpar->format : AV_SAMPLE_FMT_NONE; }
@@ -286,24 +281,12 @@ int channels() const {
     std::string    str_audio_codec()    const { return has_audio() ? avcodec_get_name(fmt_ctx->streams[audio_stream_index]->codecpar->codec_id) : "invalid"; }
     int64_t        audio_bit_rate()     const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->codecpar->bit_rate : -1; }
     AVRational     audio_time_base()    const { return has_audio() ? fmt_ctx->streams[audio_stream_index]->time_base : av_make_q(0, 0); }
-
-
-std::string str_channel_layout() const {
-    char result[256] = {0};
-    if (has_audio())
-        describe_codecpar_channel_layout(fmt_ctx->streams[audio_stream_index]->codecpar, result, sizeof(result));
-    return std::string(result);
-}
-
-
-    /*
-    std::string    str_channel_layout() const {
-        char result[256] = { 0 };
+    std::string str_channel_layout() const {
+        char result[256] = {0};
         if (has_audio())
-            av_channel_layout_describe(&fmt_ctx->streams[audio_stream_index]->codecpar->ch_layout, result, 256);
+            describe_codecpar_channel_layout(fmt_ctx->streams[audio_stream_index]->codecpar, result, sizeof(result));
         return std::string(result);
     }
-    */
 
     std::string get_string(const char* arg) const {
         if (arg)

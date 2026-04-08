@@ -1,5 +1,24 @@
-#ifndef FFMPEG_COMPAT_HPP
-#define FFMPEG_COMPAT_HPP
+/********************************************************************
+* libavio/include/Compatability.hpp
+*
+* Copyright (c) 2026  Stephen Rhodes
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+*********************************************************************/
+
+#ifndef COMPATABILITY_HPP
+#define COMPATABILITY_HPP
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -26,13 +45,9 @@ namespace avio {
 
 #if LIBAVCODEC_VERSION_MAJOR >= 59
 #define AVIO_HAS_FRAME_TIME_BASE 1
-#else
-#define AVIO_HAS_FRAME_TIME_BASE 0
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR >= 59
 #define AVIO_HAS_PACKET_TIME_BASE 1
 #else
+#define AVIO_HAS_FRAME_TIME_BASE 0
 #define AVIO_HAS_PACKET_TIME_BASE 0
 #endif
 
@@ -222,4 +237,4 @@ inline int find_best_stream_compat(
 
 } // namespace avio
 
-#endif // FFMPEG_COMPAT_HPP
+#endif // COMPATABILITY_HPP

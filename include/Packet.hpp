@@ -24,7 +24,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-#include "FFmpegCompat.hpp"
+#include "Compatability.hpp"
 #include "Exception.hpp"
 
 namespace avio {
@@ -83,9 +83,7 @@ public:
     int        size()         const { return pkt ? pkt->size : 0; }
     int        flags()        const { return pkt ? pkt->flags : 0; }
     bool       is_key_frame() const { return pkt ? pkt->flags & AV_PKT_FLAG_KEY : false; }
-
     AVRational time_base() const { return packet_time_base(pkt); }
-    //AVRational time_base()    const { return pkt ? pkt->time_base : av_make_q(0, 0); }
     
 };
 
