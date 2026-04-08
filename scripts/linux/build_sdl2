@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 cd $SOURCE && \
 if [ ! -d "SDL-release-2.32.0" ]; then

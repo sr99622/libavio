@@ -1,24 +1,47 @@
 #!/usr/bin/env bash
 
-if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <project directory>" >&2
+USE_SYSTEM_LIBS=0
+
+usage() {
+  echo "Usage: $0 [--system-libs] <project directory>" >&2
   exit 1
+}
+
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+  usage
 fi
-if [ ! -d "$1" ]; then
-  echo "Project directory $1 does not exist, please enter a valid directory" >&2
-  exit 1
+
+if [[ $# -eq 2 ]]; then
+  if [[ "$1" != "--system-libs" ]]; then
+    usage
+  fi
+  USE_SYSTEM_LIBS=1
+  PROJECT_ARG="$2"
+else
+  PROJECT_ARG="$1"
 fi
-if [[ ! -f "$1/pyproject.toml" && ! -f "$1/setup.py" ]]; then
-  echo "Invalid Python project directory, did not find either pyproject.toml or setup.py in $1" >&2
+
+if [[ ! -d "$PROJECT_ARG" ]]; then
+  echo "Project directory $PROJECT_ARG does not exist, please enter a valid directory" >&2
   exit 1
 fi
 
-PROJECT_DIR="$PWD/$1"
+if [[ ! -f "$PROJECT_ARG/pyproject.toml" && ! -f "$PROJECT_ARG/setup.py" ]]; then
+  echo "Invalid Python project directory, did not find either pyproject.toml or setup.py in $PROJECT_ARG" >&2
+  exit 1
+fi
+
+PROJECT_DIR="$(cd "$PROJECT_ARG" && pwd)"
 echo "Project Directory: $PROJECT_DIR" >&2
 
-dnf install -y wget nasm
+if (( USE_SYSTEM_LIBS )); then
+  echo "Using system-installed FFmpeg/SDL libraries" >&2
+else
+  echo "Using custom FFmpeg/SDL libraries" >&2
+fi
 
-BASE=$PWD
+#PROJECT_DIR="$PWD/$1"
+#echo "Project Directory: $PROJECT_DIR" >&2
 
 TMP=$(uname -m)
 if [[ "$TMP" == "x86_64" ]] || [[ "$TMP" == "amd64" ]] || [[ "$TMP" == "i386" ]] || [[ "$TMP" == "i686" ]]; then
@@ -33,17 +56,21 @@ else
 fi
 export ARCH=$ARCHITECTURE
 
-#export SOURCE=$BASE/source
-#export BUILD=$BASE/build
-#export BIN=$BASE/usr/local/bin
 
-export DIR_NAME=$(dirname "$PWD/$0")
+BASE="$PWD"
+DIR_NAME="$(cd "$(dirname "$0")" && pwd)"
 export LD_RUN_PATH='$ORIGIN'
-#export ACLOCAL_PATH=/usr/share/aclocal
-#export PKG_CONFIG_PATH=$BUILD/lib/pkgconfig
-#export SDL2_DIR=$BUILD
 
-#$DIR_NAME/build_libs
+if (( ! USE_SYSTEM_LIBS )); then
+  dnf install -y wget nasm
+  export SOURCE="$BASE/source"
+  export BUILD="$BASE/build"
+  export BIN="$BASE/usr/local/bin"
+  export ACLOCAL_PATH=/usr/share/aclocal
+  export PKG_CONFIG_PATH="$BUILD/lib/pkgconfig"
+  export SDL2_DIR="$BUILD"
+  "$DIR_NAME/build_libs"
+fi
 
 first_pass=1
 venvs=("py314")
