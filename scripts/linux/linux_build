@@ -59,7 +59,24 @@ export ARCH=$ARCHITECTURE
 BASE="$PWD"
 export LD_RUN_PATH='$ORIGIN'
 
-if (( ! USE_SYSTEM_LIBS )); then
+if (( USE_SYSTEM_LIBS )); then
+  dnf install -y dnf-plugins-core epel-release
+  dnf config-manager --set-enabled powertools
+
+  dnf install -y \
+    https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-8.noarch.rpm \
+    https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-8.noarch.rpm
+
+  dnf makecache
+
+  dnf install -y \
+    ffmpeg ffmpeg-devel ffmpeg-libs \
+    SDL2 SDL2-devel \
+    x264 x264-devel \
+    x265 x265-devel \
+    fdk-aac fdk-aac-devel \
+    pkgconf-pkg-config
+else
   dnf install -y wget nasm
   export SOURCE="$BASE/source"
   export BUILD="$BASE/build"
