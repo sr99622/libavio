@@ -56,9 +56,7 @@ else
 fi
 export ARCH=$ARCHITECTURE
 
-
 BASE="$PWD"
-DIR_NAME="$(cd "$(dirname "$0")" && pwd)"
 export LD_RUN_PATH='$ORIGIN'
 
 if (( ! USE_SYSTEM_LIBS )); then
@@ -69,6 +67,7 @@ if (( ! USE_SYSTEM_LIBS )); then
   export ACLOCAL_PATH=/usr/share/aclocal
   export PKG_CONFIG_PATH="$BUILD/lib/pkgconfig"
   export SDL2_DIR="$BUILD"
+  export DIR_NAME="$(cd "$(dirname "$0")" && pwd)"
   "$DIR_NAME/build_libs"
 fi
 
