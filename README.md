@@ -1,9 +1,6 @@
 # avio
 
-<h2>DEV BRANCH</h2>
-
-Python library for processing media streams designed for use in 
-[Onvif GUI](https://github.com/sr99622/libonvif).
+Python library for processing media streams.
 
 
 <h3>Linux</h3>
@@ -47,9 +44,9 @@ The package installers will be found in the libavio/wheelhouse directory. For a 
 . $HOME/py313/bin/activate
 pip install $HOME/libavio/wheelhouse/*313*
 python
->> import libavio
->> libavio.__version__
->> libavio.Player("") 
+>>> import avio
+>>> avio.__version__
+>>> avio.Player("") 
 ```
 
 ---
@@ -77,8 +74,8 @@ to test
 . $HOME/py313/bin/activate
 pip install ../../*313*
 python
->> import avio
->> avio.__version__ 
+>>> import avio
+>>> avio.__version__ 
 ```
 
 ---
