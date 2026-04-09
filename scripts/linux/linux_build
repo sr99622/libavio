@@ -16,18 +16,12 @@ fi
 PROJECT_DIR="$(cd "$1" && pwd)"
 echo "Project Directory: $PROJECT_DIR" >&2
 
-TMP=$(uname -m)
-if [[ "$TMP" == "x86_64" ]] || [[ "$TMP" == "amd64" ]] || [[ "$TMP" == "i386" ]] || [[ "$TMP" == "i686" ]]; then
-  echo "processor architecture is x86"
-  ARCHITECTURE="x86_64"
-elif [[ "$TMP" == "aarch64" ]] || [[ "$TMP" == "arm64" ]] || [[ "$TMP" == "arm"* ]]; then
-  echo "proocessor architecture is aarch64"
-  ARCHITECTURE="aarch64"
-else
-  echo "Unknown processor architecture: $TMP"
-  ARCHITECTURE="UNKNOWN"
-fi
-export ARCH=$ARCHITECTURE
+case "$(uname -m)" in
+  x86_64|amd64|i386|i686) ARCH="x86_64" ;;
+  aarch64|arm64|arm*)     ARCH="aarch64" ;;
+  *)                      ARCH="UNKNOWN" ;;
+esac
+export ARCH
 
 BASE="$PWD"
 export LD_RUN_PATH='$ORIGIN'
