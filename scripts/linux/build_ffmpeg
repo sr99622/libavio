@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-cd $SOURCE && \
+cd "$SOURCE"
 if [[ ! -d "ffmpeg" ]]; then
-  wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
+  wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
   tar xjvf ffmpeg-snapshot.tar.bz2
 fi
-cd ffmpeg && \
+cd ffmpeg
 if [[ $ARCH == "x86_64" ]]; then
   PATH="$BIN:$PATH" PKG_CONFIG_PATH="$BUILD/lib/pkgconfig" ./configure \
     --prefix="$BUILD" \
@@ -21,9 +22,9 @@ if [[ $ARCH == "x86_64" ]]; then
     --enable-libfdk-aac \
     --enable-libx264 \
     --enable-libx265 \
-    --enable-nonfree && \
-  PATH="$BIN:$PATH" make -j$(nproc) && \
-  make install && \
+    --enable-nonfree
+  PATH="$BIN:$PATH" make -j"$(nproc)"
+  make install
   hash -r
 else
   PATH="$BIN:$PATH" PKG_CONFIG_PATH="$BUILD/lib/pkgconfig" ./configure \
@@ -39,8 +40,8 @@ else
     --enable-gpl \
     --enable-libfdk-aac \
     --enable-libx264 \
-    --enable-nonfree && \
-  PATH="$BIN:$PATH" make -j$(nproc) && \
-  make install && \
+    --enable-nonfree
+  PATH="$BIN:$PATH" make -j"$(nproc)"
+  make install
   hash -r
 fi

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "ERROR: build failed in ${BASH_SOURCE[0]} at line ${LINENO}" >&2' ERR
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <project directory>" >&2

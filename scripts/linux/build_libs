@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "ERROR: build failed in ${BASH_SOURCE[0]} at line ${LINENO}" >&2' ERR
 
 cd $DIR_NAME
 echo "HELLO FROM build libs: $DIR_NAME"
-
 
 if [ ! -d "$SOURCE" ]; then
   mkdir -p "$SOURCE"
