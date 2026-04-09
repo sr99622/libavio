@@ -64,7 +64,7 @@ for venv in "${venvs[@]}"; do
 
   if [[ "$ARCH" == "x86_64" ]]; then
     echo "processor architecture is x86"
-    auditwheel repair dist/*.whl --plat manylinux_2_38_x86_64
+    auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
   elif [[ "$ARCH" == "aarch64" ]]; then
     echo "aarch64"
     auditwheel repair dist/*.whl --plat manylinux_2_28_aarch64
