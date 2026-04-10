@@ -1,8 +1,0 @@
-#!/bin/bash
-
-cd $BUILD/lib
-for entry in $(otool -l libx265.dylib | grep -A5 LC_ID_DYLIB | grep name | awk '{print $2}'); do
-    echo "entry: $entry"
-    file=$(basename $entry)
-    install_name_tool -id $BUILD/lib/$file $file
-done
