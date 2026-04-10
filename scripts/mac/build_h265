@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd $HOME/ffmpeg_sources && \
+cd $SOURCE && \
 #wget -O x265.tar.bz2 https://bitbucket.org/multicoreware/x265_git/get/master.tar.bz2 && \
 #tar xjvf x265.tar.bz2 && \
 #cd multicoreware*/build/linux && \
@@ -11,13 +11,13 @@ if [ ! -d "x265_4.1" ]; then
     tar xzvf x265_4.1.tar.gz
 fi && \
 cd x265_4.1/build/linux && \
-PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED=on ../../source && \
-PATH="$HOME/bin:$PATH" make  -j$(nproc) && \
+PATH="$BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$BUILD" -DENABLE_SHARED=on ../../source && \
+PATH="$BIN:$PATH" make  -j$(nproc) && \
 make install
 
-cd $HOME/ffmpeg_build/lib
+cd $BUILD/lib
 for entry in $(otool -l libx265.dylib | grep -A5 LC_ID_DYLIB | grep name | awk '{print $2}'); do
     echo "entry: $entry"
     file=$(basename $entry)
-    install_name_tool -id $HOME/ffmpeg_build/lib/$file $file
+    install_name_tool -id $BUILD/lib/$file $file
 done
