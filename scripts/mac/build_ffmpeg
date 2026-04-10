@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-cd $SOURCE && \
+cd $SOURCE
 if [[ ! -d "ffmpeg" ]]; then
-  wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 && \
+  wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
   tar xjvf ffmpeg-snapshot.tar.bz2
 fi
-cd ffmpeg && \
+cd ffmpeg
 PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$BUILD/lib/pkgconfig" ./configure \
   --prefix="$BUILD" \
   --extra-cflags="-I$BUILD/include" \
@@ -20,7 +20,7 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$BUILD/lib/pkgconfig" ./configure \
   --enable-libfdk-aac \
   --enable-libx264 \
   --enable-libx265 \
-  --enable-nonfree && \
-PATH="$HOME/bin:$PATH" make -j$(nproc) && \
-make install && \
+  --enable-nonfree
+PATH="$HOME/bin:$PATH" make -j$(nproc)
+make install
 hash -r
