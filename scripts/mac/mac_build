@@ -29,7 +29,7 @@ mkdir -p $HOME/bin
 mkdir -p $HOME/sources
 mkdir -p $HOME/libxml2_sources
 
-export BUILD="$HOME/ffmoeg_build"
+export BUILD="$HOME/ffmpeg_build"
 export SOURCE="$HOME/ffmpeg_sources"
 export BIN="$HOME/bin"
 export MACOSX_DEPLOYMENT_TARGET=15.0
