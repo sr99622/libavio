@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "ERROR: build failed in ${BASH_SOURCE[0]} at line ${LINENO}" >&2' ERR
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <project directory>" >&2
+  exit 1
+fi
+if [ ! -d "$1" ]; then
+  echo "Project directory $1 does not exist, please enter a valid directory" >&2
+  exit 1
+fi
+if [[ ! -f "$1/pyproject.toml" && ! -f "$1/setup.py" ]]; then
+  echo "Invalid Python project directory, did not find either pyproject.toml or setup.py in $1" >&2
+  exit 1
+fi
+
+PROJECT_DIR="$(cd "$1" && pwd)"
+echo "Project Directory: $PROJECT_DIR" >&2
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 echo >> $HOME/.zprofile
@@ -11,6 +29,9 @@ mkdir -p $HOME/bin
 mkdir -p $HOME/sources
 mkdir -p $HOME/libxml2_sources
 
+export BUILD="$HOME/ffmoeg_build"
+export SOURCE="$HOME/ffmpeg_sources"
+export BIN="$HOME/bin"
 export MACOSX_DEPLOYMENT_TARGET=15.0
 export PKG_CONFIG_PATH=$HOME/ffmpeg_build/lib/pkgconfig
 export SDL2_DIR=$HOME/ffmpeg_build
@@ -19,24 +40,25 @@ export LIBXML2_LIBRARIES=$HOME/libxml2_build/lib/libxml2.dylib
 
 export PATH=/usr/local/bin:$PATH
 
-cd scripts/mac
+rm -rf "$BUILD"
 
-./build_cmake_mac
-./build_h264
-./build_h265
-./fix_x265_rpath
-./build_aac
-./build_sdl2
-./build_ffmpeg 
+"$PROJECT_DIR/scripts/mac/build_cmake_mac"
+"$PROJECT_DIR/scripts/mac/build_h264"
+"$PROJECT_DIR/scripts/mac/build_h265"
+#"$PROJECT_DIR/scripts/mac/fix_x265_rpath"
+"$PROJECT_DIR/scripts/mac/build_aac"
+"$PROJECT_DIR/scripts/mac/build_sdl2"
+"$PROJECT_DIR/scripts/mac/build_ffmpeg" 
 
 versions=("3.10.11" "3.11.9" "3.12.9" "3.13.2" "3.14.2")
 for version in "${versions[@]}"; do
-    ./install_python $version
+    "$PROJECT_DIR/scripts/mac/install_python" $version
 done
 
-cd ../..
+cd $PROJECT_DIR
 first_pass=1
-venvs=("py310" "py311" "py312" "py313" "py314")
+#venvs=("py310" "py311" "py312" "py313" "py314")
+venvs=("py313")
 for venv in "${venvs[@]}"; do
     source $HOME/$venv/bin/activate
     python --version
@@ -47,9 +69,9 @@ for venv in "${venvs[@]}"; do
         pydir=$HOME/$venv/lib/$pyname/site-packages
         modname=$(ls $pydir/avio/avio*.so | awk '{print $1}')
         export executable=$modname
-        export sourcedir=avio
-        scripts/mac/copy_libs
-        scripts/mac/install_name
+        export sourcedir=$PROJECT_DIR/avio
+        $PROJECT_DIR/scripts/mac/copy_libs
+        $PROJECT_DIR/scripts/mac/install_name
     fi
     first_pass=0
     python -m build .

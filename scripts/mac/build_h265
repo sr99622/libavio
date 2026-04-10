@@ -5,6 +5,7 @@ cd $HOME/ffmpeg_sources && \
 #tar xjvf x265.tar.bz2 && \
 #cd multicoreware*/build/linux && \
 #cd multicoreware-x265_git-ef83e1285847/build/linux
+
 if [ ! -d "x265_4.1" ]; then
     wget http://ftp.videolan.org/pub/videolan/x265/x265_4.1.tar.gz && \
     tar xzvf x265_4.1.tar.gz
@@ -13,3 +14,10 @@ cd x265_4.1/build/linux && \
 PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED=on ../../source && \
 PATH="$HOME/bin:$PATH" make  -j$(nproc) && \
 make install
+
+cd $HOME/ffmpeg_build/lib
+for entry in $(otool -l libx265.dylib | grep -A5 LC_ID_DYLIB | grep name | awk '{print $2}'); do
+    echo "entry: $entry"
+    file=$(basename $entry)
+    install_name_tool -id $HOME/ffmpeg_build/lib/$file $file
+done
