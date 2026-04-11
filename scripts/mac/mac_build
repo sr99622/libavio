@@ -50,8 +50,8 @@ for version in "${versions[@]}"; do
 done
 
 cd "$PROJECT_DIR"
-#venvs=("py310" "py311" "py312" "py313" "py314")
-venvs=("py313")
+venvs=("py310" "py311" "py312" "py313" "py314")
+#venvs=("py313")
 for venv in "${venvs[@]}"; do
     source $HOME/$venv/bin/activate
     python --version
@@ -59,6 +59,6 @@ for venv in "${venvs[@]}"; do
     python -m build .
     wheel=$(ls -1 dist/*${venv:2}*)
     echo $wheel
-    delocate-wheel -w fixed_wheels --require-archs=arm64  -v $wheel
+    delocate-wheel -w fixed_wheels --require-archs=arm64  -v "$wheel"
     deactivate
 done

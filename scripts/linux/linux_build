@@ -38,8 +38,8 @@ export SDL2_DIR="$BUILD"
 export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 "$SCRIPT_DIR/build_libs"
 
-venvs=("py314")
-#venvs=("py310" "py311" "py312" "py313" "py314")
+#venvs=("py314")
+venvs=("py310" "py311" "py312" "py313" "py314")
 for venv in "${venvs[@]}"; do
   echo "Python venv: $venv" >&2
   if [ ! -d "$BASE/$venv" ]; then
