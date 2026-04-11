@@ -10,7 +10,7 @@ git clone https://bitbucket.org/multicoreware/x265_git
 cd x265_git/build/linux
 cmake ../../source -DCMAKE_INSTALL_PREFIX="$BUILD"
 make 
-sudo make install
+make install
 
 #if [ ! -d "x265_4.1" ]; then
 #    wget http://ftp.videolan.org/pub/videolan/x265/x265_4.1.tar.gz
