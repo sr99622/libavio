@@ -3,6 +3,6 @@
 cd $SOURCE
 git -C x264 pull 2> /dev/null || git clone --depth 1 https://code.videolan.org/videolan/x264.git
 cd x264
-PATH="$BIN:$PATH" PKG_CONFIG_PATH="$BUILD/lib/pkgconfig" ./configure --prefix="$BUILD" --bindir="$HOME/bin" --enable-shared --enable-pic
-PATH="$BIN:$PATH" make -j$(nproc)
+PKG_CONFIG_PATH="$BUILD/lib/pkgconfig" ./configure --prefix="$BUILD" --bindir="$BIN" --enable-shared --enable-pic
+make -j
 make install
