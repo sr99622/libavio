@@ -14,6 +14,6 @@ git -C x265_git pull 2> /dev/null || git clone --depth 1 https://bitbucket.org/m
 #git clone https://bitbucket.org/multicoreware/x265_git
 cd x265_git/build/linux
 
-PATH="$BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED=on ../../source && \
-PATH="$BIN:$PATH" make  -j$(nproc) && \
+PATH="$BIN:$PATH" cmake -G "Unix Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$BUILD" -DENABLE_SHARED=on ../../source
+PATH="$BIN:$PATH" make  -j$(nproc)
 make install
