@@ -43,11 +43,11 @@ venvs=("py314")
 for venv in "${venvs[@]}"; do
   echo "Python venv: $venv" >&2
   if [ ! -d "$BASE/$venv" ]; then
-    version="${venv:2}"
+    #version="${venv:2}"
     version="${version:0:1}.${version:1}"
     echo "version $version"
-    python${version} -m venv $BASE/$venv
-    . $BASE/$venv/bin/activate
+    python${version} -m venv "$BASE/$venv"
+    source "$BASE/$venv/bin/activate"
     pip install --upgrade pip
     deactivate
   fi
@@ -55,7 +55,7 @@ for venv in "${venvs[@]}"; do
   python --version
 
   pip install build auditwheel patchelf
-  cd $PROJECT_DIR
+  cd "$PROJECT_DIR"
   python -m build
 
   if [[ "$ARCH" == "x86_64" ]]; then
