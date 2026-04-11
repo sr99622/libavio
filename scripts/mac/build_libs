@@ -9,12 +9,12 @@ if [ ! -d "$SOURCE" ]; then
   mkdir -p "$SOURCE"
 fi
 
-echo "Starting CMAKE build" >&2
-if [ ! -f "/usr/local/bin/cmake" ]; then
-  "$SCRIPT_DIR/build_cmake_mac"
-else
-  echo "Found existing cmake" >&2
-fi
+#echo "Starting CMAKE build" >&2
+#if [ ! -f "/usr/local/bin/cmake" ]; then
+#  "$SCRIPT_DIR/build_cmake_mac"
+#else
+#  echo "Found existing cmake" >&2
+#fi
 
 echo "Starting LIB_X264 build" >&2
 if [ ! -f "$BUILD/lib/libx264.dylib" ]; then
