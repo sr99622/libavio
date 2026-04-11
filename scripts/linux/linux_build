@@ -35,8 +35,8 @@ export BIN="$BASE/usr/local/bin"
 export ACLOCAL_PATH=/usr/share/aclocal
 export PKG_CONFIG_PATH="$BUILD/lib/pkgconfig"
 export SDL2_DIR="$BUILD"
-export DIR_NAME="$(cd "$(dirname "$0")" && pwd)"
-"$DIR_NAME/build_libs"
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+"$SCRIPT_DIR/build_libs"
 
 venvs=("py314")
 #venvs=("py310" "py311" "py312" "py313" "py314")
@@ -58,12 +58,14 @@ for venv in "${venvs[@]}"; do
   cd "$PROJECT_DIR"
   python -m build
 
+  wheel=$(ls -1 dist/*${venv:2}*)
+  echo $wheel
   if [[ "$ARCH" == "x86_64" ]]; then
     echo "processor architecture is x86"
-    auditwheel repair dist/*.whl --plat manylinux_2_28_x86_64
+    auditwheel repair "$wheel" --plat manylinux_2_28_x86_64
   elif [[ "$ARCH" == "aarch64" ]]; then
     echo "aarch64"
-    auditwheel repair dist/*.whl --plat manylinux_2_28_aarch64
+    auditwheel repair "$wheel" --plat manylinux_2_28_aarch64
   else
     echo "ERROR: UNABLE TO BUILD WHEEL - Unknown architecture"
   fi
