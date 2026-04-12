@@ -24,8 +24,8 @@ if [ ! -f /opt/homebrew/bin/brew ]; then
     echo >> $HOME/.zprofile
     echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.zprofile
     eval "$(/opt/homebrew/bin/brew shellenv)"
-    brew install wget automake nasm libtool pkgconfig cmake ninja
 fi
+brew install wget automake nasm libtool pkgconfig cmake ninja
 
 export BUILD="$BASE/build"
 export SOURCE="$BASE/source"
@@ -56,7 +56,7 @@ for venv in "${venvs[@]}"; do
     source $HOME/$venv/bin/activate
     python --version
     pip install build delocate
-    python -m build .
+    python -m build --sdist --wheel
     wheel=$(ls -1 dist/*${venv:2}*)
     echo $wheel
     delocate-wheel -w fixed_wheels --require-archs=arm64  -v "$wheel"
