@@ -1,28 +1,11 @@
-#*******************************************************************************
-# libavio/CMakeLists.txt
-#
-# Copyright (c) 2022, 2024 Stephen Rhodes 
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-#******************************************************************************/
-
 cmake_minimum_required(VERSION 3.17)
 
-project(libavio VERSION 3.2.7)
+project(libavio VERSION 3.2.8 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -38,18 +21,20 @@ add_definitions(-w)
 find_package(FFmpeg REQUIRED)
 find_package(SDL2 REQUIRED)
 
-add_subdirectory(pybind11)
+set(PYBIND11_FINDPYTHON ON)
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(avio 
+pybind11_add_module(avio
     src/avio.cpp
 )
 
-target_link_libraries(avio PRIVATE 
+target_link_libraries(avio PRIVATE
     FFmpeg::FFmpeg
     SDL2::SDL2
 )
 
-target_include_directories(avio SYSTEM PUBLIC
+target_include_directories(avio PRIVATE
     include
 )
 
@@ -62,3 +47,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         INSTALL_RPATH_USE_ORIGIN TRUE
     )
 endif()
+
+install(TARGETS avio
+    LIBRARY DESTINATION avio
+    RUNTIME DESTINATION avio
+    ARCHIVE DESTINATION avio
+)
