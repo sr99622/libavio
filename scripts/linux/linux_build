@@ -56,7 +56,7 @@ for venv in "${venvs[@]}"; do
 
   pip install build auditwheel patchelf
   cd "$PROJECT_DIR"
-  python -m build
+  python -m build --sdist --wheel
 
   wheel=$(ls -1 dist/*${venv:2}*)
   echo $wheel
