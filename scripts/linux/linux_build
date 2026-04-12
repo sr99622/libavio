@@ -18,6 +18,8 @@ fi
 PROJECT_DIR="$(cd "$1" && pwd)"
 echo "Project Directory: $PROJECT_DIR" >&2
 
+dnf install -y wget nasm
+
 case "$(uname -m)" in
   x86_64|amd64|i386|i686) ARCH="x86_64" ;;
   aarch64|arm64|arm*)     ARCH="aarch64" ;;
@@ -26,13 +28,12 @@ esac
 export ARCH
 
 BASE="$PWD"
-export LD_RUN_PATH='$ORIGIN'
-
-dnf install -y wget nasm
 export SOURCE="$BASE/source"
 export BUILD="$BASE/build"
 export BIN="$BASE/usr/local/bin"
+export LD_RUN_PATH='$ORIGIN'
 export ACLOCAL_PATH=/usr/share/aclocal
+export LD_LIBRARY_PATH="$BUILD/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export PKG_CONFIG_PATH="$BUILD/lib/pkgconfig"
 export SDL2_DIR="$BUILD"
 export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
