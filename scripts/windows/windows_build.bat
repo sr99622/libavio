@@ -17,13 +17,14 @@ cd %HOMEPATH%
 if not exist onvif-gui-win-libs\ (
     git clone https://github.com/sr99622/onvif-gui-win-libs
 )
-cd %HOMEPATH%\onvif-gui-win-libs
-rem git pull
 
 cd %HOMEPATH%\libavio
 
 if exist dist\ (
     del /q dist\*
+)
+if exist wheelhouse\ (
+    del /q wheelhouse\*
 )
 
 call %HOMEPATH%\libavio\scripts\windows\python\install
@@ -35,22 +36,11 @@ for %%v in %list% do (
     cd %HOMEPATH%
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
     call py%%v\Scripts\activate
-    python.exe -m pip install --upgrade pip
-    pip uninstall -y avio
-    call %HOMEPATH%\libavio\scripts\windows\build_pkgs
+    rem python -m pip install --upgrade pip
 
-    pip install build
-    if not exist dist/ (
-        mkdir dist
-    )
+    pip install build delvewheel
     cd libavio
-    rmdir /q /s build
-    set SOURCE_DIR=%CD%
-    python -m build
-    for /f %%F in ('dir /b /a-d dist\*whl') do (
-        pip install dist\%%F
-    )
-    move dist\* ..\dist
-
+    python -m build --sdist --wheel
+    delvewheel repair dist\*cp%%v-cp%%v-*.whl --add-path avio
     call deactivate
 )
