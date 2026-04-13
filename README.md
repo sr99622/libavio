@@ -34,7 +34,7 @@ From inside the container, run the build
 
 ```
 cd $HOME
-git clone --recursive https://github.com/sr99622/libavio
+git clone https://github.com/sr99622/libavio
 libavio/scripts/linux/linux_build libavio
 ```
 
@@ -64,7 +64,7 @@ This will start the XCode tools installation. Once complete:
 
 ```
 cd $HOME
-git clone --recursive https://github.com/sr99622/libavio
+git clone https://github.com/sr99622/libavio
 cd libavio/scripts/mac
 ./mac_build
 ```
