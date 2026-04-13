@@ -5,7 +5,7 @@ Python library for processing media streams.
 
 <h3>Linux</h3>
 
-Use for both x86_64 and aarch64. Start the docker container and cd to $HOME, it won't work from /. The command line requires the location of the project directory. Substitute the `<arch>` tag for your platform.
+Use for both x86_64 and aarch64. Start the docker container and cd to $HOME, it won't work from /. Substitute the `<arch>` tag for your platform.
 
 Docker configuration
 
@@ -35,7 +35,7 @@ From inside the container, run the build
 ```
 cd $HOME
 git clone https://github.com/sr99622/libavio
-libavio/scripts/linux/linux_build libavio
+libavio/scripts/linux/linux_build
 ```
 
 The package installers will be found in the libavio/wheelhouse directory. For a quick test:
