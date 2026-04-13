@@ -65,14 +65,13 @@ This will start the XCode tools installation. Once complete:
 ```
 cd $HOME
 git clone https://github.com/sr99622/libavio
-cd libavio/scripts/mac
-./mac_build
+libavio/scripts/mac/mac_build
 ```
 
 to test
 ```
 . $HOME/py313/bin/activate
-pip install ../../*313*
+pip install $HOME/libavio/fixed_wheels/*313*
 python
 >>> import avio
 >>> avio.__version__ 
