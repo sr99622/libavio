@@ -48,8 +48,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     )
 endif()
 
-install(TARGETS avio
-    LIBRARY DESTINATION avio
-    RUNTIME DESTINATION avio
-    ARCHIVE DESTINATION avio
-)
+if(WIN32)
+    install(TARGETS avio LIBRARY DESTINATION .)
+else()
+    install(TARGETS avio
+        LIBRARY DESTINATION avio
+        RUNTIME DESTINATION avio
+        ARCHIVE DESTINATION avio
+    )
+endif()
