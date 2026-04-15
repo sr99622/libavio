@@ -81,7 +81,7 @@ python
 
 <h3>Windows</h3>
 
-to build on windows, run from administrator prompt
+to build on windows a virtual machine is recommended, run from administrator prompt. Note that if a system python is installed, it may interfer with the linking process.
 
 ```
 cd %HOMEPATH%
