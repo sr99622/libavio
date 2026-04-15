@@ -5,7 +5,7 @@ Python library for processing media streams.
 
 <h3>Linux</h3>
 
-Use for both x86_64 and aarch64. Start the docker container and cd to $HOME, it won't work from /. Substitute the `<arch>` tag for your platform.
+Use for both x86_64 and aarch64. Start the docker container and cd to $HOME, it won't work from /.
 
 Docker configuration
 
