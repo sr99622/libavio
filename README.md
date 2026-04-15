@@ -75,6 +75,7 @@ pip install $HOME/libavio/fixed_wheels/*313*
 python
 >>> import avio
 >>> avio.__version__ 
+>>> avio.Player("")
 ```
 
 ---
@@ -105,7 +106,7 @@ python
 
 &nbsp;
 
-Copyright (c) 2022, 2023, 2024  Stephen Rhodes
+Copyright (c) 2022, 2023, 2024, 2026  Stephen Rhodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
