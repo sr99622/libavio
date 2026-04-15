@@ -79,6 +79,32 @@ python
 
 ---
 
+<h3>Windows</h3>
+
+to build on windows, run from administrator prompt
+
+```
+cd %HOMEPATH%
+git clone https://github.com/sr99622/libavio
+libavio\scripts\windows\windows_build
+```
+
+to test
+
+```
+cd %HOMEPATH%
+py313\scripts\activate
+for /f "delims=" %F in ('dir /b /s libavio\wheelhouse\*313*') do pip install "%F"
+python
+>>> import avio
+>>> avio.__version__
+>>> avio.Player("")
+```
+
+---
+
+&nbsp;
+
 Copyright (c) 2022, 2023, 2024  Stephen Rhodes
 
 Licensed under the Apache License, Version 2.0 (the "License");
