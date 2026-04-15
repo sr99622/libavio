@@ -20,7 +20,6 @@ if not exist onvif-gui-win-libs\ (
 )
 
 cd %HOMEPATH%\libavio
-rmdir /q /s avio
 
 if exist dist\ (
     del /q dist\*
@@ -31,7 +30,6 @@ if exist wheelhouse\ (
 
 call %HOMEPATH%\libavio\scripts\windows\python\install
 call %HOMEPATH%\libavio\scripts\windows\env_variables
-rem call %HOMEPATH%\libavio\scripts\windows\copy_libs
 
 set list=(310 311 312 313 314)
 rem set list=(313)
