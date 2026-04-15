@@ -6,6 +6,7 @@ if not exist onvif-gui-win-libs\ (
 )
 
 cd %HOMEPATH%\libavio
+rmdir /q /s avio
 
 if exist dist\ (
     del /q dist\*
@@ -18,8 +19,8 @@ call %HOMEPATH%\libavio\scripts\windows\python\install
 call %HOMEPATH%\libavio\scripts\windows\env_variables
 rem call %HOMEPATH%\libavio\scripts\windows\copy_libs
 
-rem set list=(310 311 312 313 314)
-set list=(313)
+set list=(310 311 312 313 314)
+rem set list=(313)
 for %%v in %list% do (
     cd %HOMEPATH%
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
