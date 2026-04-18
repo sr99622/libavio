@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo "Installing Python version: $1"
 arg="$1"
 tag="${arg%.*}"
 
-if [ ! -d "$HOME/py${tag/.}" ]; then
+if [ ! -d "$BASE/py${tag/.}" ]; then
     if [ ! -f "/Library/Frameworks/Python.framework/Versions/$tag/bin/python$tag" ]; then
         cp changes_in "changes$tag.plist"
         sed -i "" "s/_VERSION_/$tag/g" "changes$tag.plist"
@@ -12,8 +12,8 @@ if [ ! -d "$HOME/py${tag/.}" ]; then
         sudo installer -pkg "./python$tag-installer.pkg" -applyChoiceChangesXML "./changes$tag.plist" -target /
         rm "python$tag-installer.pkg"
     fi
-    "/Library/Frameworks/Python.framework/Versions/$tag/bin/python$tag" -m venv "$HOME/py${tag/.}"
-    source "$HOME/py${tag/.}/bin/activate"
+    "/Library/Frameworks/Python.framework/Versions/$tag/bin/python$tag" -m venv "$BASE/py${tag/.}"
+    source "$BASE/py${tag/.}/bin/activate"
     python -m pip install --upgrade pip
     deactivate
     echo "Python version $tag installed"
