@@ -48,7 +48,6 @@ public:
     bool headless = false;
 
     Display(Reader* reader, Queue<Frame>* frames, bool headless) : reader(reader), frames(frames), headless(headless) {
-
         if (headless) return;
         
         if (SDL_Init(SDL_INIT_VIDEO)) error("SDL_Init");
@@ -124,8 +123,9 @@ public:
             if (reader->seek_pts != AV_NOPTS_VALUE)
                 return 1;
 
-            if (!reader->live_stream)
+            if (!reader->live_stream) {
                 wait(f.pts());
+            }
 
             show_frame(f);
             
@@ -138,14 +138,9 @@ public:
     void wait(int64_t pts) {
         if (reader->has_audio()) {
             int64_t rts = reader->real_time(reader->video_stream_index, pts);
-            int count = 0;
-            while (rts - reader->last_audio_rts > 0) {
-                count++;
-                if ((count > 1000) || reader->closed || reader->seek_pts != AV_NOPTS_VALUE) 
-                    break;
-
-                SDL_Delay(1);
-            }
+            int64_t diff = rts - reader->last_audio_rts;
+            if (diff > 0 && diff < 1000)
+                SDL_Delay(diff);
         }
         else {
             int64_t pts_diff = pts - last_frame.pts();

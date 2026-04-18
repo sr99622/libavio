@@ -60,5 +60,6 @@ for venv in "${venvs[@]}"; do
     wheel=$(ls -1 dist/*${venv:2}*)
     echo $wheel
     delocate-wheel -w wheelhouse --require-archs=arm64  -v "$wheel"
+    pip install --force-reinstall wheelhouse/*${venv:2}*
     deactivate
 done
