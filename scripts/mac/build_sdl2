@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 cd $SOURCE
-if [ ! -d "SDL-release-2.32.0" ]; then
-    wget -O release-2.32.0.tar.gz https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.32.0.tar.gz
-    tar xzvf release-2.32.0.tar.gz
+if [ ! -d "SDL-release-2.32.6" ]; then
+    wget -O release-2.32.6.tar.gz https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.32.6.tar.gz
+    tar xzvf release-2.32.6.tar.gz
 fi
-cd SDL-release-2.32.0
+cd SDL-release-2.32.6
 ./configure --prefix=$BUILD
 make -j$(nproc)
 make install
