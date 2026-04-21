@@ -167,34 +167,42 @@ public:
                     video_decoder->writer_pkts = &writer_pkts;
                 video_filter = new Filter(video_decoder, str_video_filter, &decoded_video_frames, &filtered_video_frames);
             }
+
             if (reader->has_audio() && !disable_audio && !hidden) {
-                audio_decoder = new Decoder(reader, AVMEDIA_TYPE_AUDIO, &audio_pkts, &decoded_audio_frames);
-                if (live_stream)
-                    audio_decoder->writer_pkts = &writer_pkts;
-                audio_filter = new Filter(audio_decoder, str_audio_filter, &decoded_audio_frames, &filtered_audio_frames);
+                try {
+                    audio = new Audio(reader, &filtered_audio_frames, audio_driver_index);
+                    audio->volume = volume;
+                    audio->mute = mute;
+                    audio->pyAudioCallback = pyAudioCallback;
+                    if (!reader->has_video())
+                        audio->progressCallback = progressCallback;
+                    audio_decoder = new Decoder(reader, AVMEDIA_TYPE_AUDIO, &audio_pkts, &decoded_audio_frames);
+                    if (live_stream)
+                        audio_decoder->writer_pkts = &writer_pkts;
+                    audio_filter = new Filter(audio_decoder, str_audio_filter, &decoded_audio_frames, &filtered_audio_frames);
+                    audio_decoder_thread = new std::thread([&] { while (audio_decoder->decode()) {} });
+                    audio_filter_thread = new std::thread([&] { while (audio_filter->filter()) {} });
+                }
+                catch (const std::exception& e) {
+                    if (infoCallback) 
+                        infoCallback(e.what(), uri);
+                    else
+                        std::cout << uri << " audio initialization error: " << e.what() << std::endl;
+                    disable_audio = true;
+                    reader->disable_audio = true;
+                    reader->audio_pkts = nullptr;
+                }
             }
-            
+
             reader_thread = new std::thread([&] { while (reader->read()) {} });
-            
+
             if (video_decoder) {
                 video_decoder_thread = new std::thread([&] { while (video_decoder->decode()) {} });
                 video_filter_thread = new std::thread([&] { while (video_filter->filter()) {} });
             }
-            if (audio_decoder) {
-                audio_decoder_thread = new std::thread([&] { while (audio_decoder->decode()) {} });
-                audio_filter_thread = new std::thread([&] { while (audio_filter->filter()) {} });
-            }
+
             if (writer) {
                 writer_thread = new std::thread([&] { while (writer->write()) {} });
-            }
-
-            if (reader->has_audio() && !disable_audio && !hidden) {
-                audio = new Audio(reader, &filtered_audio_frames, audio_driver_index);
-                audio->volume = volume;
-                audio->mute = mute;
-                audio->pyAudioCallback = pyAudioCallback;
-                if (!reader->has_video())
-                    audio->progressCallback = progressCallback;
             }
 
             if (mediaPlayingStarted) {
@@ -216,13 +224,11 @@ public:
             if (errorCallback) {
                 crashed = true;
                 errorCallback(e.what(), uri, request_reconnect);
-                //infoCallback(e.what(), uri);
-                if (reader) reader->terminate();
             }
             else {
                 std::cout << uri << " player error: " << e.what() << std::endl;
-                if (reader) reader->terminate();
             }
+            if (reader) reader->terminate();
         }
 
         if (display_thread)       display_thread->join();

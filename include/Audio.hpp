@@ -162,13 +162,8 @@ Audio::Audio(Reader* reader, Queue<Frame>* frames, int audio_driver_index) : rea
     AVCodecParameters* codecpar = reader->fmt_ctx->streams[reader->audio_stream_index]->codecpar;
     ex.ck(swr_ctx = swr_alloc());
     
-ex.ck(swr_ctx = swr_alloc());
-ex.ck(swr_alloc_set_opts_compat(&swr_ctx, codecpar, output_format, codecpar->sample_rate), SASO);
-ex.ck(swr_init(swr_ctx), SI);
-
-    
-    //ex.ck(swr_alloc_set_opts2(&swr_ctx, &codecpar->ch_layout, output_format, codecpar->sample_rate,
-    //    &codecpar->ch_layout, (AVSampleFormat)codecpar->format, codecpar->sample_rate, 0, NULL), SASO);
+    ex.ck(swr_ctx = swr_alloc());
+    ex.ck(swr_alloc_set_opts_compat(&swr_ctx, codecpar, output_format, codecpar->sample_rate), SASO);
     ex.ck(swr_init(swr_ctx), SI);
 
     if (!SDL_WasInit(SDL_INIT_AUDIO)) {
@@ -183,9 +178,7 @@ ex.ck(swr_init(swr_ctx), SI);
         }
     }
 
-sdl.channels = channel_count_from_codecpar(codecpar);   
-
-    //sdl.channels = codecpar->ch_layout.nb_channels;
+    sdl.channels = channel_count_from_codecpar(codecpar);   
     sdl.freq = codecpar->sample_rate;
     sdl.silence = 0;
     sdl.samples = get_number_of_samples(codecpar);
@@ -200,11 +193,8 @@ sdl.channels = channel_count_from_codecpar(codecpar);
 }
 
 Audio::~Audio() {
-    if (SDL_WasInit(SDL_INIT_AUDIO) && device_id > 0) {
-        //SDL_PauseAudioDevice(device_id, 1);
-        //SDL_LockAudioDevice(device_id);
+    if (SDL_WasInit(SDL_INIT_AUDIO) && device_id > 0)
         SDL_CloseAudioDevice(device_id);
-    }
     if (swr_ctx) swr_free(&swr_ctx);
     if (buffer) free(buffer);
     if (temp) free(temp);

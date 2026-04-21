@@ -1,9 +1,10 @@
 @echo off
 echo "Delete system python from host machine before compiling, otherwise linking will not work"
 
-if not exist "%ALLUSERSPROFILE%\chocolatey\bin\" (
-    @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "[System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+if not exist "%PROGRAMDATA%\chocolatey\bin\" (
+    @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "[System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%PROGRAMDATA%\chocolatey\bin"
 )
+
 if not exist "%ProgramFiles%\Git\" (
     choco install -y git
 )
@@ -31,8 +32,8 @@ if exist wheelhouse\ (
 call %HOMEPATH%\libavio\scripts\windows\python\install
 call %HOMEPATH%\libavio\scripts\windows\env_variables
 
-set list=(310 311 312 313 314)
-rem set list=(313)
+rem set list=(310 311 312 313 314)
+set list=(313)
 for %%v in %list% do (
     cd %HOMEPATH%
     %LOCALAPPDATA%\Programs\Python\Python%%v\python -m venv py%%v
@@ -43,5 +44,9 @@ for %%v in %list% do (
     cd libavio
     python -m build --sdist --wheel
     delvewheel repair dist\*cp%%v-cp%%v-*.whl --add-path %HOMEPATH%\onvif-gui-win-libs\ffmpeg\bin --add-path %HOMEPATH%\onvif-gui-win-libs\sdl\bin
+    for %%F in (wheelhouse\*cp%%v-cp%%v-*.whl) do (
+        pip install --force-reinstall "%%F"
+    )
     call deactivate
+    cd %HOMEPATH%
 )

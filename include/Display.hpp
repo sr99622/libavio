@@ -136,17 +136,17 @@ public:
     }
 
     void wait(int64_t pts) {
-        if (reader->has_audio()) {
+        if (reader->has_audio() && !reader->disable_audio) {
             int64_t rts = reader->real_time(reader->video_stream_index, pts);
             int64_t diff = rts - reader->last_audio_rts;
             if (diff > 0 && diff < 1000)
-                SDL_Delay(diff);
+                std::this_thread::sleep_for(std::chrono::milliseconds(diff));
         }
         else {
             int64_t pts_diff = pts - last_frame.pts();
             int64_t diff = reader->real_time(reader->video_stream_index, pts_diff);
             if (diff > 0 && diff < 1000)
-                SDL_Delay(diff);
+                std::this_thread::sleep_for(std::chrono::milliseconds(diff));
         }
     }
 

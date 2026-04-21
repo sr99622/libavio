@@ -12,5 +12,6 @@ filename = args.name
 player = avio.Player(filename)
 player.headless = False
 player.live_stream = False
+#player.disable_audio = True
 player.str_video_filter = "scale=1280:720"
 player.play()

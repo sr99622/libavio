@@ -111,22 +111,6 @@ public:
         ex.ck((pkt = av_packet_alloc()), APA);
     }
 
-    /*
-    Reader(const std::string& uri) : uri(uri) {
-        AVDictionary* opts = nullptr;
-        int timeout_us = MAX_TIMEOUT * 1000000;
-        av_dict_set_int(&opts, "timeout", timeout_us, 0);
-        ex.ck(avformat_open_input(&fmt_ctx, uri.c_str(), nullptr, &opts), AOI);
-        av_dict_free(&opts);
-        AVIOInterruptCB cb = { interrupt_callback, &callback_params };
-        fmt_ctx->interrupt_callback = cb;
-        ex.ck(avformat_find_stream_info(fmt_ctx, nullptr), AFSI);
-        video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-        audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-        ex.ck((pkt = av_packet_alloc()), APA);
-    }
-    */
-
     ~Reader() {
         if (fmt_ctx) {
             avformat_close_input(&fmt_ctx);
