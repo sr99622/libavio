@@ -69,11 +69,11 @@ if (-not (Test-Path $libsDir)) {
 
 Set-Location $PROJECT_DIR
 
-if (Test-Path "dist") {
-    Remove-Item "dist\*" -Force -ErrorAction SilentlyContinue
+if (Test-Path "$BASE\dist") {
+    Remove-Item "$BASE\dist\*" -Force -ErrorAction SilentlyContinue
 }
-if (Test-Path "wheelhouse") {
-    Remove-Item "wheelhouse\*" -Force -ErrorAction SilentlyContinue
+if (Test-Path "$BASE\wheelhouse") {
+    Remove-Item "$BASE\wheelhouse\*" -Force -ErrorAction SilentlyContinue
 }
 
 & (Join-Path $PROJECT_DIR "scripts\windows\python\install.ps1")
@@ -100,14 +100,14 @@ foreach ($v in $pyList) {
     & $venvPython -m pip install build delvewheel
 
     Set-Location $PROJECT_DIR
-    & $venvPython -m build --sdist --wheel
+    & $venvPython -m build --outdir "$BASE\dist"
 
     $ffmpegBin = Join-Path $BASE "onvif-gui-win-libs\ffmpeg\bin"
     $sdlBin    = Join-Path $BASE "onvif-gui-win-libs\sdl\bin"
 
-    & $venvPython -m delvewheel repair "dist\*cp$v-cp$v-*.whl" --add-path $ffmpegBin --add-path $sdlBin
+    & $venvPython -m delvewheel repair "$BASE\dist\avio*cp$v-cp$v-*.whl" --add-path $ffmpegBin --add-path $sdlBin --wheel-dir "$BASE\wheelhouse"
 
-    $fixedWheels = Get-ChildItem "wheelhouse\*cp$v-cp$v-*.whl" -ErrorAction SilentlyContinue
+    $fixedWheels = Get-ChildItem "$BASE\wheelhouse\avio*cp$v-cp$v-*.whl" -ErrorAction SilentlyContinue
     foreach ($wheel in $fixedWheels) {
         & $venvPython -m pip install --force-reinstall $wheel.FullName
     }
