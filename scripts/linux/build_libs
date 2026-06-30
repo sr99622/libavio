@@ -43,5 +43,3 @@ if [ ! -f "$BUILD/lib/libavcodec.so" ]; then
 else
   echo "Found existing FFMPEG" >&2
 fi
-
-

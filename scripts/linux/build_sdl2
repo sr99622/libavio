@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Install audio development libraries for ALSA, PulseAudio, and PipeWire support
+dnf install -y alsa-lib-devel pulseaudio-libs-devel pipewire-devel
+
 cd "$SOURCE"
 if [ ! -d "SDL-release-2.32.6" ]; then
     wget -O release-2.32.6.tar.gz https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.32.6.tar.gz
     tar xzvf release-2.32.6.tar.gz
 fi
 cd SDL-release-2.32.6
-./configure --prefix="$BUILD"
+./configure --prefix="$BUILD" --enable-alsa --enable-pulseaudio --enable-pipewire
 make -j"$(nproc)"
 make install
