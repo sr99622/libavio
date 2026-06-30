@@ -16,7 +16,7 @@ sudo usermod -aG docker $USER
 sudo reboot now
 ```
 
-Start the container. Select your architecture.
+Start the container for your architecture.
 
    * x86_64
 
