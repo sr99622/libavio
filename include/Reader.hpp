@@ -188,13 +188,12 @@ public:
 
     void terminate() {
         clear_callback(player);
-        if (video_pkts && !closed && !terminated) {
-            video_pkts->clear();
+        if (paused) paused = false;
+        if (video_pkts /*&& !closed && !terminated*/) {
             video_pkts->push(Packet(nullptr));
             video_pkts = nullptr;
         }
-        if (audio_pkts && !closed && !terminated) {
-            audio_pkts->clear();
+        if (audio_pkts /*&& !closed && !terminated*/) {
             audio_pkts->push(Packet(nullptr));
             audio_pkts = nullptr;
         }
