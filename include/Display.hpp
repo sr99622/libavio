@@ -39,17 +39,23 @@ public:
 
     Reader* reader = nullptr;
     Queue<Frame>* frames = nullptr;
+    Queue<Frame>* output = nullptr;
     Frame last_frame;
     bool one_shot = false;
     ExceptionChecker ex;
-    
+
     std::function<void(const Frame& f, const std::string& uri)> renderCallback = nullptr;
     std::function<void(float progress, const std::string& uri)> progressCallback = nullptr;
     bool headless = false;
 
-    Display(Reader* reader, Queue<Frame>* frames, bool headless) : reader(reader), frames(frames), headless(headless) {
+    Display(Reader* reader, Queue<Frame>* frames, Queue<Frame>* output, bool headless) : 
+            reader(reader),
+            frames(frames),
+            output(output),
+            headless(headless)
+    {
         if (headless) return;
-        
+
         if (SDL_Init(SDL_INIT_VIDEO)) error("SDL_Init");
 
         if (!reader->has_video()) {
@@ -117,8 +123,11 @@ public:
         else {
             Frame f = frames->pop();
 
-            if (f.is_null())
+            if (f.is_null()) {
+                std::cout << "display recvd null frame" << std::endl;
+                if (output) output->push(Frame(nullptr));
                 return 0;
+            }
 
             if (reader->seek_pts != AV_NOPTS_VALUE)
                 return 1;
@@ -128,7 +137,9 @@ public:
             }
 
             show_frame(f);
-            
+
+            Frame fo = f;
+            if (output) output->push(std::move(fo));
             last_frame = std::move(f);
             one_shot = false;
         }
@@ -198,7 +209,7 @@ public:
         SDL_GetCurrentDisplayMode(0, &DM);
         int x = (DM.w - width) / 2;
         int y = (DM.h - height) / 2;
-        SDL_SetWindowPosition(window, x, y);                
+        SDL_SetWindowPosition(window, x, y);
     }
 
     Uint32 get_sdl_pix_fmt(AVPixelFormat fmt) {

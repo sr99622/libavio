@@ -30,3 +30,9 @@ wheel.packages = ["avio"]
 cmake.build-type = "Release"
 build-dir = "build/{wheel_tag}"
 minimum-version = "build-system.requires"
+
+[dependency-groups]
+dev = [
+    "ninja>=1.13.0",
+    "pip>=26.1.2",
+]

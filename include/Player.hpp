@@ -35,6 +35,7 @@
 #include "Decoder.hpp"
 #include "Drain.hpp"
 #include "Writer.hpp"
+#include "Encoder.hpp"
 
 namespace avio {
 
@@ -42,6 +43,8 @@ class Player {
 public:
     std::string uri;
     bool live_stream = true;
+    // need to turn this off later
+    bool encoding = true;
     bool headless = true;
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
     std::string str_hw_device_type;
@@ -79,6 +82,8 @@ public:
     Display* display       = nullptr;
     Audio* audio           = nullptr;
     Writer* writer         = nullptr;
+    Encoder* video_encoder = nullptr;
+    Encoder* audio_encoder = nullptr;
 
     Player(const std::string& uri) : uri(uri) { av_log_set_level(log_level); }
     ~Player() { }
@@ -117,6 +122,8 @@ public:
         std::thread* audio_filter_thread  = nullptr;
         std::thread* display_thread       = nullptr;
         std::thread* writer_thread        = nullptr;
+        std::thread* video_encoder_thread = nullptr;
+        std::thread* audio_encoder_thread = nullptr;
 
         Queue<Packet> video_pkts(128);
         Queue<Packet> audio_pkts(128);
@@ -124,6 +131,10 @@ public:
         Queue<Frame>  decoded_audio_frames(1);
         Queue<Frame>  filtered_video_frames(1);
         Queue<Frame>  filtered_audio_frames(1);
+        Queue<Frame>  output_video_frames(1);
+        Queue<Frame>  output_audio_frames(1);
+        Queue<Packet> encoded_video_pkts(128);
+        Queue<Packet> encoded_audio_pkts(128);
         Queue<Packet> writer_pkts(128);
 
         try {
@@ -142,7 +153,7 @@ public:
             if (!disable_audio && !hidden)
                 reader->audio_pkts = &audio_pkts;
 
-            if (live_stream) {
+            if (live_stream || encoding) {
                 writer = new Writer(reader);
                 writer->disable_audio = disable_audio;
                 writer->disable_video = disable_video;
@@ -151,7 +162,7 @@ public:
                     reader->writer_pkts = &writer_pkts;
                 }
             }
-            
+
             if (file_start_from_seek > 0.0)
                 seek(file_start_from_seek);
 
@@ -166,6 +177,9 @@ public:
                 if (live_stream)
                     video_decoder->writer_pkts = &writer_pkts;
                 video_filter = new Filter(video_decoder, str_video_filter, &decoded_video_frames, &filtered_video_frames);
+
+                if (writer)
+                    video_encoder = new Encoder(AVMEDIA_TYPE_VIDEO, writer, &output_video_frames, &encoded_video_pkts);
             }
 
             if (reader->has_audio() && !disable_audio && !hidden) {
@@ -201,6 +215,10 @@ public:
                 video_filter_thread = new std::thread([&] { while (video_filter->filter()) {} });
             }
 
+            if (video_encoder) {
+                video_encoder_thread = new std::thread([&] { while (video_encoder->encode()) {} });
+            }
+
             if (writer) {
                 writer_thread = new std::thread([&] { while (writer->write()) {} });
             }
@@ -210,7 +228,7 @@ public:
             }
 
             if (reader->has_video() && !disable_video && !hidden) {
-                display = new Display(reader, &filtered_video_frames, headless);
+                display = new Display(reader, &filtered_video_frames, &output_video_frames, headless);
                 display->renderCallback = renderCallback;
                 display->progressCallback = progressCallback;
                 if (headless)
@@ -232,16 +250,20 @@ public:
         }
 
         if (display_thread)       display_thread->join();
+        if (audio_encoder_thread) audio_encoder_thread->join();
         if (audio_filter_thread)  audio_filter_thread->join();
         if (audio_decoder_thread) audio_decoder_thread->join();
+        if (video_encoder_thread) video_encoder_thread->join();
         if (video_filter_thread)  video_filter_thread->join();
         if (video_decoder_thread) video_decoder_thread->join();
         if (reader_thread)        reader_thread->join();
         if (writer_thread)        writer_thread->join();
 
         if (display_thread)       { delete display_thread;       display_thread       = nullptr; }
+        if (audio_encoder_thread) { delete audio_encoder_thread; audio_encoder_thread = nullptr; }
         if (audio_filter_thread)  { delete audio_filter_thread;  audio_filter_thread  = nullptr; }
         if (audio_decoder_thread) { delete audio_decoder_thread; audio_decoder_thread = nullptr; }
+        if (video_encoder_thread) { delete video_encoder_thread; video_encoder_thread = nullptr; }
         if (video_filter_thread)  { delete video_filter_thread;  video_filter_thread  = nullptr; }
         if (video_decoder_thread) { delete video_decoder_thread; video_filter_thread  = nullptr; }
         if (writer_thread)        { delete writer_thread;        writer_thread        = nullptr; }
@@ -249,8 +271,10 @@ public:
 
         if (display)              { delete display;              display              = nullptr; }
         if (writer)               { delete writer;               writer               = nullptr; }
+        if (video_encoder)        { delete video_encoder;        video_encoder        = nullptr; }
         if (video_filter)         { delete video_filter;         video_filter         = nullptr; }
         if (video_decoder)        { delete video_decoder;        video_decoder        = nullptr; }
+        if (audio_encoder)        { delete audio_encoder;        audio_encoder        = nullptr; }
         if (audio_filter)         { delete audio_filter;         audio_filter         = nullptr; }
         if (audio_decoder)        { delete audio_decoder;        audio_decoder        = nullptr; }
         if (audio) {

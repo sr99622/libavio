@@ -16,3 +16,5 @@ python*amd64.exe
 wheelhouse/
 avio.libs
 fixed_wheels/
+uv.lock
+
