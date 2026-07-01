@@ -93,6 +93,33 @@ public:
     }
 
     void clear_queues() {
+            if (reader->video_pkts) reader->video_pkts->clear();
+            if (video_decoder) {
+                video_decoder->frames->clear();
+                AVPacket* flush = av_packet_alloc();
+                flush->data = (uint8_t*)"FLUSH";
+                video_decoder->pkts->push(Packet(flush));
+            }
+            if (video_filter) video_filter->output->clear();
+            if (video_encoder) video_encoder->frames->clear();
+            if (writer) writer->video_cache.clear();
+            if (display) display->frames->clear();
+
+            if (reader->audio_pkts) reader->audio_pkts->clear();
+            if (audio_decoder) {
+                audio_decoder->frames->clear();
+                AVPacket* flush = av_packet_alloc();
+                flush->data = (uint8_t*)"FLUSH";
+                audio_decoder->pkts->push(Packet(flush));
+            }
+            if (audio_filter) audio_filter->output->clear();
+            if (audio_encoder) audio_encoder->frames->clear();
+            if (writer) writer->audio_cache.clear();
+            if (audio) audio->frames->clear();
+    }
+
+    /*
+    void clear_queues() {
         if (!reader) return;
         if (!reader->closed) {
             if (reader->audio_pkts) reader->audio_pkts->clear();
@@ -113,6 +140,7 @@ public:
             if (video_filter) video_filter->output->clear();
         }
     }
+    */
 
     void play() {
         std::thread* reader_thread        = nullptr;

@@ -106,11 +106,6 @@ public:
     int render() {
         if (!headless) poll();
 
-        if (reader->terminated) {
-            frames->clear();
-            return 0;
-        }
-
         if (!reader->has_video()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             return 1;

@@ -112,13 +112,6 @@ public:
     int decode() {
         Packet pkt = pkts->pop();
 
-        if (reader->terminated) {
-            frames->clear();
-            frames->push(Frame(nullptr));
-            if (writer_pkts) writer_pkts->push(Packet(nullptr));
-            return 0;
-        }
-
         if (!pkt.is_null() && pkt.pts() == AV_NOPTS_VALUE) {
             if (pkt.pkt->data) {
                 if (!strcmp((const char*)pkt.pkt->data, "FLUSH"))
@@ -154,8 +147,11 @@ public:
         }
 
         if (pkt.is_null()) {
+            std::cout << str_media_type << " decoder recvd null packet: " << frames->size() << std::endl;
             frames->push(Frame(nullptr));
+            std::cout << str_media_type << " decoder terminating 1" << std::endl;
             if (writer_pkts) writer_pkts->push(std::move(pkt));
+            std::cout << str_media_type << " decoder terminating 2" << std::endl;
             return 0;
         }
 

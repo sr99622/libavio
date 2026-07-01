@@ -187,6 +187,7 @@ public:
     }
 
     void terminate() {
+        clear_callback(player);
         if (video_pkts && !closed && !terminated) {
             video_pkts->clear();
             video_pkts->push(Packet(nullptr));

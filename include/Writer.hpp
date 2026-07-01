@@ -214,6 +214,7 @@ public:
         }
 
         if (pkt.is_null()) {
+            std::cout << "writer recvd null packet" << std::endl;
             return 0;
         }
 

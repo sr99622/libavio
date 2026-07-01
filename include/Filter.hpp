@@ -103,13 +103,8 @@ public:
     int filter() {
         Frame f = input->pop();
 
-        if (decoder->reader->terminated) {
-            output->clear();
-            output->push(Frame(nullptr));
-            return 0;
-        }
-
         if (f.is_null()) {
+            std::cout << "filter recvd null frame" << std::endl;
             output->push(Frame(nullptr));
             return 0; 
         }

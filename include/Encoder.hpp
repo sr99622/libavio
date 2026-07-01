@@ -53,7 +53,7 @@ public:
 
     int encode() {
         Frame f = frames->pop();
-        std::cout << "encode: " << f.pts() << std::endl;
+        // std::cout << "encode: " << f.pts() << std::endl;
 
         if (f.is_null()) {
             std::cout << "encoder recvd null frame" << std::endl;

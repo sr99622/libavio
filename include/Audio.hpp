@@ -73,13 +73,6 @@ void callback(void* user_data, uint8_t* output_buffer, int output_length) {
     memset(output_buffer, 0, output_length);
     int avail = output_length;
 
-    if (audio->reader->terminated) {
-        audio->frames->clear();
-        audio->closed = true;
-        SDL_PauseAudioDevice(audio->device_id, 1);
-        return;
-    }
-
     if (audio->reader->paused) 
         return;
 
@@ -99,7 +92,7 @@ void callback(void* user_data, uint8_t* output_buffer, int output_length) {
 
                 Frame f = audio->frames->pop();
 
-                if (f.is_null() || audio->reader->terminated) {
+                if (f.is_null()) {
                     audio->closed = true;
                     return;
                 }
