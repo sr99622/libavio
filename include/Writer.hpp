@@ -193,7 +193,6 @@ public:
 
     int write() {
         Packet pkt = input->pop();
-        //if (reader->recording && !reader->closed && !reader->terminated && !pkt.is_null()) {
         // there's an issue here with how the stream closes, either video or audio could send
         // a null packet first when using post decode mode
         if (reader->recording && !pkt.is_null()) {

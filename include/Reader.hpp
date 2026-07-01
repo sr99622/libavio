@@ -65,7 +65,6 @@ public:
     int64_t last_video_rts = INT64_MAX;
     int64_t last_audio_pts = AV_NOPTS_VALUE;
     int64_t last_video_pts = AV_NOPTS_VALUE;
-    bool terminated = false;
     bool closed = false;
     AVPixelFormat output_pix_fmt = AV_PIX_FMT_NONE;
     ExceptionChecker ex;
@@ -189,11 +188,11 @@ public:
     void terminate() {
         clear_callback(player);
         if (paused) paused = false;
-        if (video_pkts /*&& !closed && !terminated*/) {
+        if (video_pkts) {
             video_pkts->push(Packet(nullptr));
             video_pkts = nullptr;
         }
-        if (audio_pkts /*&& !closed && !terminated*/) {
+        if (audio_pkts) {
             audio_pkts->push(Packet(nullptr));
             audio_pkts = nullptr;
         }
@@ -202,7 +201,6 @@ public:
             writer_pkts = nullptr;
         }
         closed = true;
-        terminated = true;
     }
 
     int64_t real_time(int stream_index, int64_t pts) {
