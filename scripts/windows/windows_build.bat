@@ -1,5 +1,4 @@
 @echo off
-echo Delete system python from host machine before compiling, otherwise linking will not work
 echo Build and test this module from a directory other than the project directory
 echo During first run, use Administrator privilege to install tools, standard prompt ok after that
 

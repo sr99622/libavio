@@ -5,7 +5,6 @@ trap {
     exit 1
 }
 
-Write-Host "Delete system python from host machine before compiling, otherwise linking will not work"
 Write-Host "Build and test this module from a directory other than the project directory"
 Write-Host "During first run, use Administrator privilege to install tools, standard prompt ok after that"
 

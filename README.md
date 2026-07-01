@@ -54,7 +54,7 @@ python
 
 <h3>Mac</h3>
 
-to build package on mac, build out a virtual machine, then from terminal
+To build package on mac, build out a virtual machine, then from terminal
 
 ```
 git
@@ -82,7 +82,7 @@ python
 
 <h3>Windows</h3>
 
-to build on windows a virtual machine is recommended, run from administrator prompt. Note that if a system python is installed, it may interfer with the linking process.
+To build on windows a virtual machine is recommended, run from administrator prompt.
 
 ```
 cd %HOMEPATH%
