@@ -56,7 +56,6 @@ public:
     bool closed = false;
     int audio_driver_index = 0; 
 
-    
     std::function<void(const Frame&, const std::string& uri)> pyAudioCallback = nullptr;
     std::function<void(float progress, const std::string& uri)> progressCallback = nullptr;
     int last_progress = 0;

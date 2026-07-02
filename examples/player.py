@@ -6,7 +6,10 @@ def process_frame(frame: avio.Frame, uri: str):
 
 def main(args: Namespace):
     filename = args.name
-    player = avio.Player(filename)
+    reader = avio.Reader(filename)
+    print(reader.uri)
+    player = avio.Player()
+    player.reader = reader
     player.headless = False
     player.live_stream = False
     #player.disable_audio = True

@@ -73,6 +73,7 @@ public:
     float volume = 1.0;
     bool mute = false;
     AVRational onvif_frame_rate;
+    bool internal_reader = false;
 
     Reader* reader         = nullptr;
     Decoder* video_decoder = nullptr;
@@ -85,6 +86,7 @@ public:
     Encoder* video_encoder = nullptr;
     Encoder* audio_encoder = nullptr;
 
+    Player() { av_log_set_level(log_level); }
     Player(const std::string& uri) : uri(uri) { av_log_set_level(log_level); }
     ~Player() { }
 
@@ -142,7 +144,13 @@ public:
         Queue<Packet> writer_pkts(128);
 
         try {
-            reader = new Reader(uri);
+            if (!reader) {
+                reader = new Reader(uri);
+                internal_reader = true;
+            }
+            else {
+                uri = reader->uri;
+            }
             reader->clear_callback = clear_callback;
             reader->player = this;
             reader->live_stream = live_stream;
@@ -294,7 +302,11 @@ public:
             delete audio;
             audio = nullptr;
         }
-        if (reader)               { delete reader;               reader               = nullptr; }
+
+        if (internal_reader && reader) { 
+            delete reader;               
+            reader = nullptr; 
+        }
 
         if (mediaPlayingStopped) {
             std::thread thread([&]() { 

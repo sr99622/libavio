@@ -79,7 +79,7 @@ public:
 
     bool       is_null()     const { return frame == nullptr; }
     int64_t    pts()         const { return frame ? frame->pts : AV_NOPTS_VALUE; }
-    int        channels()  const { return channel_count_from_frame(frame); }
+    int        channels()    const { return channel_count_from_frame(frame); }
     int        samples()     const { return frame ? frame->nb_samples : 0; }
     int        width()       const { return frame ? frame->width : 0; }
     int        height()      const { return frame ? frame->height : 0; }
@@ -88,7 +88,7 @@ public:
     int        nb_samples()  const { return frame ? frame->nb_samples : 0; }
     int        sample_rate() const { return frame ? frame->sample_rate : 0; }
     int        format()      const { return frame ? frame->format : -1; }
-    AVRational time_base() const { return frame_time_base(frame); }
+    AVRational time_base()   const { return frame_time_base(frame); }
     
 };
 
