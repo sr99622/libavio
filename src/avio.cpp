@@ -112,6 +112,9 @@ PYBIND11_MODULE(avio, m)
         .def("str_audio_codec", &Reader::str_audio_codec)
         .def("audio_bit_rate", &Reader::audio_bit_rate)
         .def("audio_time_base", &Reader::audio_time_base)
+        .def("get_stream_info", &Reader::get_stream_info)
+        .def("real_time", &Reader::real_time)
+        .def_readwrite("video_stream_index", &Reader::video_stream_index)
         .def_readwrite("uri", &Reader::uri);
 
     py::class_<Frame>(m, "Frame", py::buffer_protocol())
