@@ -72,8 +72,11 @@ def process_frame(frame: avio.Frame, uri: str):
 
 def main(args: Namespace):
     filename = args.name
-    reader = avio.Reader(filename)
-    player.reader = reader
+    #reader = avio.Reader(filename)
+    #video_encoder = avio.Encoder()
+    #player.reader = reader
+    player.uri = filename
+    player.add_video_encoder = True
     player.headless = False
     player.live_stream = False
     #player.disable_audio = True

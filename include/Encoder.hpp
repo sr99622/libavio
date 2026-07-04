@@ -51,6 +51,8 @@ public:
     int frame_rate = 0;
     int gop_size = 0;
 
+    Encoder() {}
+
     Encoder(AVMediaType media_type, Writer* writer, Queue<Frame>* frames, Queue<Packet>* pkts) : 
             media_type(media_type), writer(writer), frames(frames), pkts(pkts)
     {
@@ -60,6 +62,7 @@ public:
     }
 
     ~Encoder() {
+        std::cout << "encoder destructor 1" << std::endl;
         if (fmt_ctx) {
             avformat_free_context(fmt_ctx);
             fmt_ctx = nullptr;
@@ -68,6 +71,7 @@ public:
         if (enc_ctx)       avcodec_free_context(&enc_ctx);
         if (pkt)           av_packet_free(&pkt);
         if (cvt_frame)     av_frame_free(&cvt_frame);
+        std::cout << "encoder destructor 2" << std::endl;
     }
 
     void open_video_stream() {
@@ -105,7 +109,7 @@ public:
 
         if (f.is_null()) {
             std::cout << "encoder recvd null frame" << std::endl;
-            writer->input->push(Packet(nullptr));
+            //writer->input->push(Packet(nullptr));
             return 0;
         }
         return 1;

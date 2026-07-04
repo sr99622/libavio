@@ -64,6 +64,7 @@ PYBIND11_MODULE(avio, m)
         .def("duration", &Player::duration)
         .def("terminate", &Player::terminate)
         .def_readwrite("reader", &Player::reader)
+        .def_readwrite("add_video_encoder", &Player::add_video_encoder)
         .def_readwrite("uri", &Player::uri)
         .def_readwrite("request_reconnect", &Player::request_reconnect)
         .def_readwrite("live_stream", &Player::live_stream)
@@ -117,6 +118,9 @@ PYBIND11_MODULE(avio, m)
         .def_readwrite("video_stream_index", &Reader::video_stream_index)
         .def_readwrite("audio_stream_index", &Reader::audio_stream_index)
         .def_readwrite("uri", &Reader::uri);
+
+    py::class_<Encoder>(m, "Encoder", py::buffer_protocol())
+        .def(py::init<>());
 
     py::class_<Frame>(m, "Frame", py::buffer_protocol())
         .def(py::init<>())

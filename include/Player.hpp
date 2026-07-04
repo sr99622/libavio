@@ -73,6 +73,8 @@ public:
     AVRational onvif_frame_rate;
     bool internal_reader = false;
 
+    bool add_video_encoder = false;
+
     Reader* reader         = nullptr;
     Decoder* video_decoder = nullptr;
     Decoder* audio_decoder = nullptr;
@@ -188,10 +190,14 @@ public:
                     video_decoder->writer_pkts = &writer_pkts;
                 video_filter = new Filter(video_decoder, str_video_filter, &decoded_video_frames, &filtered_video_frames);
 
-                //if (writer)
-                //    video_encoder = new Encoder(AVMEDIA_TYPE_VIDEO, writer, &output_video_frames, &encoded_video_pkts);
-                if (video_encoder) 
+                if (add_video_encoder)
+                    video_encoder = new Encoder(AVMEDIA_TYPE_VIDEO, writer, &output_video_frames, &encoded_video_pkts);
+                if (video_encoder) {
+                    video_encoder->media_type = AVMEDIA_TYPE_VIDEO;
+                    video_encoder->frames = &output_video_frames;
+                    video_encoder->pkts = &encoded_video_pkts;
                     video_encoder->open_video_stream();
+                }
             }
 
             if (reader->has_audio() && !disable_audio && !hidden) {
@@ -251,7 +257,6 @@ public:
                 else 
                     while (display->render()) {}
             }
-
         }
         catch (const std::exception& e) {
             if (errorCallback) {
@@ -264,16 +269,27 @@ public:
             if (reader) reader->terminate();
         }
 
+        std::cout << "joining threads" << std::endl;
         if (display_thread)       display_thread->join();
+        std::cout << "    display" << std::endl;
         if (audio_encoder_thread) audio_encoder_thread->join();
+        std::cout << "    audio encoder" << std::endl;
         if (audio_filter_thread)  audio_filter_thread->join();
+        std::cout << "    audio filter" << std::endl;
         if (audio_decoder_thread) audio_decoder_thread->join();
+        std::cout << "    audio decoder" << std::endl;
         if (video_encoder_thread) video_encoder_thread->join();
+        std::cout << "    video encoder" << std::endl;
         if (video_filter_thread)  video_filter_thread->join();
+        std::cout << "    video filter" << std::endl;
         if (video_decoder_thread) video_decoder_thread->join();
+        std::cout << "    video decoder" << std::endl;
         if (reader_thread)        reader_thread->join();
+        std::cout << "    reader" << std::endl;
         if (writer_thread)        writer_thread->join();
+        std::cout << "    writer" << std::endl;
 
+        std::cout << "deleting threads" << std::endl;
         if (display_thread)       { delete display_thread;       display_thread       = nullptr; }
         if (audio_encoder_thread) { delete audio_encoder_thread; audio_encoder_thread = nullptr; }
         if (audio_filter_thread)  { delete audio_filter_thread;  audio_filter_thread  = nullptr; }
@@ -284,15 +300,24 @@ public:
         if (writer_thread)        { delete writer_thread;        writer_thread        = nullptr; }
         if (reader_thread)        { delete reader_thread;        reader_thread        = nullptr; }
 
+        std::cout << "deleting objects" << std::endl;
         if (display)              { delete display;              display              = nullptr; }
+        std::cout << "    display" << std::endl;
         if (writer)               { delete writer;               writer               = nullptr; }
+        std::cout << "    writer" << std::endl;
         if (video_encoder)        { delete video_encoder;        video_encoder        = nullptr; }
+        std::cout << "    video encoder" << std::endl;
         if (video_filter)         { delete video_filter;         video_filter         = nullptr; }
+        std::cout << "    video filter" << std::endl;
         if (video_decoder)        { delete video_decoder;        video_decoder        = nullptr; }
+        std::cout << "    video decoder" << std::endl;
         if (audio_encoder)        { delete audio_encoder;        audio_encoder        = nullptr; }
+        std::cout << "    video encoder" << std::endl;
         if (audio_filter)         { delete audio_filter;         audio_filter         = nullptr; }
+        std::cout << "    audio filter" << std::endl;
         if (audio_decoder)        { delete audio_decoder;        audio_decoder        = nullptr; }
         if (audio) {
+        std::cout << "    audio decoder" << std::endl;
             int count = 0;
             while (!audio->closed) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -305,7 +330,9 @@ public:
             delete audio;
             audio = nullptr;
         }
+        std::cout << "    audio" << std::endl;
 
+        std::cout << "deleting reader" << std::endl;
         if (internal_reader && reader) { 
             delete reader;               
             reader = nullptr; 
