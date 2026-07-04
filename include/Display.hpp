@@ -120,7 +120,11 @@ public:
 
             if (f.is_null()) {
                 std::cout << "display recvd null frame" << std::endl;
-                if (output) output->push(Frame(nullptr));
+                if (output) {
+                    std::cout << "have output" << std::endl;
+                    output->push(Frame(nullptr));
+                } 
+                std::cout << "next step" << std::endl;
                 return 0;
             }
 
@@ -133,8 +137,10 @@ public:
 
             show_frame(f);
 
-            Frame fo = f;
-            if (output) output->push(std::move(fo));
+            if (output) {
+                Frame fo = f;
+                output->push(std::move(fo));
+            }
             last_frame = std::move(f);
             one_shot = false;
         }

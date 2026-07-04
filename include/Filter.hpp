@@ -104,7 +104,7 @@ public:
         Frame f = input->pop();
 
         if (f.is_null()) {
-            std::cout << "filter recvd null frame" << std::endl;
+            std::cout << decoder->str_media_type << " filter recvd null frame" << std::endl;
             output->push(Frame(nullptr));
             return 0; 
         }

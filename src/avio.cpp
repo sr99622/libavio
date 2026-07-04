@@ -115,6 +115,7 @@ PYBIND11_MODULE(avio, m)
         .def("get_stream_info", &Reader::get_stream_info)
         .def("real_time", &Reader::real_time)
         .def_readwrite("video_stream_index", &Reader::video_stream_index)
+        .def_readwrite("audio_stream_index", &Reader::audio_stream_index)
         .def_readwrite("uri", &Reader::uri);
 
     py::class_<Frame>(m, "Frame", py::buffer_protocol())

@@ -43,8 +43,6 @@ class Player {
 public:
     std::string uri;
     bool live_stream = true;
-    // need to turn this off later
-    bool encoding = true;
     bool headless = true;
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
     std::string str_hw_device_type;
@@ -165,7 +163,7 @@ public:
             if (!disable_audio && !hidden)
                 reader->audio_pkts = &audio_pkts;
 
-            if (live_stream || encoding) {
+            if (live_stream) {
                 writer = new Writer(reader);
                 writer->disable_audio = disable_audio;
                 writer->disable_video = disable_video;
@@ -190,8 +188,10 @@ public:
                     video_decoder->writer_pkts = &writer_pkts;
                 video_filter = new Filter(video_decoder, str_video_filter, &decoded_video_frames, &filtered_video_frames);
 
-                if (writer)
-                    video_encoder = new Encoder(AVMEDIA_TYPE_VIDEO, writer, &output_video_frames, &encoded_video_pkts);
+                //if (writer)
+                //    video_encoder = new Encoder(AVMEDIA_TYPE_VIDEO, writer, &output_video_frames, &encoded_video_pkts);
+                if (video_encoder) 
+                    video_encoder->open_video_stream();
             }
 
             if (reader->has_audio() && !disable_audio && !hidden) {
@@ -240,7 +240,10 @@ public:
             }
 
             if (reader->has_video() && !disable_video && !hidden) {
-                display = new Display(reader, &filtered_video_frames, &output_video_frames, headless);
+                Queue<Frame>* display_output = nullptr;
+                if (video_encoder)
+                    display_output = &output_video_frames;
+                display = new Display(reader, &filtered_video_frames, display_output, headless);
                 display->renderCallback = renderCallback;
                 display->progressCallback = progressCallback;
                 if (headless)
