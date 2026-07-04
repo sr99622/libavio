@@ -72,6 +72,7 @@ public:
     bool mute = false;
     AVRational onvif_frame_rate;
     bool internal_reader = false;
+    std::string output_filename;
 
     bool add_video_encoder = false;
 
@@ -197,6 +198,8 @@ public:
                     video_encoder->frames = &output_video_frames;
                     video_encoder->pkts = &encoded_video_pkts;
                     video_encoder->open_video_stream();
+                    video_encoder->output_filename = output_filename;
+                    video_encoder->open_file();
                 }
             }
 
@@ -257,6 +260,8 @@ public:
                 else 
                     while (display->render()) {}
             }
+
+            if (video_encoder) video_encoder->close_file();
         }
         catch (const std::exception& e) {
             if (errorCallback) {

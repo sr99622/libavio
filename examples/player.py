@@ -76,6 +76,7 @@ def main(args: Namespace):
     #video_encoder = avio.Encoder()
     #player.reader = reader
     player.uri = filename
+    player.output_filename = "test.mp4"
     player.add_video_encoder = True
     player.headless = False
     player.live_stream = False

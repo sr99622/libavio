@@ -34,6 +34,8 @@ public:
     std::string codec_name = "h264";
     std::string format = "mp4";
     AVFormatContext* fmt_ctx = nullptr;
+    std::string str_media_type = "unknown media type";
+    std::string output_filename;
 
     AVStream* stream = nullptr;
     const AVCodec* codec = nullptr;
@@ -56,13 +58,14 @@ public:
     Encoder(AVMediaType media_type, Writer* writer, Queue<Frame>* frames, Queue<Packet>* pkts) : 
             media_type(media_type), writer(writer), frames(frames), pkts(pkts)
     {
-        std::cout << "Encoder constructor" << std::endl;
-
-
+        const char* str = av_get_media_type_string(media_type);
+        str_media_type = (str ? str : "unknown media type");
+    
+        std::cout << str_media_type << " encoder constructor" << std::endl;
     }
 
     ~Encoder() {
-        std::cout << "encoder destructor 1" << std::endl;
+        std::cout << str_media_type << " encoder destructor 1" << std::endl;
         if (fmt_ctx) {
             avformat_free_context(fmt_ctx);
             fmt_ctx = nullptr;
@@ -71,7 +74,7 @@ public:
         if (enc_ctx)       avcodec_free_context(&enc_ctx);
         if (pkt)           av_packet_free(&pkt);
         if (cvt_frame)     av_frame_free(&cvt_frame);
-        std::cout << "encoder destructor 2" << std::endl;
+        std::cout  << str_media_type << " encoder destructor 2" << std::endl;
     }
 
     void open_video_stream() {
@@ -103,12 +106,20 @@ public:
         /**/
     }
 
+    void open_file() {
+        std::cout << str_media_type << "encoder open file: " << output_filename << std::endl;
+    }
+
+    void close_file() {
+        std::cout << str_media_type << " encoder close file: " << output_filename << std::endl;
+    }
+
     int encode() {
         Frame f = frames->pop();
-        std::cout << "encode: " << f.pts() << std::endl;
+        std::cout << str_media_type << " encode: " << f.pts() << std::endl;
 
         if (f.is_null()) {
-            std::cout << "encoder recvd null frame" << std::endl;
+            std::cout << str_media_type << " encoder recvd null frame" << std::endl;
             //writer->input->push(Packet(nullptr));
             return 0;
         }
