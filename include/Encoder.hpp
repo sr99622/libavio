@@ -50,7 +50,7 @@ public:
     int width = 0;
     int height = 0;
     int video_bit_rate = 0;
-    int frame_rate = 0;
+    AVRational frame_rate = av_make_q(0, 0);
     int gop_size = 0;
 
     Encoder() {}
@@ -60,12 +60,10 @@ public:
     {
         const char* str = av_get_media_type_string(media_type);
         str_media_type = (str ? str : "unknown media type");
-    
         std::cout << str_media_type << " encoder constructor" << std::endl;
     }
 
     ~Encoder() {
-        std::cout << str_media_type << " encoder destructor 1" << std::endl;
         if (fmt_ctx) {
             avformat_free_context(fmt_ctx);
             fmt_ctx = nullptr;
@@ -74,18 +72,24 @@ public:
         if (enc_ctx)       avcodec_free_context(&enc_ctx);
         if (pkt)           av_packet_free(&pkt);
         if (cvt_frame)     av_frame_free(&cvt_frame);
-        std::cout  << str_media_type << " encoder destructor 2" << std::endl;
+        std::cout  << str_media_type << " encoder destructor" << std::endl;
     }
 
     void open_video_stream() {
         std::cout << "open_video_stream" << std::endl;
-        /**/
-        ex.ck(avformat_alloc_output_context2(&fmt_ctx, nullptr, format.c_str(), nullptr), AAOC2);
+        ex.ck(avformat_alloc_output_context2(&fmt_ctx, nullptr, format.c_str(), output_filename.c_str()), AAOC2);
         codec = avcodec_find_encoder(fmt_ctx->oformat->video_codec);
         if (!codec) throw std::runtime_error("avcodec_find_encoder");
 
         ex.ck(stream = avformat_new_stream(fmt_ctx, nullptr), CmdTag::ANS);
         stream->id = fmt_ctx->nb_streams - 1;
+
+        stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        stream->codecpar->codec_id = AV_CODEC_ID_H264;
+        stream->codecpar->width = width;
+        stream->codecpar->height = height;
+        stream->time_base = video_time_base; // 30 FPS timebase
+
         AVCodecID codec_id = fmt_ctx->oformat->video_codec;
         ex.ck(enc_ctx = avcodec_alloc_context3(codec), CmdTag::AAC3);
 
@@ -93,7 +97,6 @@ public:
         enc_ctx->bit_rate = video_bit_rate;
         enc_ctx->width = width;
         enc_ctx->height = height;
-        stream->time_base = av_make_q(1, frame_rate);
         enc_ctx->time_base = stream->time_base;
         enc_ctx->gop_size = gop_size;
 
@@ -103,15 +106,24 @@ public:
         cvt_frame->format = AV_PIX_FMT_YUV420P;
         av_frame_get_buffer(cvt_frame, 0);
         av_frame_make_writable(cvt_frame);
-        /**/
     }
 
     void open_file() {
         std::cout << str_media_type << "encoder open file: " << output_filename << std::endl;
+        if (!(fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+            std::cout << "AVFMT_NOFILE" << std::endl;
+            ex.ck(avio_open(&fmt_ctx->pb, output_filename.c_str(), AVIO_FLAG_WRITE), AO);
+        }
+        ex.ck(avformat_write_header(fmt_ctx, NULL), AWH);
+        std::cout << "header written successfully" << std::endl;
     }
 
     void close_file() {
         std::cout << str_media_type << " encoder close file: " << output_filename << std::endl;
+        ex.ck(av_write_trailer(fmt_ctx), AWT);
+
+        if (!(fmt_ctx->oformat->flags & AVFMT_NOFILE))
+            ex.ck(avio_closep(&fmt_ctx->pb), AC);
     }
 
     int encode() {

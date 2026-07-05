@@ -194,7 +194,27 @@ public:
                 if (add_video_encoder)
                     video_encoder = new Encoder(AVMEDIA_TYPE_VIDEO, writer, &output_video_frames, &encoded_video_pkts);
                 if (video_encoder) {
+                    AVFilterLink *outlink = video_filter->sink_ctx->inputs[0];
+                    std::cout << "got filter sink context link" << std::endl;
+                    std::cout << "filter output width: " << outlink->w << std::endl;
                     video_encoder->media_type = AVMEDIA_TYPE_VIDEO;
+
+                    //video_encoder->width     = outlink->w;
+                    //video_encoder->height    = outlink->h;
+                    //video_encoder->pix_fmt   = (AVPixelFormat)outlink->format;
+                    //video_encoder->video_time_base = outlink->time_base;
+                    video_encoder->gop_size = 10;
+                    video_encoder->video_bit_rate = 800 * 1000;
+                    // Optional: frame_rate or sample_aspect_ratio properties
+                    //video_encoder->frame_rate = outlink->frame_rate;
+
+                    video_encoder->width      = av_buffersink_get_w(video_filter->sink_ctx);
+                    video_encoder->height     = av_buffersink_get_h(video_filter->sink_ctx);
+                    video_encoder->pix_fmt    = (AVPixelFormat)av_buffersink_get_format(video_filter->sink_ctx);
+                    video_encoder->frame_rate = av_buffersink_get_frame_rate(video_filter->sink_ctx);
+                    video_encoder->video_time_base  = av_buffersink_get_time_base(video_filter->sink_ctx);
+
+
                     video_encoder->frames = &output_video_frames;
                     video_encoder->pkts = &encoded_video_pkts;
                     video_encoder->open_video_stream();
